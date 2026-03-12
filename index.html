@@ -586,7 +586,8 @@ function toDb(m) {
     id: m.id, title: m.title, category: m.category, summary: m.summary,
     key_points: m.keyPoints || [], original: m.original,
     is_temp: m.isTemp, starred: m.starred, merged_from: m.mergedFrom || null,
-    created_at: m.createdAt, updated_at: m.updatedAt,
+    created_at: typeof m.createdAt === 'string' ? new Date(m.createdAt).getTime() : (m.createdAt || Date.now()),
+    updated_at: typeof m.updatedAt === 'string' ? new Date(m.updatedAt).getTime() : (m.updatedAt || Date.now()),
     user_id: currentUser ? currentUser.id : null
   };
 }
@@ -800,7 +801,7 @@ function renderList() {
         || (m.original||'').toLowerCase().includes(query);
     });
   }
-  filtered.sort(function(a,b) { return new Date(b.updatedAt) - new Date(a.updatedAt); });
+  filtered.sort(function(a,b) { return b.updatedAt - a.updatedAt; });
   var body = document.getElementById('memoListBody');
   if (!body) return;
   if (filtered.length === 0) {
@@ -865,7 +866,7 @@ function toggleOriginal() {
 async function toggleStarCurrent() {
   var m = memos.find(function(m) { return m.id === currentMemoId; });
   if (!m) return;
-  m.starred = !m.starred; m.updatedAt = new Date().toISOString();
+  m.starred = !m.starred; m.updatedAt = Date.now();
   await updateMemo(m);
   openMemo(m.id, prevScreen); renderHome();
   toast(m.starred ? '⭐ 즐겨찾기 추가' : '☆ 즐겨찾기 해제');
@@ -901,7 +902,7 @@ async function saveTitleEdit() {
   if (!newTitle) return cancelTitleEdit();
   var m = memos.find(function(m) { return m.id === currentMemoId; });
   if (!m) return cancelTitleEdit();
-  m.title = newTitle; m.updatedAt = new Date().toISOString();
+  m.title = newTitle; m.updatedAt = Date.now();
   await updateMemo(m);
   document.getElementById('detailTitle').textContent = newTitle;
   cancelTitleEdit(); renderHome();
@@ -948,7 +949,7 @@ async function processInput() {
 
     setProcessing('🤖 AI 정리 중...');
     var response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -977,7 +978,7 @@ async function processInput() {
       id: genId(), title: result.title, category: result.category,
       summary: result.summary, keyPoints: result.keyPoints,
       original: input, isTemp: false, starred: false,
-      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      createdAt: Date.now(), updatedAt: Date.now()
     };
     await saveMemo(newMemo, embedding);
     memos.unshift(newMemo);
@@ -1028,7 +1029,7 @@ async function doMerge(existingId) {
   try {
     var mergePrompt = 'Respond with valid JSON only.\nMerge these two memos into one in Korean.\nExisting: ' + existing.summary + '\nNew: ' + result.summary + '\nFormat: {"summary":"merged 5-7 sentences in Korean","keyPoints":["pt1","pt2","pt3","pt4"]}';
     var res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey,
       { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ contents:[{parts:[{text:mergePrompt}]}], generationConfig:{maxOutputTokens:1000} }) }
     );
     if (res.ok) {
@@ -1041,7 +1042,7 @@ async function doMerge(existingId) {
     }
     existing.original = (existing.original||'') + '\n\n---\n\n' + rawInput;
     existing.mergedFrom = existing.title;
-    existing.updatedAt = new Date().toISOString();
+    existing.updatedAt = Date.now();
     var emb = null;
     try { emb = await getEmbedding(existing.summary + ' ' + existing.original.substring(0,500), apiKey); } catch(e){}
     await updateMemo(existing, emb);
@@ -1057,7 +1058,7 @@ async function saveAsNew() {
   var body = document.getElementById('mergeBody');
   var rawInput = JSON.parse(body.dataset.input);
   var result = JSON.parse(body.dataset.result);
-  var memo = { id:genId(), title:result.title, category:result.category, summary:result.summary, keyPoints:result.keyPoints, original:rawInput, isTemp:false, starred:false, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+  var memo = { id:genId(), title:result.title, category:result.category, summary:result.summary, keyPoints:result.keyPoints, original:rawInput, isTemp:false, starred:false, createdAt:Date.now(), updatedAt:Date.now() };
   await saveMemo(memo);
   memos.unshift(memo);
   document.getElementById('memoInput').value = '';
@@ -1069,7 +1070,7 @@ async function saveTemp() {
   var body = document.getElementById('mergeBody');
   var rawInput = JSON.parse(body.dataset.input);
   var result = JSON.parse(body.dataset.result);
-  var memo = { id:genId(), title:result.title, category:result.category, summary:result.summary, keyPoints:result.keyPoints, original:rawInput, isTemp:true, starred:false, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+  var memo = { id:genId(), title:result.title, category:result.category, summary:result.summary, keyPoints:result.keyPoints, original:rawInput, isTemp:true, starred:false, createdAt:Date.now(), updatedAt:Date.now() };
   await saveMemo(memo);
   memos.unshift(memo);
   document.getElementById('memoInput').value = '';
@@ -1082,7 +1083,7 @@ async function saveDirect() {
   if (!input) return toast('내용을 입력해줘');
   if (!currentUser) return toast('로그인이 필요해');
   var title = input.substring(0,20) + (input.length > 20 ? '...' : '');
-  var memo = { id:genId(), title:title, category:'일반', summary:input, keyPoints:[], original:input, isTemp:false, starred:false, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+  var memo = { id:genId(), title:title, category:'일반', summary:input, keyPoints:[], original:input, isTemp:false, starred:false, createdAt:Date.now(), updatedAt:Date.now() };
   try {
     await saveMemo(memo);
     memos.unshift(memo);
