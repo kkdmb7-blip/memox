@@ -630,11 +630,11 @@ async function deleteMemoDb(id) {
 async function getEmbedding(text, apiKey) {
   try {
     var res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=' + apiKey,
+      'https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=' + apiKey,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'models/text-embedding-004', content: { parts: [{ text: text.substring(0, 2000) }] } })
+        body: JSON.stringify({ model: 'models/embedding-001', content: { parts: [{ text: text.substring(0, 2000) }] } })
       }
     );
     if (!res.ok) return null; // 실패해도 null 반환, 오류 안 냄
@@ -949,7 +949,7 @@ async function processInput() {
 
     setProcessing('🤖 AI 정리 중...');
     var response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=' + apiKey,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1029,7 +1029,7 @@ async function doMerge(existingId) {
   try {
     var mergePrompt = 'Respond with valid JSON only.\nMerge these two memos into one in Korean.\nExisting: ' + existing.summary + '\nNew: ' + result.summary + '\nFormat: {"summary":"merged 5-7 sentences in Korean","keyPoints":["pt1","pt2","pt3","pt4"]}';
     var res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=' + apiKey,
       { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ contents:[{parts:[{text:mergePrompt}]}], generationConfig:{maxOutputTokens:1000} }) }
     );
     if (res.ok) {
