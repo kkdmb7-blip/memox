@@ -744,6 +744,46 @@
   }
 
   .sidebar-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── MOBILE ───────────────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    header { padding: 12px 16px; }
+    .header-meta { display: none; }
+    .api-key-bar { padding: 8px 12px; flex-wrap: wrap; gap: 6px; }
+    .api-key-bar input { max-width: 100%; flex: 1; min-width: 0; }
+    .layout { flex-direction: column; height: auto; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); display: none; }
+    .sidebar.mobile-open {
+      display: flex; position: fixed;
+      top: 0; left: 0; right: 0; bottom: 56px;
+      z-index: 200; background: var(--bg);
+    }
+    .main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .detail-area { padding: 16px; }
+    .input-area { padding: 12px 16px; padding-bottom: 68px; }
+    .input-actions { flex-wrap: wrap; gap: 8px; }
+    .btn { padding: 10px 14px; font-size: 12px; }
+    .memo-detail-title { font-size: 18px; }
+    textarea { min-height: 80px; }
+  }
+  .mobile-nav { display: none; }
+  @media (max-width: 768px) {
+    .mobile-nav {
+      display: flex; border-top: 1px solid var(--border);
+      background: var(--bg); position: fixed;
+      bottom: 0; left: 0; right: 0; z-index: 150; height: 56px;
+    }
+    .mobile-nav-btn {
+      flex: 1; padding: 8px; text-align: center;
+      font-size: 10px; font-weight: 700; color: var(--text3);
+      cursor: pointer; background: none; border: none;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px;
+    }
+    .mobile-nav-btn .nav-icon { font-size: 18px; }
+    .mobile-nav-btn.active { color: var(--accent); }
+  }
+
 </style>
 </head>
 <body>
@@ -1420,8 +1460,44 @@ document.getElementById('memoInput').addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') processInput();
 });
 
+
+// ── MOBILE NAV ─────────────────────────────────────────────────
+function mobileNav(tab) {
+  const sidebar = document.querySelector('.sidebar');
+  const main = document.querySelector('.main');
+  ['mnavWrite','mnavList','mnavStar'].forEach(id => {
+    document.getElementById(id).classList.remove('active');
+  });
+  if (tab === 'write') {
+    document.getElementById('mnavWrite').classList.add('active');
+    sidebar.classList.remove('mobile-open');
+    main.style.display = 'flex';
+  } else if (tab === 'list') {
+    document.getElementById('mnavList').classList.add('active');
+    sidebar.classList.add('mobile-open');
+    switchSidebarTab('all');
+  } else if (tab === 'star') {
+    document.getElementById('mnavStar').classList.add('active');
+    sidebar.classList.add('mobile-open');
+    switchSidebarTab('star');
+  }
+}
+
 // INIT — Supabase에서 메모 불러오기
 loadMemos();
 </script>
+
+<div class="mobile-nav">
+  <button class="mobile-nav-btn active" id="mnavWrite" onclick="mobileNav('write')">
+    <span class="nav-icon">✏️</span>작성
+  </button>
+  <button class="mobile-nav-btn" id="mnavList" onclick="mobileNav('list')">
+    <span class="nav-icon">📋</span>메모목록
+  </button>
+  <button class="mobile-nav-btn" id="mnavStar" onclick="mobileNav('star')">
+    <span class="nav-icon">⭐</span>즐겨찾기
+  </button>
+</div>
+
 </body>
 </html>
