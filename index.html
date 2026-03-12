@@ -1067,7 +1067,9 @@ async function processInput() {
       `ID:${m.id} | 제목:${m.title} | 카테고리:${m.category} | 요약:${(m.summary || '').substring(0, 100)}`
     ).join('\n');
 
-    const prompt = `당신은 메모 정리 AI입니다. 아래 입력된 메모를 분석하고 JSON으로만 응답하세요.
+    const prompt = `[IMPORTANT: Respond with valid JSON only. No explanation, no markdown, no code blocks, no thinking text. Just raw JSON.]
+
+메모 정리 AI 역할: 입력된 메모를 분석해서 아래 JSON 형식으로만 응답.
 
 기존 메모 목록:
 ${existingMemosSummary || '(없음)'}
@@ -1075,17 +1077,8 @@ ${existingMemosSummary || '(없음)'}
 새 입력:
 ${input}
 
-다음 JSON 형식으로만 응답 (다른 텍스트 없이):
-{
-  "title": "핵심 제목 (15자 이내)",
-  "category": "카테고리명 (예: 아이디어, 계획, 인물, 프로젝트, 기타)",
-  "summary": "AI 정리 요약 (핵심만, 3-5문장)",
-  "keyPoints": ["핵심 포인트1", "핵심 포인트2", "핵심 포인트3"],
-  "similarMemoId": "유사한 기존 메모 ID (없으면 null)",
-  "similarMemoTitle": "유사한 기존 메모 제목 (없으면 null)",
-  "decision": "new 또는 merge 또는 temp",
-  "decisionReason": "판단 이유 (1문장)"
-}`;
+반드시 아래 JSON만 출력 (```json 같은 마크다운 절대 금지):
+{"title":"핵심 제목 15자이내","category":"아이디어/계획/인물/프로젝트/기타 중 하나","summary":"핵심만 3-5문장으로 정리","keyPoints":["포인트1","포인트2","포인트3"],"similarMemoId":null,"similarMemoTitle":null,"decision":"new","decisionReason":"판단이유 1문장"}`;
 
     showProcessing('🤖 AI 정리 중...');
 
@@ -1108,10 +1101,21 @@ ${input}
 
     const data = await response.json();
     const rawText = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+    // JSON 블록 추출 (thinking 모드 텍스트 제거)
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('AI 응답 파싱 실패');
-
-    const result = JSON.parse(jsonMatch[0]);
+    if (!jsonMatch) {
+      console.error('AI 원문 응답:', rawText);
+      throw new Error('AI가 올바른 형식으로 응답하지 않았어. 다시 시도해줘.');
+    }
+    let result;
+    try {
+      result = JSON.parse(jsonMatch[0]);
+    } catch(parseErr) {
+      // JSON이 중간에 잘린 경우 마지막 완전한 필드까지만 파싱 시도
+      const fixed = jsonMatch[0].replace(/,\s*$/, '') + '}';
+      try { result = JSON.parse(fixed); }
+      catch { throw new Error('AI 응답 파싱 실패. 다시 시도해줘.'); }
+    }
 
     showProcessing('💾 저장 중...');
     await delay(300);
