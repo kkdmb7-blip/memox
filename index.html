@@ -858,23 +858,19 @@ async function processInput() {
     let similarMemos = [];
     if (embedding) similarMemos = await findSimilarMemos(embedding, 0.75);
     const similarContext = similarMemos.length > 0
-      ? similarMemos.map(m => `ID:${m.id} | 제목:${m.title} | 유사도:${(m.similarity*100).toFixed(0)}% | 요약:${(m.summary||'').substring(0,150)}`).join('
-')
-      : '(없음)';
-    const prompt = `[IMPORTANT: Respond with valid JSON only. No markdown, no code blocks, no extra text. Just raw JSON.]
-너는 메모 정리 전문가야. 아래 입력된 메모를 분석해서 JSON으로만 응답해.
-정리 원칙:
-- 내용을 이해할 수 있을 만큼 충분히 써줘
-- 중복된 말, 군더더기 표현만 제거
-- 핵심 정보, 수치, 이름, 날짜는 반드시 보존
-- keyPoints는 각 항목을 읽으면 내용을 파악할 수 있을 정도로 구체적으로
-벡터 검색으로 찾은 유사 메모 (유사도 75% 이상):
-${similarContext}
-새 입력:
-${input}
-유사 메모가 있고 같은 주제면 decision을 merge로, 없거나 완전히 다른 주제면 new로 설정.
-반드시 아래 JSON만 출력:
-{"title":"핵심 제목 20자이내","category":"아이디어/계획/인물/프로젝트/일상/기타 중 하나","summary":"내용을 충분히 파악할 수 있도록 핵심 내용을 5-8문장으로 정리.","keyPoints":["구체적인 핵심 포인트1","구체적인 핵심 포인트2","구체적인 핵심 포인트3","구체적인 핵심 포인트4"],"similarMemoId":"유사메모ID 또는 null","similarMemoTitle":"유사메모제목 또는 null","decision":"new 또는 merge","decisionReason":"판단이유 1문장"}`;
+      ? similarMemos.map(m => 'ID:' + m.id + ' | ' + m.title + ' | ' + (m.similarity*100).toFixed(0) + '% | ' + (m.summary||'').substring(0,150)).join('\n')
+      : '(none)';
+    const prompt = [
+      '[Respond with valid JSON only. Raw JSON, no markdown.]',
+      'You are a memo organizer. Analyze the input and respond with JSON only.',
+      'Rules: preserve key info. keyPoints must be specific and in Korean.',
+      'Similar memos (similarity >= 75%):',
+      similarContext,
+      'New input:',
+      input,
+      'If similar memo on same topic: decision=merge, else: decision=new',
+      '{"title":"20char Korean title","category":"아이디어/계획/인물/프로젝트/일상/기타","summary":"5-8 sentences in Korean","keyPoints":["pt1","pt2","pt3","pt4"],"similarMemoId":null,"similarMemoTitle":null,"decision":"new","decisionReason":"reason in Korean"}'
+    ].join('\n')
     setProcessing('🤖 AI 정리 중...');
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
