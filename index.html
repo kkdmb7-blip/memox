@@ -231,6 +231,8 @@
   .btn-secondary:hover:not(:disabled) { color:var(--text); }
   .btn-ghost { background:transparent; color:var(--text3); border:1px solid var(--border); }
   .btn-ghost:hover:not(:disabled) { color:var(--text); border-color:var(--text3); }
+  .btn-save { background:var(--surface3); color:var(--text); border:1px solid rgba(200,245,101,0.2); }
+  .btn-save:hover:not(:disabled) { background:var(--surface2); border-color:rgba(200,245,101,0.4); color:var(--accent); }
 
   /* SAVE SUCCESS CARD */
   .save-success {
@@ -443,7 +445,7 @@
     <textarea id="memoInput" rows="3" placeholder="생각나는 거 그냥 붙여넣어. 길어도 돼." oninput="updateCharCount()"></textarea>
     <div class="input-actions">
       <button class="btn btn-primary" id="processBtn" onclick="processInput()">⚡ AI 정리하기</button>
-      <button class="btn btn-ghost" onclick="saveDirect()">💾 바로저장</button>
+      <button class="btn btn-save" onclick="saveDirect()">💾 바로저장</button>
       <div class="char-count" id="charCount">0자</div>
     </div>
   </div>
@@ -601,8 +603,13 @@ async function loadMemos() {
 async function saveMemo(memo, embedding) {
   var data = toDb(memo);
   if (embedding) data.embedding = JSON.stringify(embedding);
+  console.log('저장 시도:', data.title, 'user_id:', data.user_id);
   var res = await sb.from('memos').insert(data);
-  if (res.error) throw new Error(res.error.message);
+  if (res.error) {
+    console.error('DB 저장 오류:', res.error);
+    throw new Error(res.error.message);
+  }
+  console.log('저장 성공');
 }
 
 async function updateMemo(memo, embedding) {
@@ -1072,13 +1079,19 @@ async function saveTemp() {
 async function saveDirect() {
   var input = document.getElementById('memoInput').value.trim();
   if (!input) return toast('내용을 입력해줘');
+  if (!currentUser) return toast('로그인이 필요해');
   var title = input.substring(0,20) + (input.length > 20 ? '...' : '');
   var memo = { id:genId(), title:title, category:'일반', summary:input, keyPoints:[], original:input, isTemp:false, starred:false, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
-  await saveMemo(memo);
-  memos.unshift(memo);
-  document.getElementById('memoInput').value = '';
-  updateCharCount(); renderHome();
-  showSaveSuccess(memo);
+  try {
+    await saveMemo(memo);
+    memos.unshift(memo);
+    document.getElementById('memoInput').value = '';
+    updateCharCount(); renderHome();
+    showSaveSuccess(memo);
+  } catch(e) {
+    console.error('저장 오류:', e);
+    toast('저장 실패: ' + e.message);
+  }
 }
 
 // ── UI ────────────────────────────────────────────────────────
