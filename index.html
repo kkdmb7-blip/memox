@@ -455,14 +455,20 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ── SUPABASE CONFIG ────────────────────────────────────────────
+// ── SUPABASE ──────────────────────────────────────────────────
 const SUPABASE_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
+let memos = [];
+let todos = JSON.parse(localStorage.getItem('memox_todos') || '[]');
+let currentMemoId = null;
+let listTab = 'all';
+let prevScreen = 'home';
+let isProcessing = false;
 
-// ── AUTH ───────────────────────────────────────────────────────
+// ── AUTH ──────────────────────────────────────────────────────
 async function loginWithGoogle() {
   await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -473,35 +479,26 @@ async function loginWithGoogle() {
 async function confirmLogout() {
   if (!confirm('로그아웃 할까요?')) return;
   await supabase.auth.signOut();
-  currentUser = null;
-  memos = [];
+  currentUser = null; memos = [];
   showScreen('login');
   document.getElementById('userAvatar').style.display = 'none';
 }
 
 async function initAuth() {
   const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user) {
-    setUser(session.user);
-  } else {
-    showScreen('login');
-  }
-
-  supabase.auth.onAuthStateChange((_event, session) => {
-    if (session?.user) {
-      setUser(session.user);
-    } else {
-      showScreen('login');
-    }
+  if (session && session.user) { setUser(session.user); }
+  else { showScreen('login'); }
+  supabase.auth.onAuthStateChange(function(_event, session) {
+    if (session && session.user) { setUser(session.user); }
+    else { showScreen('login'); }
   });
 }
 
 function setUser(user) {
   currentUser = user;
-  // show avatar
-  const avatar = document.getElementById('userAvatar');
-  const avatarImg = document.getElementById('userAvatarImg');
-  if (user.user_metadata?.avatar_url) {
+  var avatar = document.getElementById('userAvatar');
+  var avatarImg = document.getElementById('userAvatarImg');
+  if (user.user_metadata && user.user_metadata.avatar_url) {
     avatarImg.src = user.user_metadata.avatar_url;
     avatar.style.display = 'flex';
   }
@@ -509,18 +506,7 @@ function setUser(user) {
   showScreen('home');
 }
 
-// ── DB via Supabase JS (with auth) ────────────────────────────
-async function sbQuery(table, options = {}) {
-  let q = supabase.from(table);
-  if (options.select) q = q.select(options.select);
-  else q = q.select('*');
-  if (options.eq) Object.entries(options.eq).forEach(([k,v]) => q = q.eq(k, v));
-  if (options.order) q = q.order(options.order, { ascending: false });
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  return data || [];
-}
-
+// ── DB ────────────────────────────────────────────────────────
 function fromDb(r) {
   return {
     id: r.id, title: r.title, category: r.category, summary: r.summary,
@@ -536,75 +522,43 @@ function toDb(m) {
     key_points: m.keyPoints || [], original: m.original,
     is_temp: m.isTemp, starred: m.starred, merged_from: m.mergedFrom || null,
     created_at: m.createdAt, updated_at: m.updatedAt,
-    user_id: currentUser?.id
+    user_id: currentUser ? currentUser.id : null
   };
 }
 
-// ── STATE ──────────────────────────────────────────────────────
-let memos = [];
-let todos = JSON.parse(localStorage.getItem('memox_todos') || '[]');
-let currentMemoId = null;
-let listTab = 'all';
-let prevScreen = 'home';
-let isProcessing = false;
-
-function getApiKey() {
-  return document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('memox_gemini_key') || '';
-}
-
-function onApiKeyInput(val) {
-  const dot = document.getElementById('apiDot');
-  const status = document.getElementById('apiStatus');
-  const pill = document.getElementById('apiPill');
-  if (val.length > 10) {
-    dot.classList.add('on'); status.textContent = '연결됨'; pill.classList.add('connected');
-    localStorage.setItem('memox_gemini_key', val);
-  } else {
-    dot.classList.remove('on'); status.textContent = 'API 키 설정'; pill.classList.remove('connected');
-    localStorage.removeItem('memox_gemini_key');
-  }
-}
-
-// ── DB OPERATIONS ──────────────────────────────────────────────
 async function loadMemos() {
   if (!currentUser) return;
   try {
-    const { data, error } = await supabase
-      .from('memos')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .order('updated_at', { ascending: false });
-    if (error) throw error;
-    memos = (data || []).map(fromDb);
+    var res = await supabase.from('memos').select('*').eq('user_id', currentUser.id).order('updated_at', { ascending: false });
+    if (res.error) throw res.error;
+    memos = (res.data || []).map(fromDb);
     renderHome();
-  } catch (e) {
-    toast('메모 불러오기 실패: ' + e.message);
-  }
+  } catch(e) { toast('메모 불러오기 실패: ' + e.message); }
 }
 
-async function saveMemo(memo, embedding = null) {
-  const data = toDb(memo);
+async function saveMemo(memo, embedding) {
+  var data = toDb(memo);
   if (embedding) data.embedding = JSON.stringify(embedding);
-  const { error } = await supabase.from('memos').insert(data);
-  if (error) throw new Error(error.message);
+  var res = await supabase.from('memos').insert(data);
+  if (res.error) throw new Error(res.error.message);
 }
 
-async function updateMemo(memo, embedding = null) {
-  const data = toDb(memo);
+async function updateMemo(memo, embedding) {
+  var data = toDb(memo);
   if (embedding) data.embedding = JSON.stringify(embedding);
-  const { error } = await supabase.from('memos').update(data).eq('id', memo.id).eq('user_id', currentUser.id);
-  if (error) throw new Error(error.message);
+  var res = await supabase.from('memos').update(data).eq('id', memo.id).eq('user_id', currentUser.id);
+  if (res.error) throw new Error(res.error.message);
 }
 
 async function deleteMemoDb(id) {
-  const { error } = await supabase.from('memos').delete().eq('id', id).eq('user_id', currentUser.id);
-  if (error) throw new Error(error.message);
+  var res = await supabase.from('memos').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (res.error) throw new Error(res.error.message);
 }
 
-// ── EMBEDDING & VECTOR SEARCH ──────────────────────────────────
+// ── EMBEDDING ─────────────────────────────────────────────────
 async function getEmbedding(text, apiKey) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${apiKey}`,
+  var res = await fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=' + apiKey,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -612,28 +566,28 @@ async function getEmbedding(text, apiKey) {
     }
   );
   if (!res.ok) throw new Error('임베딩 오류: ' + res.status);
-  const data = await res.json();
-  return data.embedding?.values || null;
+  var data = await res.json();
+  return data.embedding ? data.embedding.values : null;
 }
 
-async function findSimilarMemos(embedding, threshold = 0.75) {
+async function findSimilarMemos(embedding) {
   try {
-    const { data, error } = await supabase.rpc('match_memos', {
+    var res = await supabase.rpc('match_memos', {
       query_embedding: embedding,
-      match_threshold: threshold,
+      match_threshold: 0.75,
       match_count: 3,
       user_id_filter: currentUser.id
     });
-    if (error) return [];
-    return data || [];
-  } catch { return []; }
+    if (res.error) return [];
+    return res.data || [];
+  } catch(e) { return []; }
 }
 
-// ── SCREEN NAVIGATION ──────────────────────────────────────────
+// ── SCREENS ───────────────────────────────────────────────────
 function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const id = 'screen' + name.charAt(0).toUpperCase() + name.slice(1);
-  const el = document.getElementById(id);
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  var id = 'screen' + name.charAt(0).toUpperCase() + name.slice(1);
+  var el = document.getElementById(id);
   if (el) el.classList.add('active');
   if (name === 'home') renderHome();
   if (name === 'list') renderList();
@@ -643,180 +597,195 @@ function goBackFromDetail() {
   showScreen(prevScreen === 'list' ? 'list' : 'home');
 }
 
+// ── API KEY ───────────────────────────────────────────────────
+function getApiKey() {
+  return document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('memox_gemini_key') || '';
+}
+
+function onApiKeyInput(val) {
+  var dot = document.getElementById('apiDot');
+  var status = document.getElementById('apiStatus');
+  var pill = document.getElementById('apiPill');
+  if (val.length > 10) {
+    dot.classList.add('on'); status.textContent = '연결됨'; pill.classList.add('connected');
+    localStorage.setItem('memox_gemini_key', val);
+  } else {
+    dot.classList.remove('on'); status.textContent = 'API 키 설정'; pill.classList.remove('connected');
+    localStorage.removeItem('memox_gemini_key');
+  }
+}
+
 // ── TODO ──────────────────────────────────────────────────────
 function saveTodos() { localStorage.setItem('memox_todos', JSON.stringify(todos)); }
 
 function addTodo() {
-  const input = document.getElementById('todoInput');
-  const text = input.value.trim();
+  var input = document.getElementById('todoInput');
+  var text = input.value.trim();
   if (!text) return;
-  todos.unshift({ id: genId(), text, done: false });
+  todos.unshift({ id: genId(), text: text, done: false });
   input.value = '';
   saveTodos(); renderTodos();
 }
 
 function toggleTodo(id) {
-  const t = todos.find(t => t.id === id);
+  var t = todos.find(function(t) { return t.id === id; });
   if (t) { t.done = !t.done; saveTodos(); renderTodos(); }
 }
 
 function deleteTodo(id) {
-  todos = todos.filter(t => t.id !== id);
+  todos = todos.filter(function(t) { return t.id !== id; });
   saveTodos(); renderTodos();
-}
-
-function renderTodos() {
-  const list = document.getElementById('todoList');
-  const count = document.getElementById('todoCount');
-  const remaining = todos.filter(t => !t.done).length;
-  const done = todos.filter(t => t.done).length;
-  if (count) count.textContent = remaining > 0 ? `${remaining}개` : (done > 0 ? '모두완료!' : '');
-  if (todos.length === 0) {
-    list.innerHTML = '<div class="panel-empty">할일을 추가해봐 👆</div>';
-    return;
-  }
-  const sorted = [...todos.filter(t=>!t.done), ...todos.filter(t=>t.done)];
-  list.innerHTML = sorted.map(t => `
-    <div class="todo-item ${t.done ? 'done' : ''}" onclick="toggleTodo('${t.id}')">
-      <div class="todo-check"></div>
-      <div class="todo-text">${escHtml(t.text)}</div>
-      <button class="todo-del" onclick="event.stopPropagation();deleteTodo('${t.id}')">✕</button>
-    </div>
-  `).join('');
 }
 
 function clearDoneTodos() {
-  const doneCount = todos.filter(t => t.done).length;
-  if (doneCount === 0) return toast('완료된 항목이 없어', 'info');
-  todos = todos.filter(t => !t.done);
+  var doneCount = todos.filter(function(t) { return t.done; }).length;
+  if (doneCount === 0) return toast('완료된 항목이 없어');
+  todos = todos.filter(function(t) { return !t.done; });
   saveTodos(); renderTodos();
-  toast(`🗑 완료 항목 ${doneCount}개 삭제됨`, 'info');
+  toast('완료 항목 ' + doneCount + '개 삭제됨');
 }
 
-// ── HOME RENDER ────────────────────────────────────────────────
+function renderTodos() {
+  var list = document.getElementById('todoList');
+  var count = document.getElementById('todoCount');
+  var remaining = todos.filter(function(t) { return !t.done; }).length;
+  var done = todos.filter(function(t) { return t.done; }).length;
+  if (count) count.textContent = remaining > 0 ? remaining + '개' : (done > 0 ? '모두완료!' : '');
+  if (todos.length === 0) {
+    list.innerHTML = '<div class="panel-empty">할일을 추가해봐</div>';
+    return;
+  }
+  var sorted = todos.filter(function(t){return !t.done;}).concat(todos.filter(function(t){return t.done;}));
+  list.innerHTML = sorted.map(function(t) {
+    return '<div class="todo-item ' + (t.done ? 'done' : '') + '" onclick="toggleTodo(\'' + t.id + '\')">'
+      + '<div class="todo-check"></div>'
+      + '<div class="todo-text">' + escHtml(t.text) + '</div>'
+      + '<button class="todo-del" onclick="event.stopPropagation();deleteTodo(\'' + t.id + '\')">✕</button>'
+      + '</div>';
+  }).join('');
+}
+
+// ── HOME ──────────────────────────────────────────────────────
 function renderHome() {
   renderTodos();
-  const starred = memos.filter(m => m.starred && !m.isTemp);
-  const list = document.getElementById('starredList');
+  var starred = memos.filter(function(m) { return m.starred && !m.isTemp; });
+  var list = document.getElementById('starredList');
   if (!list) return;
   if (starred.length === 0) {
     list.innerHTML = '<div class="panel-empty">즐겨찾기한 메모가 없어<br>메모에서 ☆ 눌러봐</div>';
     return;
   }
-  list.innerHTML = starred.map(m => memoRowHtml(m, 'home')).join('');
+  list.innerHTML = starred.map(function(m) { return memoRowHtml(m, 'home'); }).join('');
 }
 
 function memoRowHtml(m, from) {
-  return `
-    <div class="memo-row" onclick="openMemo('${m.id}','${from}')">
-      <div class="memo-row-cat">${escHtml(m.category || '기타')}</div>
-      <div class="memo-row-title">${escHtml(m.title || '제목없음')}${m.isTemp ? ' <span class="temp-badge">임시</span>' : ''}</div>
-      <div class="memo-row-date">${formatDate(m.updatedAt)}</div>
-      <div class="memo-row-arrow">›</div>
-    </div>
-  `;
+  return '<div class="memo-row" onclick="openMemo(\'' + m.id + '\',\'' + from + '\')">'
+    + '<div class="memo-row-cat">' + escHtml(m.category || '기타') + '</div>'
+    + '<div class="memo-row-title">' + escHtml(m.title || '제목없음') + (m.isTemp ? ' <span class="temp-badge">임시</span>' : '') + '</div>'
+    + '<div class="memo-row-date">' + formatDate(m.updatedAt) + '</div>'
+    + '<div class="memo-row-arrow">›</div>'
+    + '</div>';
 }
 
-// ── LIST RENDER ────────────────────────────────────────────────
+// ── LIST ──────────────────────────────────────────────────────
 function renderList() {
-  const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
-  let filtered = memos.filter(m => {
+  var query = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').toLowerCase();
+  var filtered = memos.filter(function(m) {
     if (listTab === 'star') return m.starred;
     if (listTab === 'temp') return m.isTemp;
     return !m.isTemp;
   });
   if (query) {
-    filtered = filtered.filter(m =>
-      (m.title||'').toLowerCase().includes(query) ||
-      (m.summary||'').toLowerCase().includes(query) ||
-      (m.original||'').toLowerCase().includes(query)
-    );
+    filtered = filtered.filter(function(m) {
+      return (m.title||'').toLowerCase().includes(query)
+        || (m.summary||'').toLowerCase().includes(query)
+        || (m.original||'').toLowerCase().includes(query);
+    });
   }
-  filtered.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-  const body = document.getElementById('memoListBody');
+  filtered.sort(function(a,b) { return new Date(b.updatedAt) - new Date(a.updatedAt); });
+  var body = document.getElementById('memoListBody');
   if (!body) return;
   if (filtered.length === 0) {
     body.innerHTML = '<div class="panel-empty" style="padding:32px">메모 없음</div>';
     return;
   }
-  body.innerHTML = filtered.map(m => memoRowHtml(m, 'list')).join('');
+  body.innerHTML = filtered.map(function(m) { return memoRowHtml(m, 'list'); }).join('');
 }
 
 function switchListTab(tab) {
   listTab = tab;
-  ['ltabAll','ltabStar','ltabTemp'].forEach(id => document.getElementById(id)?.classList.remove('active'));
-  document.getElementById(tab === 'all' ? 'ltabAll' : tab === 'star' ? 'ltabStar' : 'ltabTemp')?.classList.add('active');
+  ['ltabAll','ltabStar','ltabTemp'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  var activeId = tab === 'all' ? 'ltabAll' : tab === 'star' ? 'ltabStar' : 'ltabTemp';
+  var activeEl = document.getElementById(activeId);
+  if (activeEl) activeEl.classList.add('active');
   renderList();
 }
 
-// ── DETAIL ─────────────────────────────────────────────────────
+// ── DETAIL ────────────────────────────────────────────────────
 function openMemo(id, from) {
   currentMemoId = id;
   prevScreen = from || 'home';
-  const memo = memos.find(m => m.id === id);
+  var memo = memos.find(function(m) { return m.id === id; });
   if (!memo) return;
   document.getElementById('detailCat').textContent = '📂 ' + (memo.category || '기타');
   document.getElementById('detailTitle').textContent = memo.title || '제목없음';
   document.getElementById('detailTitle').style.display = '';
   document.getElementById('detailTitleInput').style.display = 'none';
-  const starBtn = document.getElementById('starBtn');
+  var starBtn = document.getElementById('starBtn');
   starBtn.textContent = memo.starred ? '⭐' : '☆';
   starBtn.className = 'icon-btn' + (memo.starred ? ' starred' : '');
-  const keyPointsHtml = memo.keyPoints && memo.keyPoints.length > 0
-    ? `<ul class="key-points">${memo.keyPoints.map(p => `<li class="key-point-item"><div class="key-point-bullet"></div><span>${escHtml(p)}</span></li>`).join('')}</ul>`
-    : `<div class="original-content">${escHtml(memo.summary || '')}</div>`;
-  const mergeNotice = memo.mergedFrom ? `<div class="merge-notice">🔗 다른 메모와 병합된 내용 포함</div>` : '';
-  document.getElementById('detailBody').innerHTML = `
-    ${mergeNotice}
-    <div class="content-block">
-      <div class="block-label summary"><div class="dot"></div>AI 정리본</div>
-      ${keyPointsHtml}
-    </div>
-    <button class="show-original-btn" id="origToggleBtn" onclick="toggleOriginal()">📄 원본 보기</button>
-    <div id="originalBlock" style="display:none">
-      <div class="content-block">
-        <div class="block-label"><div class="dot"></div>원문</div>
-        <div class="original-content">${escHtml(memo.original || '')}</div>
-      </div>
-    </div>
-  `;
+
+  var kpHtml = '';
+  if (memo.keyPoints && memo.keyPoints.length > 0) {
+    kpHtml = '<ul class="key-points">' + memo.keyPoints.map(function(p) {
+      return '<li class="key-point-item"><div class="key-point-bullet"></div><span>' + escHtml(p) + '</span></li>';
+    }).join('') + '</ul>';
+  } else {
+    kpHtml = '<div class="original-content">' + escHtml(memo.summary || '') + '</div>';
+  }
+
+  var mergeNotice = memo.mergedFrom ? '<div class="merge-notice">🔗 다른 메모와 병합된 내용 포함</div>' : '';
+  document.getElementById('detailBody').innerHTML = mergeNotice
+    + '<div class="content-block"><div class="block-label summary"><div class="dot"></div>AI 정리본</div>' + kpHtml + '</div>'
+    + '<button class="show-original-btn" id="origToggleBtn" onclick="toggleOriginal()">📄 원본 보기</button>'
+    + '<div id="originalBlock" style="display:none"><div class="content-block"><div class="block-label"><div class="dot"></div>원문</div>'
+    + '<div class="original-content">' + escHtml(memo.original || '') + '</div></div></div>';
+
   showScreen('detail');
 }
 
 function toggleOriginal() {
-  const block = document.getElementById('originalBlock');
-  const btn = document.getElementById('origToggleBtn');
-  if (block.style.display === 'none') {
-    block.style.display = 'block'; btn.textContent = '📄 원본 숨기기';
-  } else {
-    block.style.display = 'none'; btn.textContent = '📄 원본 보기';
-  }
+  var block = document.getElementById('originalBlock');
+  var btn = document.getElementById('origToggleBtn');
+  if (block.style.display === 'none') { block.style.display = 'block'; btn.textContent = '📄 원본 숨기기'; }
+  else { block.style.display = 'none'; btn.textContent = '📄 원본 보기'; }
 }
 
 async function toggleStarCurrent() {
-  const m = memos.find(m => m.id === currentMemoId);
+  var m = memos.find(function(m) { return m.id === currentMemoId; });
   if (!m) return;
   m.starred = !m.starred; m.updatedAt = new Date().toISOString();
   await updateMemo(m);
-  openMemo(m.id, prevScreen);
-  renderHome();
-  toast(m.starred ? '⭐ 즐겨찾기 추가' : '☆ 즐겨찾기 해제', 'info');
+  openMemo(m.id, prevScreen); renderHome();
+  toast(m.starred ? '⭐ 즐겨찾기 추가' : '☆ 즐겨찾기 해제');
 }
 
 async function deleteCurrentMemo() {
   if (!confirm('이 메모를 삭제할까요?')) return;
   await deleteMemoDb(currentMemoId);
-  memos = memos.filter(m => m.id !== currentMemoId);
+  memos = memos.filter(function(m) { return m.id !== currentMemoId; });
   currentMemoId = null;
-  goBackFromDetail();
-  renderHome();
-  toast('🗑 삭제됨', 'info');
+  goBackFromDetail(); renderHome();
+  toast('삭제됨');
 }
 
-// ── TITLE EDIT ─────────────────────────────────────────────────
+// ── TITLE EDIT ────────────────────────────────────────────────
 function startTitleEdit() {
-  const titleEl = document.getElementById('detailTitle');
-  const inputEl = document.getElementById('detailTitleInput');
+  var titleEl = document.getElementById('detailTitle');
+  var inputEl = document.getElementById('detailTitleInput');
   inputEl.value = titleEl.textContent;
   titleEl.style.display = 'none';
   inputEl.style.display = 'block';
@@ -829,71 +798,80 @@ function cancelTitleEdit() {
 }
 
 async function saveTitleEdit() {
-  const inputEl = document.getElementById('detailTitleInput');
-  const newTitle = inputEl.value.trim();
+  var inputEl = document.getElementById('detailTitleInput');
+  var newTitle = inputEl.value.trim();
   if (!newTitle) return cancelTitleEdit();
-  const m = memos.find(m => m.id === currentMemoId);
+  var m = memos.find(function(m) { return m.id === currentMemoId; });
   if (!m) return cancelTitleEdit();
   m.title = newTitle; m.updatedAt = new Date().toISOString();
   await updateMemo(m);
   document.getElementById('detailTitle').textContent = newTitle;
-  cancelTitleEdit();
-  renderHome();
-  toast('✏️ 제목 수정됨', 'success');
+  cancelTitleEdit(); renderHome();
+  toast('제목 수정됨');
 }
 
-// ── PROCESS INPUT ──────────────────────────────────────────────
+// ── PROCESS INPUT ─────────────────────────────────────────────
 async function processInput() {
-  const input = document.getElementById('memoInput').value.trim();
-  if (!input) return toast('내용을 입력해줘', 'info');
-  const apiKey = getApiKey();
-  if (!apiKey) return toast('API 키 먼저 설정해줘', 'info');
+  var input = document.getElementById('memoInput').value.trim();
+  if (!input) return toast('내용을 입력해줘');
+  var apiKey = getApiKey();
+  if (!apiKey) return toast('API 키 먼저 설정해줘');
   if (isProcessing) return;
   isProcessing = true;
   document.getElementById('processBtn').disabled = true;
+
   try {
     setProcessing('🔢 벡터 변환 중...');
-    const embedding = await getEmbedding(input, apiKey);
+    var embedding = await getEmbedding(input, apiKey);
+
     setProcessing('🔍 유사 메모 검색 중...');
-    let similarMemos = [];
-    if (embedding) similarMemos = await findSimilarMemos(embedding, 0.75);
-    const similarContext = similarMemos.length > 0
-      ? similarMemos.map(m => 'ID:' + m.id + ' | ' + m.title + ' | ' + (m.similarity*100).toFixed(0) + '% | ' + (m.summary||'').substring(0,150)).join('\n')
-      : '(none)';
-    const prompt = [
-      '[Respond with valid JSON only. Raw JSON, no markdown.]',
-      'You are a memo organizer. Analyze the input and respond with JSON only.',
-      'Rules: preserve key info. keyPoints must be specific and in Korean.',
-      'Similar memos (similarity >= 75%):',
-      similarContext,
-      'New input:',
-      input,
-      'If similar memo on same topic: decision=merge, else: decision=new',
-      '{"title":"20char Korean title","category":"아이디어/계획/인물/프로젝트/일상/기타","summary":"5-8 sentences in Korean","keyPoints":["pt1","pt2","pt3","pt4"],"similarMemoId":null,"similarMemoTitle":null,"decision":"new","decisionReason":"reason in Korean"}'
-    ].join('\n')
+    var similarMemos = embedding ? await findSimilarMemos(embedding) : [];
+
+    var similarContext = similarMemos.length > 0
+      ? similarMemos.map(function(m) {
+          return 'ID:' + m.id + ' title:' + m.title + ' similarity:' + (m.similarity*100).toFixed(0) + '% summary:' + (m.summary||'').substring(0,100);
+        }).join('\n')
+      : 'none';
+
+    var promptParts = [
+      'Respond with valid JSON only. No markdown. Just raw JSON object.',
+      'You are a Korean memo organizer. Analyze this input and respond with JSON.',
+      'Preserve all key info, numbers, names, dates. Write keyPoints specifically in Korean.',
+      'Similar existing memos (similarity >= 75%): ' + similarContext,
+      'New input: ' + input,
+      'If similar memo exists on same topic set decision=merge, otherwise decision=new.',
+      'Response format: {"title":"Korean title max 20 chars","category":"one of: 아이디어/계획/인물/프로젝트/일상/기타","summary":"5-8 sentences in Korean","keyPoints":["specific point 1 in Korean","point 2","point 3","point 4"],"similarMemoId":null,"similarMemoTitle":null,"decision":"new","decisionReason":"reason in Korean"}'
+    ];
+    var prompt = promptParts.join('\n');
+
     setProcessing('🤖 AI 정리 중...');
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    var response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2000 } })
       }
     );
-    if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 오류'); }
-    const data = await response.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('AI 응답 파싱 실패. 다시 시도해줘.');
-    let result;
+    if (!response.ok) {
+      var errData = await response.json();
+      throw new Error(errData.error ? errData.error.message : 'API 오류');
+    }
+    var data = await response.json();
+    var rawText = data.candidates && data.candidates[0] ? data.candidates[0].content.parts.map(function(p){return p.text||'';}).join('') : '';
+    var jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('AI 응답 파싱 실패');
+    var result;
     try { result = JSON.parse(jsonMatch[0]); }
-    catch { const fixed = jsonMatch[0].replace(/,\s*([}\]])/, '$1'); result = JSON.parse(fixed); }
+    catch(e) { var fixed = jsonMatch[0].replace(/,\s*([}\]])/g, '$1'); result = JSON.parse(fixed); }
+
     setProcessing('💾 저장 중...');
     if (result.decision === 'merge' && result.similarMemoId) {
-      const existing = memos.find(m => m.id === result.similarMemoId);
+      var existing = memos.find(function(m) { return m.id === result.similarMemoId; });
       if (existing) { stopProcessing(); showMergeDecision(input, result, existing); return; }
     }
-    const newMemo = {
+
+    var newMemo = {
       id: genId(), title: result.title, category: result.category,
       summary: result.summary, keyPoints: result.keyPoints,
       original: input, isTemp: false, starred: false,
@@ -903,10 +881,10 @@ async function processInput() {
     memos.unshift(newMemo);
     stopProcessing();
     document.getElementById('memoInput').value = '';
-    updateCharCount();
-    renderHome();
+    updateCharCount(); renderHome();
     showSaveSuccess(newMemo);
-  } catch (e) {
+
+  } catch(e) {
     console.error(e); stopProcessing();
     toast('오류: ' + e.message);
   } finally {
@@ -916,109 +894,100 @@ async function processInput() {
 }
 
 function showMergeDecision(input, result, existingMemo) {
-  const body = document.getElementById('mergeBody');
-  body.innerHTML = `
-    <div style="padding:4px 0 14px;font-size:13px;color:var(--text2);">${escHtml(result.decisionReason)}</div>
-    <div class="content-block" style="border-color:rgba(124,92,252,0.3);background:rgba(124,92,252,0.05)">
-      <div class="block-label" style="color:#a58af8"><div class="dot"></div>기존 메모 — ${escHtml(existingMemo.title)}</div>
-      <div class="original-content">${escHtml(existingMemo.summary || '')}</div>
-    </div>
-    <div class="content-block">
-      <div class="block-label summary"><div class="dot"></div>새로 추가될 내용</div>
-      <div class="original-content">${escHtml(result.summary)}</div>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
-      <button class="btn btn-primary" onclick="doMerge('${existingMemo.id}', ${JSON.stringify(JSON.stringify(input))}, ${JSON.stringify(JSON.stringify(result))})">🔗 기존 메모에 합치기</button>
-      <button class="btn btn-secondary" onclick="saveAsNew(${JSON.stringify(JSON.stringify(input))}, ${JSON.stringify(JSON.stringify(result))})">✨ 새 메모로 저장</button>
-      <button class="btn btn-ghost" onclick="saveTemp(${JSON.stringify(JSON.stringify(input))}, ${JSON.stringify(JSON.stringify(result))})">📥 임시보관</button>
-    </div>
-  `;
+  var inputStr = JSON.stringify(input);
+  var resultStr = JSON.stringify(result);
+  var body = document.getElementById('mergeBody');
+  body.innerHTML = '<div style="padding:4px 0 14px;font-size:13px;color:var(--text2);">' + escHtml(result.decisionReason) + '</div>'
+    + '<div class="content-block" style="border-color:rgba(124,92,252,0.3);background:rgba(124,92,252,0.05)">'
+    + '<div class="block-label" style="color:#a58af8"><div class="dot"></div>기존 메모 — ' + escHtml(existingMemo.title) + '</div>'
+    + '<div class="original-content">' + escHtml(existingMemo.summary||'') + '</div></div>'
+    + '<div class="content-block"><div class="block-label summary"><div class="dot"></div>새로 추가될 내용</div>'
+    + '<div class="original-content">' + escHtml(result.summary) + '</div></div>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">'
+    + '<button class="btn btn-primary" onclick="doMerge(\'' + existingMemo.id + '\', this)">🔗 기존 메모에 합치기</button>'
+    + '<button class="btn btn-secondary" onclick="saveAsNew(this)">✨ 새 메모로 저장</button>'
+    + '<button class="btn btn-ghost" onclick="saveTemp(this)">📥 임시보관</button>'
+    + '</div>';
+  // Store data
+  body.dataset.input = JSON.stringify(input);
+  body.dataset.result = JSON.stringify(result);
+  body.dataset.existingId = existingMemo.id;
   showScreen('merge');
 }
 
-async function doMerge(existingId, rawInputStr, resultStr) {
-  const rawInput = JSON.parse(rawInputStr);
-  const result = JSON.parse(resultStr);
-  const existing = memos.find(m => m.id === existingId);
+async function doMerge(existingId) {
+  var body = document.getElementById('mergeBody');
+  var rawInput = JSON.parse(body.dataset.input);
+  var result = JSON.parse(body.dataset.result);
+  var existing = memos.find(function(m) { return m.id === existingId; });
   if (!existing) return;
-  const apiKey = getApiKey();
+  var apiKey = getApiKey();
   setProcessing('🔄 병합 중...');
   try {
-    const mergePrompt = `[IMPORTANT: Respond with valid JSON only.]
-기존 메모와 새 내용을 하나로 합쳐서 정리해줘.
-기존: ${existing.summary}
-새 내용: ${result.summary}
-{"summary":"합쳐진 요약 5-7문장","keyPoints":["통합 핵심1","통합 핵심2","통합 핵심3","통합 핵심4"]}`;
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    var mergePrompt = 'Respond with valid JSON only.\nMerge these two memos into one in Korean.\nExisting: ' + existing.summary + '\nNew: ' + result.summary + '\nFormat: {"summary":"merged 5-7 sentences in Korean","keyPoints":["pt1","pt2","pt3","pt4"]}';
+    var res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
       { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ contents:[{parts:[{text:mergePrompt}]}], generationConfig:{maxOutputTokens:1000} }) }
     );
     if (res.ok) {
-      const data = await res.json();
-      const raw = data.candidates?.[0]?.content?.parts?.map(p => p.text||'').join('') || '';
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (match) { try { const merged = JSON.parse(match[0]); existing.summary = merged.summary; existing.keyPoints = merged.keyPoints; } catch{} }
+      var data = await res.json();
+      var raw = data.candidates && data.candidates[0] ? data.candidates[0].content.parts.map(function(p){return p.text||'';}).join('') : '';
+      var match = raw.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { var merged = JSON.parse(match[0]); existing.summary = merged.summary; existing.keyPoints = merged.keyPoints; } catch(e){}
+      }
     }
-    existing.original = (existing.original||'') + '
-
----
-
-' + rawInput;
+    existing.original = (existing.original||'') + '\n\n---\n\n' + rawInput;
     existing.mergedFrom = existing.title;
     existing.updatedAt = new Date().toISOString();
-    let emb = null;
-    try { emb = await getEmbedding(existing.summary + ' ' + existing.original.substring(0,1000), apiKey); } catch{}
+    var emb = null;
+    try { emb = await getEmbedding(existing.summary + ' ' + existing.original.substring(0,500), apiKey); } catch(e){}
     await updateMemo(existing, emb);
     stopProcessing();
     document.getElementById('memoInput').value = '';
-    updateCharCount();
-    renderHome();
+    updateCharCount(); renderHome();
     openMemo(existing.id, 'home');
-    toast(`✅ "${existing.title}"에 병합됨`, 'success');
+    toast(existing.title + '에 병합됨');
   } catch(e) { stopProcessing(); toast('병합 오류: ' + e.message); }
 }
 
-async function saveAsNew(rawInputStr, resultStr) {
-  const rawInput = JSON.parse(rawInputStr);
-  const result = JSON.parse(resultStr);
-  const memo = { id:genId(), title:result.title, category:result.category, summary:result.summary, keyPoints:result.keyPoints, original:rawInput, isTemp:false, starred:false, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+async function saveAsNew() {
+  var body = document.getElementById('mergeBody');
+  var rawInput = JSON.parse(body.dataset.input);
+  var result = JSON.parse(body.dataset.result);
+  var memo = { id:genId(), title:result.title, category:result.category, summary:result.summary, keyPoints:result.keyPoints, original:rawInput, isTemp:false, starred:false, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
   await saveMemo(memo);
   memos.unshift(memo);
   document.getElementById('memoInput').value = '';
-  updateCharCount();
-  renderHome();
+  updateCharCount(); renderHome();
   showSaveSuccess(memo);
 }
 
-async function saveTemp(rawInputStr, resultStr) {
-  const rawInput = JSON.parse(rawInputStr);
-  const result = JSON.parse(resultStr);
-  const memo = { id:genId(), title:result.title, category:result.category, summary:result.summary, keyPoints:result.keyPoints, original:rawInput, isTemp:true, starred:false, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+async function saveTemp() {
+  var body = document.getElementById('mergeBody');
+  var rawInput = JSON.parse(body.dataset.input);
+  var result = JSON.parse(body.dataset.result);
+  var memo = { id:genId(), title:result.title, category:result.category, summary:result.summary, keyPoints:result.keyPoints, original:rawInput, isTemp:true, starred:false, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
   await saveMemo(memo);
   memos.unshift(memo);
   document.getElementById('memoInput').value = '';
-  renderHome();
-  toast('📥 임시보관함에 저장됨', 'info');
-  showScreen('home');
+  renderHome(); showScreen('home');
+  toast('임시보관함에 저장됨');
 }
 
 async function saveDirect() {
-  const input = document.getElementById('memoInput').value.trim();
-  if (!input) return toast('내용을 입력해줘', 'info');
-  const memo = {
-    id:genId(), title:input.substring(0,20)+(input.length>20?'...':''),
-    category:'임시', summary:input, keyPoints:[], original:input,
-    isTemp:false, starred:false, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()
-  };
+  var input = document.getElementById('memoInput').value.trim();
+  if (!input) return toast('내용을 입력해줘');
+  var title = input.substring(0,20) + (input.length > 20 ? '...' : '');
+  var memo = { id:genId(), title:title, category:'일반', summary:input, keyPoints:[], original:input, isTemp:false, starred:false, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
   await saveMemo(memo);
   memos.unshift(memo);
   document.getElementById('memoInput').value = '';
-  updateCharCount();
-  renderHome();
+  updateCharCount(); renderHome();
   showSaveSuccess(memo);
 }
 
-// ── UI HELPERS ─────────────────────────────────────────────────
+// ── UI ────────────────────────────────────────────────────────
 function setProcessing(text) {
   document.getElementById('processingStep').textContent = text;
   document.getElementById('processingOverlay').classList.add('open');
@@ -1030,11 +999,11 @@ function stopProcessing() {
 function showSaveSuccess(memo) {
   document.getElementById('saveCardTitle').textContent = memo.title || '제목없음';
   document.getElementById('saveCardCat').textContent = memo.category || '';
-  const points = memo.keyPoints && memo.keyPoints.length > 0 ? memo.keyPoints.slice(0,3) : [memo.summary ? memo.summary.substring(0,80) : '저장됨'];
-  document.getElementById('saveCardPoints').innerHTML = points.map(p =>
-    `<div class="save-card-point"><div class="save-card-point-dot"></div><span>${escHtml(p)}</span></div>`
-  ).join('');
-  document.getElementById('saveCardViewBtn').onclick = () => { closeSaveSuccess(); openMemo(memo.id, 'home'); };
+  var points = (memo.keyPoints && memo.keyPoints.length > 0) ? memo.keyPoints.slice(0,3) : [memo.summary ? memo.summary.substring(0,80) : '저장됨'];
+  document.getElementById('saveCardPoints').innerHTML = points.map(function(p) {
+    return '<div class="save-card-point"><div class="save-card-point-dot"></div><span>' + escHtml(p) + '</span></div>';
+  }).join('');
+  document.getElementById('saveCardViewBtn').onclick = function() { closeSaveSuccess(); openMemo(memo.id, 'home'); };
   document.getElementById('saveSuccess').classList.add('open');
 }
 
@@ -1043,47 +1012,45 @@ function closeSaveSuccess() {
 }
 
 function updateCharCount() {
-  const len = document.getElementById('memoInput')?.value.length || 0;
-  const el = document.getElementById('charCount');
-  if (el) el.textContent = `${len.toLocaleString()}자`;
+  var len = document.getElementById('memoInput') ? document.getElementById('memoInput').value.length : 0;
+  var el = document.getElementById('charCount');
+  if (el) el.textContent = len.toLocaleString() + '자';
 }
 
-function toast(msg, type = 'info') {
-  const c = document.getElementById('toastContainer');
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
+function toast(msg) {
+  var c = document.getElementById('toastContainer');
+  var el = document.createElement('div');
+  el.className = 'toast';
   el.textContent = msg;
   c.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+  setTimeout(function() { el.remove(); }, 3000);
 }
 
 function genId() { return 'memo_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
 
 function formatDate(ts) {
   if (!ts) return '';
-  const d = new Date(ts), now = new Date(), diff = now - d;
+  var d = new Date(ts), now = new Date(), diff = now - d;
   if (diff < 60000) return '방금';
   if (diff < 3600000) return Math.floor(diff/60000) + '분 전';
   if (diff < 86400000) return Math.floor(diff/3600000) + '시간 전';
-  return `${d.getMonth()+1}/${d.getDate()}`;
+  return (d.getMonth()+1) + '/' + d.getDate();
 }
 
 function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-document.addEventListener('keydown', e => {
+document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') processInput();
 });
 
-// 저장된 API 키 복원
-const savedKey = localStorage.getItem('memox_gemini_key');
+var savedKey = localStorage.getItem('memox_gemini_key');
 if (savedKey) {
   document.getElementById('apiKeyInput').value = savedKey;
   onApiKeyInput(savedKey);
 }
 
-// INIT — 로그인 상태 확인
 initAuth();
 </script>
 </body>
