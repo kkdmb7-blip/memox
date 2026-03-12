@@ -1204,13 +1204,13 @@ function initSpeech() {
   recognition = new SpeechRecognition();
   recognition.lang = 'ko-KR';
   recognition.continuous = true;
-  recognition.interimResults = true;
+  recognition.interimResults = false; // 최종 결과만 받기
 
   recognition.onstart = function() {
     isRecording = true;
     var btn = document.getElementById('micBtn');
     if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
-    toast('🎤 음성 인식 시작');
+    toast('🎤 말해봐! 다 말하면 ⏹ 눌러줘');
   };
 
   recognition.onend = function() {
@@ -1226,21 +1226,16 @@ function initSpeech() {
     if (e.error !== 'aborted') toast('음성 인식 오류: ' + e.error);
   };
 
-  var finalTranscript = '';
   recognition.onresult = function(e) {
-    var interim = '';
-    finalTranscript = '';
-    for (var i = 0; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        finalTranscript += e.results[i][0].transcript;
-      } else {
-        interim += e.results[i][0].transcript;
-      }
-    }
     var textarea = document.getElementById('memoInput');
-    if (textarea) {
-      textarea.value = finalTranscript + interim;
-      updateCharCount();
+    if (!textarea) return;
+    // 새로 인식된 최종 결과만 뒤에 추가
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        var text = e.results[i][0].transcript;
+        textarea.value = textarea.value + (textarea.value ? ' ' : '') + text;
+        updateCharCount();
+      }
     }
   };
 }
@@ -1252,8 +1247,6 @@ function toggleMic() {
   if (isRecording) {
     recognition.stop();
   } else {
-    var textarea = document.getElementById('memoInput');
-    if (textarea) textarea.value = '';
     recognition.start();
   }
 }
