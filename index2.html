@@ -456,9 +456,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── SUPABASE ──────────────────────────────────────────────────
-const SUPABASE_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
+const SUPABASE_URL = 'https://ymghmfkqctckxxysxkvy.sb.co';
 const SUPABASE_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let memos = [];
@@ -470,7 +470,7 @@ let isProcessing = false;
 
 // ── AUTH ──────────────────────────────────────────────────────
 async function loginWithGoogle() {
-  await supabase.auth.signInWithOAuth({
+  await sb.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: 'https://kkdmb7-blip.github.io/memox' }
   });
@@ -478,7 +478,7 @@ async function loginWithGoogle() {
 
 async function confirmLogout() {
   if (!confirm('로그아웃 할까요?')) return;
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   currentUser = null; memos = [];
   showScreen('login');
   document.getElementById('userAvatar').style.display = 'none';
@@ -488,10 +488,10 @@ async function initAuth() {
   // Attach login button
   var loginBtn = document.getElementById('googleLoginBtn');
   if (loginBtn) loginBtn.addEventListener('click', loginWithGoogle);
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   if (session && session.user) { setUser(session.user); }
   else { showScreen('login'); }
-  supabase.auth.onAuthStateChange(function(_event, session) {
+  sb.auth.onAuthStateChange(function(_event, session) {
     if (session && session.user) { setUser(session.user); }
     else { showScreen('login'); }
   });
@@ -532,7 +532,7 @@ function toDb(m) {
 async function loadMemos() {
   if (!currentUser) return;
   try {
-    var res = await supabase.from('memos').select('*').eq('user_id', currentUser.id).order('updated_at', { ascending: false });
+    var res = await sb.from('memos').select('*').eq('user_id', currentUser.id).order('updated_at', { ascending: false });
     if (res.error) throw res.error;
     memos = (res.data || []).map(fromDb);
     renderHome();
@@ -542,19 +542,19 @@ async function loadMemos() {
 async function saveMemo(memo, embedding) {
   var data = toDb(memo);
   if (embedding) data.embedding = JSON.stringify(embedding);
-  var res = await supabase.from('memos').insert(data);
+  var res = await sb.from('memos').insert(data);
   if (res.error) throw new Error(res.error.message);
 }
 
 async function updateMemo(memo, embedding) {
   var data = toDb(memo);
   if (embedding) data.embedding = JSON.stringify(embedding);
-  var res = await supabase.from('memos').update(data).eq('id', memo.id).eq('user_id', currentUser.id);
+  var res = await sb.from('memos').update(data).eq('id', memo.id).eq('user_id', currentUser.id);
   if (res.error) throw new Error(res.error.message);
 }
 
 async function deleteMemoDb(id) {
-  var res = await supabase.from('memos').delete().eq('id', id).eq('user_id', currentUser.id);
+  var res = await sb.from('memos').delete().eq('id', id).eq('user_id', currentUser.id);
   if (res.error) throw new Error(res.error.message);
 }
 
@@ -575,7 +575,7 @@ async function getEmbedding(text, apiKey) {
 
 async function findSimilarMemos(embedding) {
   try {
-    var res = await supabase.rpc('match_memos', {
+    var res = await sb.rpc('match_memos', {
       query_embedding: embedding,
       match_threshold: 0.75,
       match_count: 3,
