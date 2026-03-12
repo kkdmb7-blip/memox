@@ -871,7 +871,8 @@ let sidebarTab = 'all';
 let isProcessing = false;
 
 function getApiKey() {
-  return document.getElementById('apiKeyInput').value.trim();
+  const inputKey = document.getElementById('apiKeyInput').value.trim();
+  return inputKey || localStorage.getItem('memox_gemini_key') || '';
 }
 
 // ── DB OPERATIONS ──────────────────────────────────────────────
@@ -1393,16 +1394,25 @@ function formatDate(ts) {
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // API Key
+const savedKey = localStorage.getItem('memox_gemini_key');
+if (savedKey) {
+  document.getElementById('apiKeyInput').value = savedKey;
+  document.getElementById('apiDot').classList.add('connected');
+  document.getElementById('apiStatus').textContent = '연결됨';
+}
+
 document.getElementById('apiKeyInput').addEventListener('input', function() {
   const key = this.value.trim();
   const dot = document.getElementById('apiDot');
   const status = document.getElementById('apiStatus');
-  if (key.startsWith('AIza')) {
+  if (key.length > 10) {
     dot.classList.add('connected');
     status.textContent = '연결됨';
+    localStorage.setItem('memox_gemini_key', key);
   } else {
     dot.classList.remove('connected');
-    status.textContent = key ? '잘못된 키' : '미연결';
+    status.textContent = key ? '키 확인 중' : '미연결';
+    localStorage.removeItem('memox_gemini_key');
   }
 });
 
