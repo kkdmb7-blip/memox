@@ -17,7 +17,7 @@
   body {
     background:var(--bg); color:var(--text);
     font-family:'Noto Sans KR',sans-serif;
-    display:flex; flex-direction:column; height:100vh; overflow:hidden;
+    display:flex; flex-direction:column; height:100%; min-height:100vh; overflow:hidden;
   }
 
   /* HEADER */
@@ -110,7 +110,7 @@
   }
   .todo-item.done .todo-check { background:var(--accent); border-color:var(--accent); }
   .todo-item.done .todo-check::after { content:'✓'; font-size:9px; color:#0a0a0a; font-weight:700; }
-  .todo-text { flex:1; font-size:12px; color:var(--text2); line-height:1.4; }
+  .todo-text { flex:1; font-size:12px; color:var(--text); font-weight:500; line-height:1.4; }
   .todo-item.done .todo-text { text-decoration:line-through; color:var(--text3); }
   .todo-del { background:none; border:none; cursor:pointer; color:var(--text3); font-size:12px; padding:2px; opacity:0; transition:opacity 0.15s; }
   .todo-item:hover .todo-del { opacity:1; }
@@ -130,7 +130,8 @@
 
   /* INPUT AREA (홈 하단) */
   .home-input {
-    padding:14px 16px; background:var(--surface); flex-shrink:0;
+    padding:12px 16px 14px; background:var(--surface);
+    border-top:1px solid var(--border); flex-shrink:0;
   }
   textarea {
     width:100%; background:var(--surface2); border:1px solid var(--border);
@@ -235,10 +236,14 @@
 
   /* MOBILE */
   @media (max-width:600px) {
-    .home-top { grid-template-columns:1fr; grid-template-rows:1fr 1fr; }
-    .home-panel { border-right:none; border-bottom:1px solid var(--border); }
-    .home-panel:last-child { border-bottom:none; }
+    .home-top { grid-template-columns:1fr 1fr; }
+    .home-panel { border-right:1px solid var(--border); }
+    .home-panel:last-child { border-right:none; }
     textarea { font-size:14px; }
+    .home-input { padding:10px 12px; }
+    textarea { min-height:60px; }
+    .input-actions { gap:6px; }
+    .btn { padding:9px 12px; font-size:12px; }
   }
 </style>
 </head>
@@ -279,7 +284,10 @@
     <div class="home-panel">
       <div class="panel-header">
         <div class="panel-title">📋 할일</div>
-        <span style="font-size:10px;color:var(--text3)" id="todoCount"></span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:var(--text3)" id="todoCount"></span>
+          <button onclick="clearDoneTodos()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text3);padding:0;" title="완료 항목 삭제">완료삭제</button>
+        </div>
       </div>
       <div class="panel-body">
         <div class="todo-input-row">
@@ -331,7 +339,8 @@
     <button class="back-btn" id="detailBackBtn" onclick="goBackFromDetail()">←</button>
     <div class="detail-header-meta">
       <div class="detail-cat" id="detailCat"></div>
-      <div class="detail-title" id="detailTitle"></div>
+      <div class="detail-title" id="detailTitle" onclick="startTitleEdit()" title="클릭해서 제목 수정" style="cursor:pointer;"></div>
+      <input id="detailTitleInput" style="display:none;background:var(--surface2);border:1px solid var(--accent);border-radius:6px;padding:4px 8px;color:var(--text);font-size:15px;font-family:'Gmarket Sans',sans-serif;font-weight:700;width:100%;outline:none;" onblur="saveTitleEdit()" onkeydown="if(event.key==='Enter')saveTitleEdit();if(event.key==='Escape')cancelTitleEdit();" />
     </div>
     <div class="detail-actions">
       <button class="icon-btn" id="starBtn" onclick="toggleStarCurrent()">☆</button>
@@ -516,19 +525,31 @@ function renderTodos() {
   const list = document.getElementById('todoList');
   const count = document.getElementById('todoCount');
   const remaining = todos.filter(t => !t.done).length;
-  if (count) count.textContent = remaining > 0 ? `${remaining}개 남음` : '';
+  const done = todos.filter(t => t.done).length;
+  if (count) count.textContent = remaining > 0 ? `${remaining}개` : (done > 0 ? '모두완료!' : '');
 
   if (todos.length === 0) {
     list.innerHTML = '<div class="todo-empty">할일을 추가해봐 👆</div>';
     return;
   }
-  list.innerHTML = todos.map(t => `
+  // 미완료 먼저, 완료 나중
+  const sorted = [...todos.filter(t=>!t.done), ...todos.filter(t=>t.done)];
+  list.innerHTML = sorted.map(t => `
     <div class="todo-item ${t.done ? 'done' : ''}" onclick="toggleTodo('${t.id}')">
       <div class="todo-check"></div>
       <div class="todo-text">${escHtml(t.text)}</div>
       <button class="todo-del" onclick="event.stopPropagation();deleteTodo('${t.id}')">✕</button>
     </div>
   `).join('');
+}
+
+function clearDoneTodos() {
+  const doneCount = todos.filter(t => t.done).length;
+  if (doneCount === 0) return toast('완료된 항목이 없어', 'info');
+  todos = todos.filter(t => !t.done);
+  saveTodos();
+  renderTodos();
+  toast(`🗑 완료 항목 ${doneCount}개 삭제됨`, 'info');
 }
 
 // ── HOME RENDER ────────────────────────────────────────────────
@@ -857,6 +878,37 @@ async function promoteTemp(id) {
   await updateMemo(m);
   openMemo(m.id, prevScreen);
   toast('✅ 정식 메모로 저장됨', 'success');
+}
+
+// ── TITLE EDIT ─────────────────────────────────────────────────
+function startTitleEdit() {
+  const titleEl = document.getElementById('detailTitle');
+  const inputEl = document.getElementById('detailTitleInput');
+  inputEl.value = titleEl.textContent;
+  titleEl.style.display = 'none';
+  inputEl.style.display = 'block';
+  inputEl.focus();
+  inputEl.select();
+}
+
+function cancelTitleEdit() {
+  document.getElementById('detailTitle').style.display = '';
+  document.getElementById('detailTitleInput').style.display = 'none';
+}
+
+async function saveTitleEdit() {
+  const inputEl = document.getElementById('detailTitleInput');
+  const newTitle = inputEl.value.trim();
+  if (!newTitle) return cancelTitleEdit();
+  const m = memos.find(m => m.id === currentMemoId);
+  if (!m) return cancelTitleEdit();
+  m.title = newTitle;
+  m.updatedAt = Date.now();
+  await updateMemo(m);
+  document.getElementById('detailTitle').textContent = newTitle;
+  cancelTitleEdit();
+  renderHome();
+  toast('✏️ 제목 수정됨', 'success');
 }
 
 // ── UI HELPERS ─────────────────────────────────────────────────
