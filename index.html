@@ -1067,18 +1067,24 @@ async function processInput() {
       `ID:${m.id} | 제목:${m.title} | 카테고리:${m.category} | 요약:${(m.summary || '').substring(0, 100)}`
     ).join('\n');
 
-    const prompt = `[IMPORTANT: Respond with valid JSON only. No explanation, no markdown, no code blocks, no thinking text. Just raw JSON.]
+    const prompt = `[IMPORTANT: Respond with valid JSON only. No markdown, no code blocks, no extra text. Just raw JSON.]
 
-메모 정리 AI 역할: 입력된 메모를 분석해서 아래 JSON 형식으로만 응답.
+너는 메모 정리 전문가야. 아래 입력된 메모를 분석해서 JSON으로만 응답해.
+
+정리 원칙:
+- 내용을 이해할 수 있을 만큼 충분히 써줘 (너무 짧게 자르지 마)
+- 중복된 말, 군더더기 표현만 제거
+- 핵심 정보, 수치, 이름, 날짜는 반드시 보존
+- keyPoints는 각 항목을 읽으면 내용을 파악할 수 있을 정도로 구체적으로
 
 기존 메모 목록:
-${existingMemosSummary || '(없음)'}
+\${existingMemosSummary || '(없음)'}
 
 새 입력:
-${input}
+\${input}
 
-반드시 아래 JSON만 출력 (```json 같은 마크다운 절대 금지):
-{"title":"핵심 제목 15자이내","category":"아이디어/계획/인물/프로젝트/기타 중 하나","summary":"핵심만 3-5문장으로 정리","keyPoints":["포인트1","포인트2","포인트3"],"similarMemoId":null,"similarMemoTitle":null,"decision":"new","decisionReason":"판단이유 1문장"}`;
+반드시 아래 JSON만 출력 (마크다운 절대 금지):
+{"title":"핵심 제목 20자이내","category":"아이디어/계획/인물/프로젝트/일상/기타 중 하나","summary":"내용을 충분히 파악할 수 있도록 핵심 내용을 5-8문장으로 정리. 중요한 세부사항 포함.","keyPoints":["구체적인 핵심 포인트1 (수치/이름/날짜 포함)","구체적인 핵심 포인트2","구체적인 핵심 포인트3","구체적인 핵심 포인트4"],"similarMemoId":null,"similarMemoTitle":null,"decision":"new","decisionReason":"판단이유 1문장"}`;
 
     showProcessing('🤖 AI 정리 중...');
 
@@ -1089,7 +1095,7 @@ ${input}
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 1000 }
+          generationConfig: { maxOutputTokens: 2000 }
         })
       }
     );
