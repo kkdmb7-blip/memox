@@ -506,6 +506,7 @@ function setUser(user) {
     avatar.style.display = 'flex';
   }
   loadMemos();
+  loadApiKeyFromCloud();
   showScreen('home');
 }
 
@@ -612,9 +613,33 @@ function onApiKeyInput(val) {
   if (val.length > 10) {
     dot.classList.add('on'); status.textContent = '연결됨'; pill.classList.add('connected');
     localStorage.setItem('memox_gemini_key', val);
+    saveApiKeyToCloud(val);
   } else {
     dot.classList.remove('on'); status.textContent = 'API 키 설정'; pill.classList.remove('connected');
     localStorage.removeItem('memox_gemini_key');
+  }
+}
+
+async function saveApiKeyToCloud(key) {
+  if (!currentUser) return;
+  await sb.from('user_settings').upsert({
+    user_id: currentUser.id,
+    gemini_key: key,
+    updated_at: Date.now()
+  });
+}
+
+async function loadApiKeyFromCloud() {
+  if (!currentUser) return;
+  var local = localStorage.getItem('memox_gemini_key');
+  if (local) return; // 로컬에 있으면 스킵
+  var res = await sb.from('user_settings').select('gemini_key').eq('user_id', currentUser.id).single();
+  if (res.data && res.data.gemini_key) {
+    var key = res.data.gemini_key;
+    document.getElementById('apiKeyInput').value = key;
+    localStorage.setItem('memox_gemini_key', key);
+    onApiKeyInput(key);
+    toast('API 키 자동으로 불러옴');
   }
 }
 
