@@ -247,6 +247,7 @@
   .profile-row-label { color:var(--text3); }
   .profile-row-value { color:var(--text); font-weight:500; }
 
+  #typingText { transition: opacity 0.3s ease; }
   @media (max-width:400px) {
     .form-row { grid-template-columns:1fr; }
   }
@@ -1078,7 +1079,18 @@ function sendChip(text) {
 async function sendMessage() {
   var input = document.getElementById('chatInput');
   var text = input.value.trim();
-  if (!text || isTyping) return;
+  if (!text) return;
+  // isTyping stuck 방지: 5초 이상 지나면 강제 해제
+  if (isTyping) {
+    if (!window._typingStart || Date.now() - window._typingStart > 30000) {
+      isTyping = false;
+      document.getElementById('sendBtn').disabled = false;
+      hideTyping();
+    } else {
+      return;
+    }
+  }
+  window._typingStart = Date.now();
 
   var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || '';
   if (!apiKey) { showApiModal(); return; }
@@ -1101,10 +1113,12 @@ async function sendMessage() {
     await saveMessage('assistant', reply);
   } catch(e) {
     hideTyping();
-    appendMessage('assistant', '죄송해요, 오류가 발생했어요: ' + e.message, true);
+    console.error('Gemini 오류:', e);
+    appendMessage('assistant', '죄송해요, 잠시 오류가 발생했어요. 다시 시도해주세요. (' + e.message + ')', true);
   } finally {
     isTyping = false;
     document.getElementById('sendBtn').disabled = false;
+    hideTyping(); // 혹시 남아있을 경우 한번 더
   }
 }
 
@@ -1266,12 +1280,37 @@ function showTyping() {
   var div = document.createElement('div');
   div.className = 'msg';
   div.id = 'typingIndicator';
-  div.innerHTML = '<div class="msg-avatar">🔮</div><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+  var phrases = [
+    '🔮 별자리와 사주를 읽는 중...',
+    '✨ 운명의 실마리를 찾는 중...',
+    '🌙 천체의 흐름을 분석하는 중...',
+    '🌟 사주 기운을 살피는 중...',
+    '🔭 운명의 지도를 그리는 중...',
+    '💫 신중히 분석하는 중...',
+    '🌌 우주의 기운을 모으는 중...',
+  ];
+  var phrase = phrases[Math.floor(Math.random() * phrases.length)];
+  div.innerHTML = '<div class="msg-avatar">🔮</div><div class="msg-bubble" style="color:var(--text3);font-size:13px;font-style:italic;">' +
+    '<div id="typingText">' + phrase + '</div>' +
+    '<div class="typing" style="margin-top:6px;"><span></span><span></span><span></span></div>' +
+    '</div>';
   container.appendChild(div);
+  // 문구 교체 애니메이션
+  var idx = 0;
+  window._typingInterval = setInterval(function() {
+    var el = document.getElementById('typingText');
+    if (!el) { clearInterval(window._typingInterval); return; }
+    idx = (idx + 1) % phrases.length;
+    el.style.opacity = '0';
+    setTimeout(function() {
+      if (el) { el.textContent = phrases[idx]; el.style.opacity = '1'; }
+    }, 300);
+  }, 2500);
   scrollToBottom();
 }
 
 function hideTyping() {
+  if (window._typingInterval) { clearInterval(window._typingInterval); window._typingInterval = null; }
   var el = document.getElementById('typingIndicator');
   if (el) el.remove();
 }
