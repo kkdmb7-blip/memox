@@ -603,7 +603,7 @@ function updateDays() {
   var hourEl = document.getElementById('inputHour');
   var minEl = document.getElementById('inputMin');
 
-  var currentYear = new Date().getFullYear();
+  var currentYear = 2026;
   for (var y = currentYear; y >= 1930; y--) {
     var opt = document.createElement('option');
     opt.value = y; opt.textContent = y + '년';
