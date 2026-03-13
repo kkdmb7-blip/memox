@@ -927,11 +927,32 @@ async function fetchAstro(birth, birthTime, city) {
         if (p.name === 'Jupiter') result.jupiter = p.sign;
         if (p.name === 'Saturn') result.saturn = p.sign;
         if (p.name === 'Uranus') result.uranus = p.sign;
-        if (p.name === 'Neptune') { result.neptune = p.sign; result.dominant_planet = 'Neptune'; }
+        if (p.name === 'Neptune') result.neptune = p.sign;
         if (p.name === 'Pluto') result.pluto = p.sign;
         if (p.name === 'Ascendant') result.ascendant = p.sign;
       });
     }
+
+    // 지배행성 계산: 1하우스 행성 우선, 없으면 angular house(1,4,7,10), 없으면 speed 기준
+    var nameMapKor = {"Sun":"태양","Moon":"달","Mercury":"수성","Venus":"금성","Mars":"화성","Jupiter":"목성","Saturn":"토성","Uranus":"천왕성","Neptune":"해왕성","Pluto":"명왕성"};
+    var domPlanet = null;
+    var personalPlanets = data.filter(function(p) { return ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'].includes(p.name); });
+    // 1하우스 행성
+    var h1 = personalPlanets.filter(function(p) { return p.house === 1; });
+    if (h1.length > 0) {
+      domPlanet = h1[0].name;
+    } else {
+      // Angular house (1,4,7,10)
+      var angular = personalPlanets.filter(function(p) { return [1,4,7,10].includes(p.house); });
+      if (angular.length > 0) {
+        domPlanet = angular.sort(function(a,b){ return Math.abs(b.speed)-Math.abs(a.speed); })[0].name;
+      } else {
+        // 가장 빠른 행성
+        domPlanet = personalPlanets.sort(function(a,b){ return Math.abs(b.speed)-Math.abs(a.speed); })[0].name;
+      }
+    }
+    result.dominant_planet = (nameMapKor[domPlanet] || domPlanet) + ' (' + (result[domPlanet ? domPlanet.toLowerCase() : ''] || '') + ')';
+
     // Add aspects summary
     if (aspectsData && Array.isArray(aspectsData)) {
       var aspectNames = {"conjunction":"합","trine":"삼각","square":"사각","opposition":"대립","sextile":"육각"};
