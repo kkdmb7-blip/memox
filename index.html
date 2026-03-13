@@ -455,8 +455,15 @@ async function initAuth() {
 
   // URL에 토큰이 있으면 세션 처리 (OAuth 리다이렉트 후)
   var hash = window.location.hash;
-  if (hash && hash.includes('access_token')) {
-    await sb.auth.getSession();
+  var search = window.location.search;
+  if ((hash && hash.includes('access_token')) || (search && search.includes('code='))) {
+    try {
+      if (search && search.includes('code=')) {
+        await sb.auth.exchangeCodeForSession(new URLSearchParams(search).get('code'));
+      } else {
+        await sb.auth.getSession();
+      }
+    } catch(e) { console.warn('Session exchange error:', e); }
     window.history.replaceState(null, '', window.location.pathname);
   }
 
@@ -480,7 +487,10 @@ async function initAuth() {
 document.getElementById('googleLoginBtn').addEventListener('click', function() {
   sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: 'https://kkdmb7-blip.github.io/memox' }
+    options: { 
+      redirectTo: 'https://kkdmb7-blip.github.io/memox/',
+      skipBrowserRedirect: false
+    }
   });
 });
 
