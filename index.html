@@ -520,7 +520,7 @@ async function setUser(user) {
 
 // ── PROFILE ───────────────────────────────────────────────────
 async function loadProfile() {
-  var res = await sb.from('chat_users').select('*').eq('id', currentUser.id).single();
+  var res = await sb.from('chat_users').select('*').eq('id', currentUser.id).maybeSingle();
   if (res.error || !res.data) return null;
   return res.data;
 }
@@ -756,10 +756,12 @@ async function fetchSaju(birth, birthTime, city, gender, cal, midnight) {
     var bmm = (btParts[1]||'00').padStart(2,'0');
     var birthISO = birth + 'T' + bhh + ':' + bmm + ':00';
     console.log('사주 요청 날짜:', birthISO, 'gender:', gender === 'M' ? 'male' : 'female');
+    // Normalize city name for API
+    var cityNorm = city.replace('특별시','').replace('광역시','').replace('특별자치시','').replace('특별자치도','').trim();
     var body = {
       birth: birthISO,
       gender: gender === 'M' ? 'male' : 'female',
-      city: city,
+      city: cityNorm,
       calendar: cal === 'solar' ? 'solar' : 'lunar',
       midnightType: parseInt(midnight) || 0
     };
