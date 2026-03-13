@@ -679,7 +679,7 @@ async function submitOnboard() {
   if (!year || !month || !day) return toast('생년월일을 선택해주세요');
   if (!hour) return toast('출생시간을 선택해주세요');
   var birth = year + '-' + month + '-' + day;
-  var birthTime = hour + ':' + (min || '00');
+  var birthTime = hour.padStart(2,'0') + ':' + (min || '00').toString().padStart(2,'0');
   var city = document.getElementById('inputCity').value.trim();
   var apiKey = document.getElementById('inputApiKey').value.trim();
 
@@ -750,7 +750,12 @@ async function submitOnboard() {
 async function fetchSaju(birth, birthTime, city, gender, cal, midnight) {
   try {
     // birth: "1983-03-27", birthTime: "00:45" → "1983-03-27T00:45:00"
-    var birthISO = birth + 'T' + birthTime + ':00';
+    // 시간 패딩 보장
+    var btParts = birthTime.split(':');
+    var bhh = btParts[0].padStart(2,'0');
+    var bmm = (btParts[1]||'00').padStart(2,'0');
+    var birthISO = birth + 'T' + bhh + ':' + bmm + ':00';
+    console.log('사주 요청 날짜:', birthISO, 'gender:', gender === 'M' ? 'male' : 'female');
     var body = {
       birth: birthISO,
       gender: gender === 'M' ? 'male' : 'female',
