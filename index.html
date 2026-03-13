@@ -714,6 +714,20 @@ async function submitOnboard() {
     btn.textContent = '⏳ 저장 중...';
     toast('💾 데이터 저장 중...');
     // 저장
+    // 핵심 데이터만 추출해서 저장 (용량 절약)
+    var sajuSave = {
+      saju_pillars: sajuData.saju_pillars || (sajuData.summary && sajuData.summary.pillars),
+      saju_strength: sajuData.saju_strength || (sajuData.summary && sajuData.summary.strength),
+      saju_zodiac: sajuData.saju_zodiac || (sajuData.summary && sajuData.summary.zodiac),
+      saju_geokguk: sajuData.saju_geokguk || (sajuData.geokguk && (sajuData.geokguk.geok_kor || sajuData.geokguk.geok)),
+      saju_yongshin_primary: sajuData.saju_yongshin_primary || (sajuData.yongshin && sajuData.yongshin.primary_kor),
+      saju_yongshin_secondary: sajuData.saju_yongshin_secondary || (sajuData.yongshin && sajuData.yongshin.secondary_kor),
+      saju_five_pct: sajuData.five_pct || sajuData.saju_five_pct,
+      saju_big_luck: sajuData.big_luck || sajuData.saju_big_luck,
+      saju_lucky: sajuData.lucky || sajuData.saju_lucky,
+      saju_branch_relations: sajuData.branch_relations_kor || sajuData.saju_branch_relations,
+      saju_zodiac_compatibility: (sajuData.zodiac_compatibility || sajuData.saju_zodiac_compatibility || []).slice(0,12)
+    };
     var profile = {
       id: currentUser.id,
       email: currentUser.email,
@@ -722,7 +736,7 @@ async function submitOnboard() {
       birth_time: birthTime,
       birth_place: city,
       gender: selectedGender,
-      saju_data: sajuData,
+      saju_data: sajuSave,
       astro_data: astroData,
       gemini_key: apiKey,
       created_at: Date.now(),
