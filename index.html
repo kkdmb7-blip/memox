@@ -661,7 +661,7 @@ function updateDays() {
     opt.textContent = h + '시';
     hourEl.appendChild(opt);
   }
-  for (var min = 0; min < 60; min += 5) {
+  for (var min = 0; min < 60; min += 1) {
     var opt = document.createElement('option');
     opt.value = String(min).padStart(2, '0');
     opt.textContent = min + '분';
@@ -694,11 +694,19 @@ async function submitOnboard() {
 
   try {
     // Ablecity API 사주 계산
+    btn.textContent = '⏳ 사주 계산 중...';
+    toast('🔮 사주 데이터 계산 중...');
     var sajuData = await fetchSaju(birth, birthTime, city, selectedGender, selectedCal, selectedMidnight);
+    console.log('사주 결과:', JSON.stringify(sajuData).slice(0,200));
 
     // AstrologyAPI 점성 계산
+    btn.textContent = '⏳ 별자리 계산 중...';
+    toast('⭐ 별자리 데이터 계산 중...');
     var astroData = await fetchAstro(birth, birthTime, city);
+    console.log('점성 결과:', JSON.stringify(astroData).slice(0,200));
 
+    btn.textContent = '⏳ 저장 중...';
+    toast('💾 데이터 저장 중...');
     // 저장
     var profile = {
       id: currentUser.id,
@@ -725,8 +733,8 @@ async function submitOnboard() {
     toast('🔮 ' + name + '님의 운명 데이터가 저장됐어요!');
 
   } catch(e) {
-    console.error(e);
-    toast('오류: ' + e.message);
+    console.error('submitOnboard 오류:', e);
+    toast('❌ 오류: ' + (e.message || String(e)));
     btn.disabled = false;
     btn.textContent = '🔮 운명 분석 시작하기';
   }
