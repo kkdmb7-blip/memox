@@ -72,14 +72,7 @@
     transition:all 0.2s; box-shadow:0 4px 20px rgba(0,0,0,0.4); margin-bottom:10px;
   }
   .google-btn:hover { border-color:rgba(200,162,245,0.4); transform:translateY(-1px); }
-  .kakao-btn {
-    width:100%; max-width:320px; padding:15px 20px; border-radius:14px;
-    border:none; background:#fee500; color:#000; font-size:14px; font-weight:700;
-    cursor:pointer; font-family:'Noto Sans KR',sans-serif;
-    display:flex; align-items:center; justify-content:center; gap:10px;
-    transition:all 0.2s; box-shadow:0 4px 20px rgba(0,0,0,0.3); margin-bottom:20px;
-  }
-  .kakao-btn:hover { background:#ffd900; transform:translateY(-1px); }
+
   .login-notice { font-size:11px; color:var(--text3); text-align:center; line-height:1.8; }
 
   /* ── ONBOARDING ── */
@@ -285,12 +278,7 @@
       </svg>
       Google로 시작하기
     </button>
-    <button class="kakao-btn" id="kakaoLoginBtn">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="#000">
-        <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.74 5.16 4.32 6.6l-1.1 4.1 4.8-3.16c.64.1 1.3.16 1.98.16 5.52 0 10-3.48 10-7.8S17.52 3 12 3z"/>
-      </svg>
-      카카오로 시작하기
-    </button>
+
     <div class="login-notice">무료로 시작 · 광고없음 · 내 정보는 나만 봄</div>
   </div>
 </div>
@@ -467,12 +455,7 @@ document.getElementById('googleLoginBtn').addEventListener('click', function() {
   });
 });
 
-document.getElementById('kakaoLoginBtn').addEventListener('click', function() {
-  sb.auth.signInWithOAuth({
-    provider: 'kakao',
-    options: { redirectTo: 'https://kkdmb7-blip.github.io/memox' }
-  });
-});
+
 
 async function confirmLogout() {
   if (!confirm('로그아웃 할까요?')) return;
