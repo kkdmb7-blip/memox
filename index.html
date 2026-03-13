@@ -492,7 +492,7 @@ const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 // ── STATE ─────────────────────────────────────────────────────
 var currentUser = null;
-var _d = new Date(); var dateStr = _d.getFullYear() + '년 ' + (_d.getMonth()+1) + '월 ' + _d.getDate() + '일';
+
 var userProfile = null;
 var chatHistory = [];
 var isTyping = false;
@@ -1153,6 +1153,7 @@ async function callGemini(userMsg, apiKey) {
     });
   }
 
+  var _now = new Date(); var dateStr = _now.getFullYear() + '년 ' + (_now.getMonth()+1) + '월 ' + _now.getDate() + '일';
   var systemPrompt = '당신은 사주와 서양 점성술을 기반으로 운명을 분석하는 전문 AI 상담사예요. 오늘 날짜는 ' + dateStr + ' 입니다.\n\n' +
     '【내담자 정보】\n' +
     '이름: ' + (profile.name || '미상') + '\n' +
