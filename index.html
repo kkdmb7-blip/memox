@@ -1193,9 +1193,22 @@ async function callGemini(userMsg, apiKey) {
 
   // 최근 20개 대화 포함 (맥락 유지)
   var recentHistory = chatHistory.slice(-20);
+  // Gemini는 user로 시작해야 함 - assistant로 시작하면 제거
   var messages = recentHistory.map(function(m) {
     return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] };
   });
+  // 첫 메시지가 model이면 제거
+  while (messages.length > 0 && messages[0].role === 'model') {
+    messages.shift();
+  }
+  // 연속된 같은 role 제거 (user-user 또는 model-model 방지)
+  messages = messages.filter(function(m, i) {
+    return i === 0 || m.role !== messages[i-1].role;
+  });
+  // 메시지가 없으면 현재 질문만
+  if (messages.length === 0) {
+    messages = [{ role: 'user', parts: [{ text: userMsg }] }];
+  }
 
   var res = await fetch(
     'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=' + apiKey,
