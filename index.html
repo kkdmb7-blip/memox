@@ -612,14 +612,33 @@ function renderProfile() {
     '</div>' +
     '<div style="padding:0 0 16px">' +
     '<button class="btn btn-ghost" style="width:100%;margin-bottom:8px;" onclick="showApiModal()">🔑 API 키 변경</button>' +
-    '<button class="btn btn-ghost" style="width:100%;color:var(--danger);border-color:var(--danger);" onclick="resetProfile()">⚠️ 정보 초기화</button>' +
+    '<button class="btn btn-ghost" style="width:100%;margin-bottom:8px;color:var(--danger);border-color:var(--danger);" onclick="resetProfile()">⚠️ 정보 초기화 (API키 유지)</button>' +
+    '<button class="btn btn-ghost" style="width:100%;color:var(--danger);border-color:var(--danger);opacity:0.7;" onclick="resetProfileFull()">🗑️ 완전 초기화 (API키 포함)</button>' +
     '</div>';
 }
 
 async function resetProfile() {
-  if (!confirm('모든 정보와 대화 내역이 삭제돼요. 계속할까요?')) return;
+  if (!confirm('사주/점성 정보와 대화 내역이 초기화돼요. API 키는 유지됩니다. 계속할까요?')) return;
+  // API 키 보존
+  var savedKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || '';
   await sb.from('chat_users').delete().eq('id', currentUser.id);
   await sb.from('chat_messages').delete().eq('user_id', currentUser.id);
+  userProfile = null; chatHistory = [];
+  showScreen('onboard');
+  // API 키 복원
+  if (savedKey) {
+    setTimeout(function() {
+      var el = document.getElementById('inputApiKey');
+      if (el) el.value = savedKey;
+    }, 300);
+  }
+}
+
+async function resetProfileFull() {
+  if (!confirm('모든 정보, 대화 내역, API 키가 전부 삭제돼요. 계속할까요?')) return;
+  await sb.from('chat_users').delete().eq('id', currentUser.id);
+  await sb.from('chat_messages').delete().eq('user_id', currentUser.id);
+  localStorage.removeItem('memox_gemini_key');
   userProfile = null; chatHistory = [];
   showScreen('onboard');
 }
@@ -737,11 +756,20 @@ async function submitOnboard() {
     toast('⭐ 별자리 데이터 계산 중...(최대 10초)');
     var astroData = {};
     try {
+      btn.textContent = '⏳ 별자리 계산 중...';
+      toast('⭐ 별자리 계산 중... (15초 소요)');
       astroData = await fetchAstro(birth, birthTime, city);
-      console.log('점성 결과:', JSON.stringify(astroData).slice(0,200));
+      if (astroData.error) {
+        console.warn('점성 실패:', astroData.error);
+        toast('⚠️ 별자리 데이터 없이 저장합니다');
+        astroData = {};
+      } else {
+        console.log('점성 결과:', JSON.stringify(astroData).slice(0,100));
+      }
     } catch(e) {
       console.warn('점성 실패, 건너뜀:', e.message);
       toast('⚠️ 별자리 데이터 없이 저장합니다');
+      astroData = {};
     }
 
     btn.textContent = '⏳ 저장 중...';
@@ -869,26 +897,23 @@ async function fetchAstro(birth, birthTime, city) {
       tzone: 9.0
     };
 
-    // Fetch aspects via Worker
-    var aspectsRes = null;
-    try {
-      var ar = await fetchWithTimeout(WORKER_URL + '/astro/aspects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }, 15000);
-      if (ar.ok) aspectsRes = await ar.json();
-    } catch(e) { console.warn('어스펙트 실패:', e.message); }
+    // 두 API 동시 호출 (병렬)
+    var opts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+    var [planetsRes, aspectsRes] = await Promise.allSettled([
+      fetchWithTimeout(WORKER_URL + '/astro', opts, 15000),
+      fetchWithTimeout(WORKER_URL + '/astro/aspects', opts, 15000)
+    ]);
 
-    // Fetch planets via Worker
-    var res = await fetchWithTimeout(WORKER_URL + '/astro', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    }, 15000);
-
-    if (!res.ok) throw new Error('점성 API 오류 ' + res.status);
+    if (planetsRes.status === 'rejected' || !planetsRes.value.ok) {
+      throw new Error('점성 API 오류');
+    }
+    var res = planetsRes.value;
     var data = await res.json();
+
+    var aspectsData = null;
+    if (aspectsRes.status === 'fulfilled' && aspectsRes.value.ok) {
+      try { aspectsData = await aspectsRes.value.json(); } catch(e) {}
+    }
 
     // 전체 행성 데이터 저장
     var result = { planets_json: data };
@@ -908,9 +933,9 @@ async function fetchAstro(birth, birthTime, city) {
       });
     }
     // Add aspects summary
-    if (aspectsRes && Array.isArray(aspectsRes)) {
+    if (aspectsData && Array.isArray(aspectsData)) {
       var aspectNames = {"conjunction":"합","trine":"삼각","square":"사각","opposition":"대립","sextile":"육각"};
-      result.aspects_summary = aspectsRes.slice(0,10).map(function(a) {
+      result.aspects_summary = aspectsData.slice(0,10).map(function(a) {
         return a.planet1 + '-' + a.planet2 + ' ' + (aspectNames[a.type]||a.type) + '(' + (a.orb||'').toFixed(1) + '°)';
       }).join(', ');
     }
