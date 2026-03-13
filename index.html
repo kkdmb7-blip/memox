@@ -456,8 +456,6 @@
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
-const ASTRO_USER = '650365';
-const ASTRO_KEY = '2f0f8ed601443fd86eb24b9e503b4cabd3aec6b8';
 
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
@@ -574,11 +572,26 @@ function renderProfile() {
     '<div class="profile-card">' +
     '<div class="profile-card-title">사주 정보</div>' +
     (sajuData.saju_pillars || sajuData.pillars ?
-      '<div class="profile-row"><span class="profile-row-label">사주기둥</span><span class="profile-row-value">' + (sajuData.saju_pillars||sajuData.pillars||'-') + '</span></div>' +
-      '<div class="profile-row"><span class="profile-row-label">신강/신약</span><span class="profile-row-value">' + (sajuData.saju_strength||sajuData.strength||'-') + '</span></div>' +
-      '<div class="profile-row"><span class="profile-row-label">격국</span><span class="profile-row-value">' + (sajuData.saju_geokguk||sajuData.geokguk||'-') + '</span></div>' +
-      '<div class="profile-row"><span class="profile-row-label">용신</span><span class="profile-row-value">' + (sajuData.saju_yongshin_primary||'-') + '</span></div>' +
-      '<div class="profile-row"><span class="profile-row-label">띠</span><span class="profile-row-value">' + (sajuData.saju_zodiac||sajuData.zodiac||'-') + '</span></div>'
+      (function(){
+        var fp = sajuData.saju_five_pct || {};
+        if (typeof fp === 'string') try { fp = JSON.parse(fp); } catch(e) { fp = {}; }
+        var bl = sajuData.saju_big_luck || [];
+        if (typeof bl === 'string') try { bl = JSON.parse(bl); } catch(e) { bl = []; }
+        var lk = sajuData.saju_lucky || {};
+        if (typeof lk === 'string') try { lk = JSON.parse(lk); } catch(e) { lk = {}; }
+        var curLuck = '';
+        if (Array.isArray(bl)) bl.forEach(function(b) {
+          var r = b.year_range||''; var s = parseInt(r.split('–')[0]||r.split('-')[0]); var e = parseInt(r.split('–')[1]||r.split('-')[1]);
+          if (2026>=s && 2026<=e) curLuck = b.pillar_kor + ' (' + b.age_range + '세)';
+        });
+        return '<div class="profile-row"><span class="profile-row-label">사주기둥</span><span class="profile-row-value">' + (sajuData.saju_pillars||'-') + '</span></div>' +
+        '<div class="profile-row"><span class="profile-row-label">신강/신약</span><span class="profile-row-value">' + (sajuData.saju_strength||'-') + '</span></div>' +
+        '<div class="profile-row"><span class="profile-row-label">격국</span><span class="profile-row-value">' + (sajuData.saju_geokguk||'-') + '</span></div>' +
+        '<div class="profile-row"><span class="profile-row-label">띠</span><span class="profile-row-value">' + (sajuData.saju_zodiac||'-') + '</span></div>' +
+        '<div class="profile-row"><span class="profile-row-label">오행비율</span><span class="profile-row-value" style="font-size:11px;">목' + (fp.wood||0) + '% 화' + (fp.fire||0) + '% 토' + (fp.earth||0) + '% 금' + (fp.metal||0) + '% 수' + (fp.water||0) + '%</span></div>' +
+        '<div class="profile-row"><span class="profile-row-label">현재대운</span><span class="profile-row-value">' + (curLuck||'-') + '</span></div>' +
+        '<div class="profile-row"><span class="profile-row-label">길방/흉방</span><span class="profile-row-value">' + (lk.good_dir||'-') + ' / ' + (lk.bad_dir||'-') + '</span></div>';
+      })()
       : '<div style="font-size:12px;color:var(--text3);padding:8px 0;">아직 사주 데이터가 없어요.<br>정보를 다시 입력해주세요.</div>') +
     '</div>' +
     '<div class="profile-card">' +
@@ -856,24 +869,23 @@ async function fetchAstro(birth, birthTime, city) {
       tzone: 9.0
     };
 
-    var authHeader = 'Basic ' + btoa(ASTRO_USER + ':' + ASTRO_KEY);
-
-    // Fetch aspects (10초 타임아웃)
+    // Fetch aspects via Worker
     var aspectsRes = null;
     try {
-      var ar = await fetchWithTimeout('https://json.astrologyapi.com/v1/planets/aspects', {
+      var ar = await fetchWithTimeout(WORKER_URL + '/astro/aspects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
-      }, 10000);
+      }, 15000);
       if (ar.ok) aspectsRes = await ar.json();
     } catch(e) { console.warn('어스펙트 실패:', e.message); }
 
-    var res = await fetchWithTimeout('https://json.astrologyapi.com/v1/planets/tropical', {
+    // Fetch planets via Worker
+    var res = await fetchWithTimeout(WORKER_URL + '/astro', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
-    }, 10000);
+    }, 15000);
 
     if (!res.ok) throw new Error('점성 API 오류 ' + res.status);
     var data = await res.json();
