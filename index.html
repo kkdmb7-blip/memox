@@ -750,7 +750,25 @@ async function fetchSaju(birth, birthTime, city, gender, cal, midnight) {
       body: JSON.stringify(body)
     });
     if (!res.ok) throw new Error('사주 API 오류: ' + res.status);
-    var data = await res.json();
+    var json = await res.json();
+    // Worker returns {status, message, data: {...}}
+    var data = (json.status === 'success' && json.data) ? json.data : json;
+    // Flatten summary fields for easy access
+    if (data.summary) {
+      data.saju_pillars = data.summary.pillars;
+      data.saju_strength = data.summary.strength;
+      data.saju_zodiac = data.summary.zodiac;
+    }
+    if (data.geokguk) data.saju_geokguk = data.geokguk.geok_kor || data.geokguk.geok;
+    if (data.yongshin) {
+      data.saju_yongshin_primary = data.yongshin.primary_kor;
+      data.saju_yongshin_secondary = data.yongshin.secondary_kor;
+    }
+    if (data.five_pct) data.saju_five_pct = data.five_pct;
+    if (data.big_luck) data.saju_big_luck = data.big_luck;
+    if (data.lucky) data.saju_lucky = data.lucky;
+    if (data.branch_relations_kor) data.saju_branch_relations = data.branch_relations_kor;
+    if (data.zodiac_compatibility) data.saju_zodiac_compatibility = data.zodiac_compatibility;
     return data;
   } catch(e) {
     console.warn('사주 API 실패:', e);
