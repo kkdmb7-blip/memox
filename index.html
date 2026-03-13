@@ -332,7 +332,27 @@
 
     <div class="form-group">
       <label class="form-label">출생지역</label>
-      <input class="form-input" id="inputCity" placeholder="예: 서울, 부산, 대구..." />
+      <select class="form-input" id="inputCity">
+        <option value="">지역 선택</option>
+        <option value="서울특별시" data-lat="37.5665" data-lon="126.9780">서울</option>
+        <option value="부산광역시" data-lat="35.1796" data-lon="129.0756">부산</option>
+        <option value="대구광역시" data-lat="35.8714" data-lon="128.6014">대구</option>
+        <option value="인천광역시" data-lat="37.4563" data-lon="126.7052">인천</option>
+        <option value="광주광역시" data-lat="35.1595" data-lon="126.8526">광주</option>
+        <option value="대전광역시" data-lat="36.3504" data-lon="127.3845">대전</option>
+        <option value="울산광역시" data-lat="35.5384" data-lon="129.3114">울산</option>
+        <option value="세종특별자치시" data-lat="36.4801" data-lon="127.2890">세종</option>
+        <option value="수원시" data-lat="37.2636" data-lon="127.0286">수원</option>
+        <option value="성남시" data-lat="37.4449" data-lon="127.1388">성남</option>
+        <option value="고양시" data-lat="37.6583" data-lon="126.8320">고양</option>
+        <option value="용인시" data-lat="37.2411" data-lon="127.1775">용인</option>
+        <option value="청주시" data-lat="36.6424" data-lon="127.4890">청주</option>
+        <option value="전주시" data-lat="35.8242" data-lon="127.1480">전주</option>
+        <option value="창원시" data-lat="35.2280" data-lon="128.6811">창원</option>
+        <option value="포항시" data-lat="36.0190" data-lon="129.3435">포항</option>
+        <option value="제주시" data-lat="33.4996" data-lon="126.5312">제주</option>
+        <option value="해외" data-lat="37.5665" data-lon="126.9780">해외 (서울 기준)</option>
+      </select>
     </div>
 
     <div class="form-group">
@@ -685,7 +705,7 @@ async function submitOnboard() {
 
   if (!name) return toast('이름을 입력해주세요');
 
-  if (!city) return toast('출생지역을 입력해주세요');
+  if (!city) return toast('출생지역을 선택해주세요');
   if (!apiKey) return toast('Gemini API 키를 입력해주세요');
 
   var btn = document.getElementById('onboardSubmitBtn');
@@ -770,8 +790,8 @@ async function fetchSaju(birth, birthTime, city, gender, cal, midnight) {
     var bmm = (btParts[1]||'00').padStart(2,'0');
     var birthISO = birth + 'T' + bhh + ':' + bmm + ':00';
     console.log('사주 요청 날짜:', birthISO, 'gender:', gender === 'M' ? 'male' : 'female');
-    // Normalize city name for API
-    var cityNorm = city.replace('특별시','').replace('광역시','').replace('특별자치시','').replace('특별자치도','').trim();
+    // city already comes as full name from select dropdown
+    var cityNorm = city;
     var body = {
       birth: birthISO,
       gender: gender === 'M' ? 'male' : 'female',
@@ -891,16 +911,17 @@ async function fetchAstro(birth, birthTime, city) {
 
 function getCityCoords(city) {
   var coords = {
-    '서울': {lat:37.5665, lon:126.9780}, '부산': {lat:35.1796, lon:129.0756},
-    '대구': {lat:35.8714, lon:128.6014}, '인천': {lat:37.4563, lon:126.7052},
-    '광주': {lat:35.1595, lon:126.8526}, '대전': {lat:36.3504, lon:127.3845},
-    '울산': {lat:35.5384, lon:129.3114}, '제주': {lat:33.4996, lon:126.5312},
-    '수원': {lat:37.2636, lon:127.0286}, '성남': {lat:37.4449, lon:127.1388}
+    '서울특별시': {lat:37.5665, lon:126.9780}, '부산광역시': {lat:35.1796, lon:129.0756},
+    '대구광역시': {lat:35.8714, lon:128.6014}, '인천광역시': {lat:37.4563, lon:126.7052},
+    '광주광역시': {lat:35.1595, lon:126.8526}, '대전광역시': {lat:36.3504, lon:127.3845},
+    '울산광역시': {lat:35.5384, lon:129.3114}, '세종특별자치시': {lat:36.4801, lon:127.2890},
+    '수원시': {lat:37.2636, lon:127.0286}, '성남시': {lat:37.4449, lon:127.1388},
+    '고양시': {lat:37.6583, lon:126.8320}, '용인시': {lat:37.2411, lon:127.1775},
+    '청주시': {lat:36.6424, lon:127.4890}, '전주시': {lat:35.8242, lon:127.1480},
+    '창원시': {lat:35.2280, lon:128.6811}, '포항시': {lat:36.0190, lon:129.3435},
+    '제주시': {lat:33.4996, lon:126.5312}
   };
-  for (var key in coords) {
-    if (city.includes(key)) return coords[key];
-  }
-  return {lat:37.5665, lon:126.9780}; // 기본값 서울
+  return coords[city] || {lat:37.5665, lon:126.9780};
 }
 
 // ── CHAT ──────────────────────────────────────────────────────
