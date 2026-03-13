@@ -452,15 +452,28 @@ var selectedMidnight = '0';
 // ── AUTH ──────────────────────────────────────────────────────
 async function initAuth() {
   makeBgStars();
+
+  // URL에 토큰이 있으면 세션 처리 (OAuth 리다이렉트 후)
+  var hash = window.location.hash;
+  if (hash && hash.includes('access_token')) {
+    await sb.auth.getSession();
+    window.history.replaceState(null, '', window.location.pathname);
+  }
+
   var res = await sb.auth.getSession();
-  if (res.data.session && res.data.session.user) {
+  if (res.data && res.data.session && res.data.session.user) {
     await setUser(res.data.session.user);
   } else {
     showScreen('login');
   }
-  sb.auth.onAuthStateChange(async function(_e, session) {
-    if (session && session.user) { await setUser(session.user); }
-    else { showScreen('login'); }
+
+  sb.auth.onAuthStateChange(async function(event, session) {
+    console.log('Auth event:', event, session ? session.user.email : 'no user');
+    if (event === 'SIGNED_IN' && session && session.user) {
+      await setUser(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      showScreen('login');
+    }
   });
 }
 
