@@ -3,20 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>MEMOX</title>
-<meta name="description" content="붙여넣으면 AI가 알아서 정리해주는 메모앱">
+<title>운명에게 물어봐</title>
 <meta name="theme-color" content="#0a0a0a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MEMOX">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230a0a0a'/%3E%3Ctext y='.9em' font-size='80' x='10'%3E🧠%3C/text%3E%3C/svg%3E">
+<meta name="apple-mobile-web-app-title" content="운명챗봇">
 <link rel="manifest" id="pwaManifest">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Gmarket+Sans:wght@500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
   :root {
-    --bg:#0a0a0a; --surface:#111; --surface2:#1a1a1a; --surface3:#222;
-    --border:#2a2a2a; --accent:#c8f565; --accent2:#7c5cfc;
+    --bg:#09090f; --surface:#12121e; --surface2:#1a1a2e; --surface3:#222238;
+    --border:#2a2a45; --accent:#c8a2f5; --accent2:#7c5cfc; --gold:#f5c842;
     --text:#f0f0f0; --text2:#aaa; --text3:#666;
     --danger:#ff4444; --warn:#f5a623;
   }
@@ -28,381 +26,257 @@
     display:flex; flex-direction:column; height:100dvh; overflow:hidden;
   }
 
-  /* HEADER */
-  header {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:12px 18px; border-bottom:1px solid var(--border);
-    background:var(--bg); flex-shrink:0;
-  }
-  .logo { font-family:'Gmarket Sans',sans-serif; font-weight:700; font-size:19px; color:var(--accent); }
-  .logo span { color:var(--text); }
-  .header-right { display:flex; align-items:center; gap:8px; }
-  .api-pill {
-    display:flex; align-items:center; gap:5px;
-    background:var(--surface2); border:1px solid var(--border);
-    border-radius:20px; padding:5px 11px; cursor:pointer; font-size:11px; color:var(--text3);
-  }
-  .api-pill.connected { border-color:rgba(200,245,101,0.3); color:var(--accent); }
-  .api-dot { width:6px; height:6px; border-radius:50%; background:var(--text3); }
-  .api-dot.on { background:var(--accent); }
-  .all-memos-btn {
-    background:var(--surface2); color:var(--text2); border:1px solid var(--border);
-    border-radius:8px; padding:6px 12px; font-size:11px; font-weight:700;
-    cursor:pointer; font-family:'Noto Sans KR',sans-serif;
-  }
-  .all-memos-btn:hover { background:var(--surface3); color:var(--text); }
-
-  /* API KEY MODAL */
-  .modal-overlay {
-    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7);
-    z-index:500; align-items:center; justify-content:center; padding:20px;
-  }
-  .modal-overlay.open { display:flex; }
-  .modal {
-    background:var(--surface); border:1px solid var(--border); border-radius:16px;
-    padding:24px; width:100%; max-width:400px;
-  }
-  .modal-title { font-family:'Gmarket Sans',sans-serif; font-size:18px; margin-bottom:6px; }
-  .modal-sub { font-size:12px; color:var(--text3); margin-bottom:14px; line-height:1.8; }
-  .modal input {
-    width:100%; background:var(--surface2); border:1px solid var(--border);
-    border-radius:8px; padding:10px 12px; color:var(--text); font-size:13px;
-    font-family:monospace; outline:none; margin-bottom:12px;
-  }
-  .modal input:focus { border-color:var(--accent); }
-
   /* SCREENS */
-  .screen { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  .screen { display:none; flex:1; flex-direction:column; overflow:hidden; height:100%; }
   .screen.active { display:flex; }
 
-  /* HOME SCREEN */
-  .home-top {
-    display:grid; grid-template-columns:1fr 1fr;
-    flex:1; overflow:hidden; border-bottom:1px solid var(--border);
+  /* ── LOGIN ── */
+  .login-bg {
+    position:absolute; inset:0; overflow:hidden; pointer-events:none;
   }
-  .home-panel {
-    display:flex; flex-direction:column; overflow:hidden;
-    border-right:1px solid var(--border);
+  .login-star {
+    position:absolute; border-radius:50%; background:var(--accent);
+    animation:twinkle 3s infinite;
   }
-  .home-panel:last-child { border-right:none; }
-  .panel-header {
-    padding:12px 16px 10px; border-bottom:1px solid var(--border);
-    display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+  @keyframes twinkle { 0%,100%{opacity:0.1} 50%{opacity:0.6} }
+  .login-wrap {
+    position:relative; z-index:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; height:100%; padding:32px 24px;
   }
-  .panel-title { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text2); }
-  .panel-body { flex:1; overflow-y:auto; padding:10px; }
-  .panel-body::-webkit-scrollbar { width:3px; }
-  .panel-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  .login-icon {
+    width:88px; height:88px; border-radius:24px; margin-bottom:20px;
+    background:linear-gradient(135deg,#1a0a2e,#0a0a1a);
+    border:1px solid rgba(200,162,245,0.3);
+    display:flex; align-items:center; justify-content:center; font-size:42px;
+    box-shadow:0 0 40px rgba(124,92,252,0.2);
+  }
+  .login-title {
+    font-family:'Gmarket Sans',sans-serif; font-size:28px; font-weight:700;
+    color:var(--accent); margin-bottom:8px; letter-spacing:-0.5px;
+  }
+  .login-sub { font-size:14px; color:var(--text2); margin-bottom:40px; line-height:1.8; text-align:center; }
+  .login-badges { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-bottom:40px; }
+  .badge {
+    font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px;
+    letter-spacing:0.5px;
+  }
+  .badge-purple { background:rgba(124,92,252,0.15); border:1px solid rgba(124,92,252,0.3); color:#a58af8; }
+  .badge-gold { background:rgba(245,200,66,0.1); border:1px solid rgba(245,200,66,0.25); color:var(--gold); }
+  .badge-green { background:rgba(100,220,130,0.1); border:1px solid rgba(100,220,130,0.2); color:#64dc82; }
+  .google-btn {
+    width:100%; max-width:320px; padding:15px 20px; border-radius:14px;
+    border:1px solid rgba(255,255,255,0.1); background:var(--surface2);
+    color:var(--text); font-size:14px; font-weight:700; cursor:pointer;
+    font-family:'Noto Sans KR',sans-serif;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    transition:all 0.2s; box-shadow:0 4px 20px rgba(0,0,0,0.4); margin-bottom:10px;
+  }
+  .google-btn:hover { border-color:rgba(200,162,245,0.4); transform:translateY(-1px); }
+  .kakao-btn {
+    width:100%; max-width:320px; padding:15px 20px; border-radius:14px;
+    border:none; background:#fee500; color:#000; font-size:14px; font-weight:700;
+    cursor:pointer; font-family:'Noto Sans KR',sans-serif;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    transition:all 0.2s; box-shadow:0 4px 20px rgba(0,0,0,0.3); margin-bottom:20px;
+  }
+  .kakao-btn:hover { background:#ffd900; transform:translateY(-1px); }
+  .login-notice { font-size:11px; color:var(--text3); text-align:center; line-height:1.8; }
 
-  /* TODO */
-  .todo-input-row { display:flex; gap:6px; margin-bottom:8px; }
-  .todo-input-row input {
-    flex:1; background:var(--surface2); border:1px solid var(--border);
-    border-radius:7px; padding:7px 10px; color:var(--text); font-size:12px;
-    font-family:'Noto Sans KR',sans-serif; outline:none; min-width:0;
-  }
-  .todo-input-row input:focus { border-color:var(--accent); }
-  .todo-add-btn {
-    background:var(--accent); color:#0a0a0a; border:none; border-radius:7px;
-    width:30px; height:30px; font-size:16px; cursor:pointer; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center; font-weight:700;
-  }
-  .todo-item {
-    display:flex; align-items:center; gap:8px; padding:8px 6px; border-radius:7px;
-    cursor:pointer; transition:background 0.15s; margin-bottom:3px;
-  }
-  .todo-item:hover { background:var(--surface2); }
-  .todo-check {
-    width:16px; height:16px; border-radius:50%; border:2px solid var(--border);
-    flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.15s;
-  }
-  .todo-item.done .todo-check { background:var(--accent); border-color:var(--accent); }
-  .todo-item.done .todo-check::after { content:'✓'; font-size:9px; color:#0a0a0a; font-weight:700; }
-  .todo-text { flex:1; font-size:12px; color:var(--text); font-weight:500; line-height:1.4; }
-  .todo-item.done .todo-text { text-decoration:line-through; color:var(--text3); }
-  .todo-del { background:none; border:none; cursor:pointer; color:var(--text3); font-size:12px; padding:2px; opacity:0; transition:opacity 0.15s; }
-  .todo-item:hover .todo-del { opacity:1; }
-  .panel-empty { text-align:center; padding:24px 10px; color:var(--text3); font-size:11px; line-height:2; }
-
-  /* MEMO ROWS */
-  .memo-row {
-    display:flex; align-items:center; gap:8px; padding:9px 10px; border-radius:8px;
-    cursor:pointer; border:1px solid var(--border); margin-bottom:5px;
-    background:var(--surface); transition:all 0.15s;
-  }
-  .memo-row:hover { border-color:var(--accent2); background:var(--surface2); }
-  .memo-row-cat { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--accent); white-space:nowrap; min-width:36px; }
-  .memo-row-title { flex:1; font-size:12px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .memo-row-date { font-size:10px; color:var(--text3); white-space:nowrap; }
-  .memo-row-arrow { color:var(--text3); font-size:11px; }
-
-  /* INPUT AREA (홈 하단) */
-  .home-input {
-    padding:12px 16px 14px; background:var(--surface);
-    border-top:1px solid var(--border); flex-shrink:0;
-  }
-  textarea {
-    width:100%; background:var(--surface2); border:1px solid var(--border);
-    border-radius:10px; padding:12px 14px; color:var(--text); font-size:13px;
-    font-family:'Noto Sans KR',sans-serif; line-height:1.6; resize:none; outline:none;
-    transition:border-color 0.2s, box-shadow 0.2s; display:block;
-  }
-  textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(200,245,101,0.07); }
-  textarea::placeholder { color:var(--text3); }
-  .input-actions { display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap; }
-  .char-count { font-size:11px; color:var(--text3); margin-left:auto; }
-
-  /* LIST SCREEN */
-  .screen-header {
-    padding:13px 18px; border-bottom:1px solid var(--border);
+  /* ── ONBOARDING ── */
+  .onboard-header {
+    padding:16px 20px; border-bottom:1px solid var(--border);
     display:flex; align-items:center; gap:12px; flex-shrink:0;
   }
-  .back-btn { background:none; border:none; cursor:pointer; color:var(--text2); font-size:20px; padding:0; }
-  .screen-title { font-family:'Gmarket Sans',sans-serif; font-size:16px; font-weight:700; }
-  .search-wrap { padding:10px 14px; border-bottom:1px solid var(--border); position:relative; flex-shrink:0; }
-  .search-wrap input {
+  .onboard-step { font-size:11px; color:var(--accent); font-weight:700; letter-spacing:1px; }
+  .onboard-title { font-family:'Gmarket Sans',sans-serif; font-size:16px; font-weight:700; }
+  .onboard-body { flex:1; overflow-y:auto; padding:24px 20px; }
+  .onboard-body::-webkit-scrollbar { width:3px; }
+  .onboard-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  .onboard-desc { font-size:13px; color:var(--text2); line-height:1.9; margin-bottom:28px; }
+  .form-group { margin-bottom:18px; }
+  .form-label { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; display:block; }
+  .form-input {
     width:100%; background:var(--surface2); border:1px solid var(--border);
-    border-radius:8px; padding:7px 12px 7px 30px; color:var(--text); font-size:13px;
-    font-family:'Noto Sans KR',sans-serif; outline:none;
+    border-radius:10px; padding:12px 14px; color:var(--text); font-size:14px;
+    font-family:'Noto Sans KR',sans-serif; outline:none; transition:border-color 0.2s;
   }
-  .search-wrap input:focus { border-color:var(--accent); }
-  .search-wrap .si { position:absolute; left:24px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--text3); }
-  .list-tabs { display:flex; border-bottom:1px solid var(--border); flex-shrink:0; }
-  .list-tab { flex:1; padding:9px; text-align:center; font-size:11px; font-weight:700; color:var(--text3); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; }
-  .list-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
-  .list-body { flex:1; overflow-y:auto; padding:10px 12px; }
-  .list-body::-webkit-scrollbar { width:3px; }
-  .list-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  .form-input:focus { border-color:var(--accent); }
+  .form-input::placeholder { color:var(--text3); }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .radio-group { display:flex; gap:8px; }
+  .radio-btn {
+    flex:1; padding:10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface2); color:var(--text2); font-size:13px; font-weight:700;
+    cursor:pointer; text-align:center; transition:all 0.15s; font-family:'Noto Sans KR',sans-serif;
+  }
+  .radio-btn.selected { background:rgba(200,162,245,0.15); border-color:var(--accent); color:var(--accent); }
+  .midnight-group { display:flex; flex-direction:column; gap:6px; }
+  .midnight-btn {
+    padding:10px 14px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface2); color:var(--text2); font-size:12px;
+    cursor:pointer; text-align:left; transition:all 0.15s; font-family:'Noto Sans KR',sans-serif;
+  }
+  .midnight-btn.selected { background:rgba(200,162,245,0.15); border-color:var(--accent); color:var(--accent); }
+  .onboard-footer { padding:16px 20px; border-top:1px solid var(--border); flex-shrink:0; }
 
-  /* DETAIL SCREEN */
-  .detail-header {
+  /* ── CHAT ── */
+  .chat-header {
     padding:12px 16px; border-bottom:1px solid var(--border);
     display:flex; align-items:center; gap:10px; flex-shrink:0;
+    background:var(--surface);
   }
-  .detail-header-meta { flex:1; min-width:0; }
-  .detail-actions { display:flex; gap:6px; }
+  .chat-avatar {
+    width:36px; height:36px; border-radius:50%;
+    background:linear-gradient(135deg,var(--accent2),var(--accent));
+    display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;
+  }
+  .chat-header-info { flex:1; min-width:0; }
+  .chat-header-name { font-size:14px; font-weight:700; }
+  .chat-header-sub { font-size:11px; color:var(--text3); }
+  .chat-header-actions { display:flex; gap:6px; }
   .icon-btn {
-    width:32px; height:32px; border-radius:7px; border:1px solid var(--border);
+    width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
     background:var(--surface2); cursor:pointer; display:flex; align-items:center;
-    justify-content:center; color:var(--text2); font-size:14px; transition:all 0.15s;
+    justify-content:center; color:var(--text2); font-size:13px; transition:all 0.15s;
   }
-  .icon-btn:hover { background:var(--surface3); color:var(--text); }
-  .icon-btn.starred { color:var(--warn); border-color:rgba(245,166,35,0.3); }
-  .icon-btn.danger:hover { border-color:var(--danger); color:var(--danger); }
-  .detail-cat { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent); margin-bottom:3px; }
-  .detail-title { font-family:'Gmarket Sans',sans-serif; font-size:16px; font-weight:700; line-height:1.3; }
-  .detail-body { flex:1; overflow-y:auto; padding:16px; }
-  .detail-body::-webkit-scrollbar { width:3px; }
-  .detail-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  .icon-btn:hover { color:var(--text); background:var(--surface3); }
 
-  /* CONTENT BLOCKS */
-  .content-block { background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:16px; margin-bottom:12px; animation:fadeUp 0.3s ease; }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-  .block-label { display:flex; align-items:center; gap:5px; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
-  .block-label .dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
-  .block-label.summary { color:var(--accent); }
-  .key-points { list-style:none; display:flex; flex-direction:column; gap:7px; }
-  .key-point-item { display:flex; align-items:flex-start; gap:9px; font-size:13px; color:var(--text); line-height:1.6; }
-  .key-point-bullet { width:5px; height:5px; border-radius:50%; background:var(--accent); margin-top:8px; flex-shrink:0; }
-  .original-content { font-size:13px; line-height:1.85; color:var(--text2); white-space:pre-wrap; }
-  .show-original-btn {
-    width:100%; padding:11px; background:var(--surface2); border:1px solid var(--border);
-    border-radius:9px; color:var(--text3); font-size:12px; cursor:pointer;
-    font-family:'Noto Sans KR',sans-serif; margin-bottom:12px; transition:all 0.15s;
+  .chat-messages {
+    flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px;
   }
-  .show-original-btn:hover { border-color:var(--text3); color:var(--text2); }
-  .merge-notice { background:rgba(124,92,252,0.1); border:1px solid rgba(124,92,252,0.25); border-radius:9px; padding:10px 12px; margin-bottom:12px; font-size:12px; color:#a58af8; display:flex; align-items:center; gap:7px; }
+  .chat-messages::-webkit-scrollbar { width:3px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
-  /* MERGE SCREEN */
-  .merge-body { flex:1; overflow-y:auto; padding:16px; }
-
-  /* PROCESSING */
-  .processing-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:400; align-items:center; justify-content:center; flex-direction:column; gap:14px; }
-  .processing-overlay.open { display:flex; }
-  .spinner { width:38px; height:38px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
-  @keyframes spin { to{transform:rotate(360deg)} }
-  .processing-step { font-size:12px; color:var(--accent); font-weight:700; letter-spacing:1px; }
-
-  /* BUTTONS */
-  .btn { padding:9px 16px; border-radius:8px; border:none; cursor:pointer; font-family:'Noto Sans KR',sans-serif; font-size:12px; font-weight:700; transition:all 0.15s; display:flex; align-items:center; gap:5px; white-space:nowrap; }
-  .btn:disabled { opacity:0.4; cursor:not-allowed; }
-  .btn-primary { background:var(--accent); color:#0a0a0a; }
-  .btn-primary:hover:not(:disabled) { background:#d4ff7a; }
-  .btn-secondary { background:var(--surface3); color:var(--text2); border:1px solid var(--border); }
-  .btn-secondary:hover:not(:disabled) { color:var(--text); }
-  .btn-ghost { background:transparent; color:var(--text3); border:1px solid var(--border); }
-  .btn-ghost:hover:not(:disabled) { color:var(--text); border-color:var(--text3); }
-  .btn-save { background:var(--surface3); color:var(--text); border:1px solid rgba(200,245,101,0.2); }
-  .btn-save:hover:not(:disabled) { background:var(--surface2); border-color:rgba(200,245,101,0.4); color:var(--accent); }
-  .btn-mic {
-    width:38px; height:38px; border-radius:50%; border:1px solid var(--border);
-    background:var(--surface2); color:var(--text2); cursor:pointer;
-    display:flex; align-items:center; justify-content:center; font-size:16px;
-    transition:all 0.2s; flex-shrink:0;
+  .msg { display:flex; gap:10px; max-width:85%; animation:msgIn 0.3s ease; }
+  @keyframes msgIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .msg.user { align-self:flex-end; flex-direction:row-reverse; }
+  .msg-avatar {
+    width:30px; height:30px; border-radius:50%; flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent2),var(--accent));
+    display:flex; align-items:center; justify-content:center; font-size:14px;
+    align-self:flex-end;
   }
-  .btn-mic:hover { border-color:var(--accent); color:var(--accent); }
-  .btn-mic.recording {
-    background:rgba(255,60,60,0.15); border-color:#ff3c3c; color:#ff3c3c;
-    animation:pulse 1s infinite;
+  .msg.user .msg-avatar { background:var(--surface3); }
+  .msg-bubble {
+    padding:11px 14px; border-radius:16px; font-size:14px; line-height:1.7;
+    background:var(--surface2); border:1px solid var(--border); color:var(--text);
   }
+  .msg.user .msg-bubble {
+    background:rgba(124,92,252,0.2); border-color:rgba(124,92,252,0.3); color:var(--text);
+  }
+  .msg-time { font-size:10px; color:var(--text3); margin-top:4px; text-align:right; }
+  .msg.user .msg-time { text-align:left; }
+
+  /* 추천 질문 */
+  .suggest-chips { display:flex; flex-wrap:wrap; gap:6px; padding:0 16px 10px; }
+  .chip {
+    padding:7px 12px; border-radius:20px; border:1px solid var(--border);
+    background:var(--surface2); color:var(--text2); font-size:12px; cursor:pointer;
+    transition:all 0.15s; font-family:'Noto Sans KR',sans-serif; white-space:nowrap;
+  }
+  .chip:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* 리포트 연결 버튼 */
+  .fortuna-banner {
+    margin:0 16px 10px; padding:12px 16px; border-radius:12px;
+    background:linear-gradient(135deg,rgba(124,92,252,0.15),rgba(200,162,245,0.08));
+    border:1px solid rgba(124,92,252,0.3); cursor:pointer; transition:all 0.2s;
+    display:flex; align-items:center; gap:10px;
+  }
+  .fortuna-banner:hover { border-color:rgba(200,162,245,0.5); }
+  .fortuna-banner-text { flex:1; }
+  .fortuna-banner-title { font-size:12px; font-weight:700; color:var(--accent); margin-bottom:2px; }
+  .fortuna-banner-sub { font-size:11px; color:var(--text3); }
+
+  /* 입력창 */
+  .chat-input-wrap {
+    padding:10px 12px 14px; border-top:1px solid var(--border);
+    background:var(--surface); flex-shrink:0;
+  }
+  .chat-input-row { display:flex; gap:8px; align-items:flex-end; }
+  .chat-textarea {
+    flex:1; background:var(--surface2); border:1px solid var(--border);
+    border-radius:20px; padding:10px 14px; color:var(--text); font-size:14px;
+    font-family:'Noto Sans KR',sans-serif; line-height:1.5; resize:none; outline:none;
+    max-height:100px; transition:border-color 0.2s; min-height:40px;
+  }
+  .chat-textarea:focus { border-color:var(--accent2); }
+  .chat-textarea::placeholder { color:var(--text3); }
+  .send-btn {
+    width:40px; height:40px; border-radius:50%; border:none;
+    background:linear-gradient(135deg,var(--accent2),var(--accent));
+    color:#fff; font-size:16px; cursor:pointer; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; transition:all 0.2s;
+  }
+  .send-btn:hover { transform:scale(1.05); }
+  .send-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+  .mic-btn {
+    width:40px; height:40px; border-radius:50%; border:1px solid var(--border);
+    background:var(--surface2); color:var(--text2); font-size:16px; cursor:pointer;
+    flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.2s;
+  }
+  .mic-btn.recording { background:rgba(255,60,60,0.15); border-color:#ff3c3c; color:#ff3c3c; animation:pulse 1s infinite; }
   @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,60,60,0.3)} 50%{box-shadow:0 0 0 6px rgba(255,60,60,0)} }
 
-  /* SAVE SUCCESS CARD */
-  .save-success {
-    display:none; position:fixed; inset:0; z-index:600;
-    align-items:center; justify-content:center; padding:24px;
-    background:rgba(0,0,0,0.75); backdrop-filter:blur(6px);
-  }
-  .save-success.open { display:flex; }
-  .save-card {
-    background:linear-gradient(135deg, #0f1f0a 0%, #0a0a0a 40%, #0d0a1f 100%);
-    border:1px solid rgba(200,245,101,0.25);
-    border-radius:20px; padding:32px 28px; width:100%; max-width:360px;
-    text-align:center; position:relative; overflow:hidden;
-    box-shadow:0 0 60px rgba(200,245,101,0.1), 0 24px 48px rgba(0,0,0,0.6);
-    animation:cardPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  @keyframes cardPop { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
-  .save-card-glow {
-    position:absolute; top:-40px; left:50%; transform:translateX(-50%);
-    width:200px; height:200px; border-radius:50%;
-    background:radial-gradient(circle, rgba(200,245,101,0.15) 0%, transparent 70%);
-    pointer-events:none;
-  }
-  .save-card-icon { font-size:48px; margin-bottom:12px; display:block; }
-  .save-card-title {
-    font-family:'Gmarket Sans',sans-serif; font-size:22px; font-weight:700;
-    color:var(--accent); margin-bottom:6px; letter-spacing:-0.5px;
-  }
-  .save-card-memo {
-    font-size:15px; color:var(--text); font-weight:500; margin-bottom:4px;
-    line-height:1.4;
-  }
-  .save-card-cat {
-    font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
-    color:var(--accent2); margin-bottom:20px;
-  }
-  .save-card-points {
-    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
-    border-radius:10px; padding:14px; margin-bottom:20px; text-align:left;
-    display:flex; flex-direction:column; gap:7px;
-  }
-  .save-card-point {
-    display:flex; align-items:flex-start; gap:8px;
-    font-size:12px; color:rgba(240,240,240,0.8); line-height:1.5;
-  }
-  .save-card-point-dot { width:5px; height:5px; border-radius:50%; background:var(--accent); margin-top:5px; flex-shrink:0; }
-  .save-card-actions { display:flex; gap:8px; }
-  .save-card-actions .btn { flex:1; justify-content:center; }
+  /* 타이핑 인디케이터 */
+  .typing { display:flex; gap:4px; padding:8px 12px; }
+  .typing span { width:6px; height:6px; border-radius:50%; background:var(--text3); animation:typing 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay:0.2s; }
+  .typing span:nth-child(3) { animation-delay:0.4s; }
+  @keyframes typing { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  /* API 키 모달 */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:500; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; width:100%; max-width:400px; }
+  .modal-title { font-family:'Gmarket Sans',sans-serif; font-size:18px; margin-bottom:6px; }
+  .modal-sub { font-size:12px; color:var(--text3); margin-bottom:14px; line-height:1.8; }
+  .modal input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-size:13px; font-family:monospace; outline:none; margin-bottom:12px; }
+  .modal input:focus { border-color:var(--accent); }
+
+  /* BUTTONS */
+  .btn { padding:12px 20px; border-radius:10px; border:none; cursor:pointer; font-family:'Noto Sans KR',sans-serif; font-size:14px; font-weight:700; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .btn-primary { background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#fff; width:100%; }
+  .btn-primary:hover:not(:disabled) { opacity:0.9; transform:translateY(-1px); }
+  .btn-ghost { background:transparent; color:var(--text3); border:1px solid var(--border); }
+  .btn-ghost:hover:not(:disabled) { color:var(--text); border-color:var(--text3); }
 
   /* TOAST */
   .toast-container { position:fixed; bottom:16px; right:16px; display:flex; flex-direction:column; gap:6px; z-index:999; }
   .toast { background:var(--surface3); border:1px solid var(--border); color:var(--text); padding:9px 14px; border-radius:9px; font-size:12px; animation:slideIn 0.3s ease; box-shadow:0 6px 20px rgba(0,0,0,0.4); }
-  .toast.success { border-color:rgba(200,245,101,0.3); }
   @keyframes slideIn { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
 
-  /* TEMP BADGE */
-  .temp-badge { background:rgba(245,166,35,0.1); border:1px solid rgba(245,166,35,0.2); color:var(--warn); font-size:9px; font-weight:700; padding:1px 5px; border-radius:20px; }
+  /* 프로필 화면 */
+  .profile-header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-shrink:0; }
+  .profile-body { flex:1; overflow-y:auto; padding:20px; }
+  .profile-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:14px; }
+  .profile-card-title { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:14px; }
+  .profile-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .profile-row:last-child { border-bottom:none; }
+  .profile-row-label { color:var(--text3); }
+  .profile-row-value { color:var(--text); font-weight:500; }
 
-  /* MOBILE */
-  @media (max-width:600px) {
-    .home-top { grid-template-columns:1fr 1fr; min-height:0; }
-    .home-panel { border-right:1px solid var(--border); min-height:0; }
-    .home-panel:last-child { border-right:none; }
-    .home-input { padding:10px 12px 12px; flex-shrink:0; }
-    textarea { font-size:14px; min-height:56px; max-height:90px; }
-    .input-actions { gap:6px; margin-top:8px; }
-    .btn { padding:8px 12px; font-size:12px; }
-    .char-count { display:none; }
+  @media (max-width:400px) {
+    .form-row { grid-template-columns:1fr; }
   }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <div class="logo">MEMO<span>X</span></div>
-  <div class="header-right">
-    <div class="api-pill" id="apiPill" onclick="document.getElementById('apiModal').classList.add('open')">
-      <div class="api-dot" id="apiDot"></div>
-      <span id="apiStatus">API 키 설정</span>
-    </div>
-    <button class="all-memos-btn" onclick="showScreen('list')">📋 전체 메모</button>
-    <div id="userAvatar" style="display:none;align-items:center;gap:6px;cursor:pointer;" onclick="confirmLogout()">
-      <img id="userAvatarImg" src="" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);" />
-    </div>
-  </div>
-</header>
-
-<!-- API KEY MODAL -->
-<div class="modal-overlay" id="apiModal">
-  <div class="modal">
-    <div class="modal-title">🔑 Gemini API 키</div>
-    <div class="modal-sub">aistudio.google.com → Get API key → Create API key<br>무료로 발급 가능해!</div>
-    <input type="password" id="apiKeyInput" placeholder="AIza..." oninput="onApiKeyInput(this.value)" />
-    <button class="btn btn-primary" onclick="document.getElementById('apiModal').classList.remove('open')">확인</button>
-  </div>
-</div>
-
-<!-- PROCESSING OVERLAY -->
-<div class="processing-overlay" id="processingOverlay">
-  <div class="spinner"></div>
-  <div class="processing-step" id="processingStep">처리 중...</div>
-</div>
-
-<!-- SCREEN: HOME -->
 <!-- SCREEN: LOGIN -->
-<div class="screen active" id="screenLogin" style="align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden;">
-  <!-- 배경 장식 -->
-  <div style="position:absolute;top:-100px;left:-100px;width:400px;height:400px;background:radial-gradient(circle,rgba(200,245,101,0.07) 0%,transparent 70%);pointer-events:none;"></div>
-  <div style="position:absolute;bottom:-80px;right:-80px;width:300px;height:300px;background:radial-gradient(circle,rgba(124,92,252,0.08) 0%,transparent 70%);pointer-events:none;"></div>
-  <!-- 떠다니는 메모 장식 -->
-  <div style="position:absolute;top:12%;left:5%;opacity:0.15;transform:rotate(-8deg);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--text);max-width:140px;line-height:1.6;">오늘 미팅에서 나온 아이디어 정리해야함...</div>
-  <div style="position:absolute;top:18%;right:4%;opacity:0.12;transform:rotate(6deg);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--text);max-width:130px;line-height:1.6;">읽은 책 핵심 내용 요약</div>
-  <div style="position:absolute;bottom:22%;left:4%;opacity:0.12;transform:rotate(4deg);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--accent);max-width:130px;line-height:1.6;">✦ AI가 자동 정리</div>
-  <div style="position:absolute;bottom:28%;right:3%;opacity:0.12;transform:rotate(-5deg);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--text);max-width:120px;line-height:1.6;">프로젝트 할일 목록...</div>
-
-  <!-- 메인 콘텐츠 -->
-  <div style="text-align:center;padding:32px 28px;max-width:360px;width:100%;position:relative;z-index:1;">
-    <!-- 로고 -->
-    <div style="margin-bottom:32px;">
-      <div style="
-        width:72px;height:72px;border-radius:20px;
-        background:linear-gradient(135deg,#1a2a0a,#0a0a1a);
-        border:1px solid rgba(200,245,101,0.3);
-        display:flex;align-items:center;justify-content:center;
-        margin:0 auto 16px;
-        box-shadow:0 0 30px rgba(200,245,101,0.15);
-      ">
-        <span style="font-size:32px;">🧠</span>
-      </div>
-      <div style="font-family:'Gmarket Sans',sans-serif;font-size:38px;font-weight:700;color:var(--accent);letter-spacing:-1px;line-height:1;">MEMO<span style="color:var(--text);">X</span></div>
+<div class="screen active" id="screenLogin">
+  <div class="login-bg" id="loginBg"></div>
+  <div class="login-wrap">
+    <div class="login-icon">🔮</div>
+    <div class="login-title">운명에게 물어봐</div>
+    <div class="login-sub">사주와 별자리를 기반으로<br>AI가 당신의 운명을 읽어드려요</div>
+    <div class="login-badges">
+      <span class="badge badge-purple">🌙 사주 분석</span>
+      <span class="badge badge-gold">⭐ 점성술</span>
+      <span class="badge badge-green">💬 무제한 질문</span>
     </div>
-
-    <!-- 설명 -->
-    <div style="margin-bottom:36px;">
-      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.5;">생각나는 거 그냥 붙여넣어</div>
-      <div style="font-size:13px;color:var(--text2);line-height:1.9;">AI가 알아서 정리하고<br>기존 메모랑 합칠지도 판단해줘</div>
-    </div>
-
-    <!-- 기능 뱃지 -->
-    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:36px;">
-      <span style="background:rgba(200,245,101,0.1);border:1px solid rgba(200,245,101,0.2);color:var(--accent);font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;">⚡ AI 정리</span>
-      <span style="background:rgba(124,92,252,0.1);border:1px solid rgba(124,92,252,0.2);color:#a58af8;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;">🔗 유사메모 병합</span>
-      <span style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;">☁️ 기기 동기화</span>
-    </div>
-
-    <!-- 로그인 버튼 -->
-    <button id="googleLoginBtn" style="
-      width:100%;padding:15px 20px;border-radius:14px;
-      border:1px solid rgba(255,255,255,0.1);
-      background:var(--surface2);
-      color:var(--text);font-size:14px;font-weight:700;
-      cursor:pointer;font-family:'Noto Sans KR',sans-serif;
-      display:flex;align-items:center;justify-content:center;gap:10px;
-      transition:all 0.2s;
-      box-shadow:0 4px 20px rgba(0,0,0,0.3);
-    ">
+    <button class="google-btn" id="googleLoginBtn">
       <svg width="18" height="18" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -411,116 +285,138 @@
       </svg>
       Google로 시작하기
     </button>
-
-    <!-- PWA 설치 버튼 (JS로 표시) -->
-    <button id="installBtn" style="
-      display:none;width:100%;padding:12px 20px;border-radius:14px;
-      border:1px solid rgba(200,245,101,0.25);
-      background:rgba(200,245,101,0.08);
-      color:var(--accent);font-size:13px;font-weight:700;
-      cursor:pointer;font-family:'Noto Sans KR',sans-serif;
-      margin-top:10px;transition:all 0.2s;
-    ">📲 홈화면에 추가하기</button>
-
-    <div style="font-size:11px;color:var(--text3);margin-top:20px;line-height:1.8;">무료 · 광고없음 · 내 메모는 나만 봄</div>
+    <button class="kakao-btn" id="kakaoLoginBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#000">
+        <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.74 5.16 4.32 6.6l-1.1 4.1 4.8-3.16c.64.1 1.3.16 1.98.16 5.52 0 10-3.48 10-7.8S17.52 3 12 3z"/>
+      </svg>
+      카카오로 시작하기
+    </button>
+    <div class="login-notice">무료로 시작 · 광고없음 · 내 정보는 나만 봄</div>
   </div>
 </div>
 
-<!-- SCREEN: HOME -->
-<div class="screen" id="screenHome">
-  <!-- 상단: 할일 + 즐겨찾기 -->
-  <div class="home-top">
-    <div class="home-panel">
-      <div class="panel-header">
-        <div class="panel-title">📋 할일</div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:10px;color:var(--text3)" id="todoCount"></span>
-          <button onclick="clearDoneTodos()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text3);padding:0;" title="완료 항목 삭제">완료삭제</button>
-        </div>
-      </div>
-      <div class="panel-body">
-        <div class="todo-input-row">
-          <input type="text" id="todoInput" placeholder="할일 추가..." onkeydown="if(event.key==='Enter')addTodo()" />
-          <button class="todo-add-btn" onclick="addTodo()">+</button>
-        </div>
-        <div id="todoList"></div>
+<!-- SCREEN: ONBOARDING (사주/점성 입력) -->
+<div class="screen" id="screenOnboard">
+  <div class="onboard-header">
+    <div>
+      <div class="onboard-step">처음 한 번만 입력해요</div>
+      <div class="onboard-title">기본 정보 입력</div>
+    </div>
+  </div>
+  <div class="onboard-body">
+    <div class="onboard-desc">정확한 운세 분석을 위해 생년월일과 출생 정보가 필요해요. 입력한 정보는 안전하게 저장되어 다시 입력하지 않아도 돼요.</div>
+
+    <div class="form-group">
+      <label class="form-label">이름</label>
+      <input class="form-input" id="inputName" placeholder="이름을 입력해주세요" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">성별</label>
+      <div class="radio-group">
+        <button class="radio-btn selected" id="genderM" onclick="selectGender('M')">남성</button>
+        <button class="radio-btn" id="genderF" onclick="selectGender('F')">여성</button>
       </div>
     </div>
-    <div class="home-panel">
-      <div class="panel-header">
-        <div class="panel-title">⭐ 즐겨찾기</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">생년월일</label>
+        <input class="form-input" id="inputBirth" type="date" />
       </div>
-      <div class="panel-body" id="starredList"></div>
+      <div class="form-group">
+        <label class="form-label">출생시간</label>
+        <input class="form-input" id="inputBirthTime" type="time" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">출생지역</label>
+      <input class="form-input" id="inputCity" placeholder="예: 서울, 부산, 대구..." />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">양력/음력</label>
+      <div class="radio-group">
+        <button class="radio-btn selected" id="calSolar" onclick="selectCal('solar')">양력</button>
+        <button class="radio-btn" id="calLunar" onclick="selectCal('lunar')">음력</button>
+      </div>
+    </div>
+
+    <div class="form-group" id="midnightGroup" style="display:none">
+      <label class="form-label">자시 구분 (00~01시)</label>
+      <div class="midnight-group">
+        <button class="midnight-btn selected" id="mid0" onclick="selectMidnight('0')">당일 자시 (자정 이후)</button>
+        <button class="midnight-btn" id="mid1" onclick="selectMidnight('1')">전날 자시 (전통 방식)</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Gemini API 키</label>
+      <input class="form-input" id="inputApiKey" type="password" placeholder="AIza... (aistudio.google.com에서 무료 발급)" />
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;">aistudio.google.com → Get API key → Create API key</div>
     </div>
   </div>
-  <!-- 하단: 입력창 -->
-  <div class="home-input">
-    <textarea id="memoInput" rows="3" placeholder="생각나는 거 그냥 붙여넣어. 길어도 돼." oninput="updateCharCount()"></textarea>
-    <div class="input-actions">
-      <button class="btn btn-primary" id="processBtn" onclick="processInput()">⚡ AI 정리하기</button>
-      <button class="btn btn-save" onclick="saveDirect()">💾 바로저장</button>
-      <button class="btn-mic" id="micBtn" onclick="toggleMic()" title="음성 입력">🎤</button>
-      <div class="char-count" id="charCount">0자</div>
+  <div class="onboard-footer">
+    <button class="btn btn-primary" id="onboardSubmitBtn" onclick="submitOnboard()">🔮 운명 분석 시작하기</button>
+  </div>
+</div>
+
+<!-- SCREEN: CHAT -->
+<div class="screen" id="screenChat">
+  <div class="chat-header">
+    <div class="chat-avatar">🔮</div>
+    <div class="chat-header-info">
+      <div class="chat-header-name" id="chatHeaderName">운명 챗봇</div>
+      <div class="chat-header-sub" id="chatHeaderSub">사주 · 점성술 기반 AI</div>
+    </div>
+    <div class="chat-header-actions">
+      <button class="icon-btn" onclick="showScreen('profile')" title="내 정보">👤</button>
+      <button class="icon-btn" onclick="confirmLogout()">⏻</button>
+    </div>
+  </div>
+
+  <div class="chat-messages" id="chatMessages"></div>
+
+  <div class="suggest-chips" id="suggestChips"></div>
+
+  <div class="fortuna-banner" onclick="openFortuna()">
+    <div style="font-size:20px;">✨</div>
+    <div class="fortuna-banner-text">
+      <div class="fortuna-banner-title">더 자세한 운세 리포트 보기</div>
+      <div class="fortuna-banner-sub">포르투나에서 심층 분석 · 대운 · 궁합</div>
+    </div>
+    <div style="color:var(--text3);font-size:14px;">›</div>
+  </div>
+
+  <div class="chat-input-wrap">
+    <div class="chat-input-row">
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</button>
+      <textarea class="chat-textarea" id="chatInput" placeholder="운명에 대해 무엇이든 물어보세요..." rows="1"
+        oninput="autoResize(this)"
+        onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendMessage()"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
     </div>
   </div>
 </div>
 
-<!-- SCREEN: LIST -->
-<div class="screen" id="screenList">
-  <div class="screen-header">
-    <button class="back-btn" onclick="showScreen('home')">←</button>
-    <div class="screen-title">📋 전체 메모</div>
+<!-- SCREEN: PROFILE -->
+<div class="screen" id="screenProfile">
+  <div class="profile-header">
+    <button class="icon-btn" onclick="showScreen('chat')">←</button>
+    <div style="font-family:'Gmarket Sans',sans-serif;font-size:16px;font-weight:700;">내 정보</div>
   </div>
-  <div class="search-wrap">
-    <span class="si">🔍</span>
-    <input type="text" placeholder="검색..." id="searchInput" oninput="renderList()" />
-  </div>
-  <div class="list-tabs">
-    <div class="list-tab active" id="ltabAll" onclick="switchListTab('all')">전체</div>
-    <div class="list-tab" id="ltabStar" onclick="switchListTab('star')">⭐ 즐겨찾기</div>
-    <div class="list-tab" id="ltabTemp" onclick="switchListTab('temp')">📥 임시</div>
-  </div>
-  <div class="list-body" id="memoListBody"></div>
+  <div class="profile-body" id="profileBody"></div>
 </div>
 
-<!-- SCREEN: DETAIL -->
-<div class="screen" id="screenDetail">
-  <div class="detail-header">
-    <button class="back-btn" id="detailBackBtn" onclick="goBackFromDetail()">←</button>
-    <div class="detail-header-meta">
-      <div class="detail-cat" id="detailCat"></div>
-      <div class="detail-title" id="detailTitle" onclick="startTitleEdit()" title="클릭해서 제목 수정" style="cursor:pointer;"></div>
-      <input id="detailTitleInput" style="display:none;background:var(--surface2);border:1px solid var(--accent);border-radius:6px;padding:4px 8px;color:var(--text);font-size:15px;font-family:'Gmarket Sans',sans-serif;font-weight:700;width:100%;outline:none;" onblur="saveTitleEdit()" onkeydown="if(event.key==='Enter')saveTitleEdit();if(event.key==='Escape')cancelTitleEdit();" />
-    </div>
-    <div class="detail-actions">
-      <button class="icon-btn" id="starBtn" onclick="toggleStarCurrent()">☆</button>
-      <button class="icon-btn danger" onclick="deleteCurrentMemo()">🗑</button>
-    </div>
-  </div>
-  <div class="detail-body" id="detailBody"></div>
-</div>
-
-<!-- SCREEN: MERGE -->
-<div class="screen" id="screenMerge">
-  <div class="screen-header">
-    <button class="back-btn" onclick="showScreen('home')">←</button>
-    <div class="screen-title">🔗 비슷한 메모 발견</div>
-  </div>
-  <div class="merge-body" id="mergeBody"></div>
-</div>
-
-<!-- SAVE SUCCESS OVERLAY -->
-<div class="save-success" id="saveSuccess" onclick="closeSaveSuccess()">
-  <div class="save-card" onclick="event.stopPropagation()">
-    <div class="save-card-glow"></div>
-    <span class="save-card-icon">✦</span>
-    <div class="save-card-title">저장 완료</div>
-    <div class="save-card-memo" id="saveCardTitle"></div>
-    <div class="save-card-cat" id="saveCardCat"></div>
-    <div class="save-card-points" id="saveCardPoints"></div>
-    <div class="save-card-actions">
-      <button class="btn btn-ghost" onclick="closeSaveSuccess()">닫기</button>
-      <button class="btn btn-primary" id="saveCardViewBtn">메모 보기 →</button>
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <div class="modal-title">🔑 Gemini API 키</div>
+    <div class="modal-sub">aistudio.google.com → Get API key → Create API key<br>무료로 발급 가능해요!</div>
+    <input type="password" id="apiKeyInput" placeholder="AIza..." oninput="onApiKeyChange(this.value)" />
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="document.getElementById('apiModal').classList.remove('open')">저장</button>
     </div>
   </div>
 </div>
@@ -529,718 +425,571 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ── SUPABASE ──────────────────────────────────────────────────
-const SUPABASE_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ── CONFIG ────────────────────────────────────────────────────
+const SB_URL = 'https://afktkixkbcirsknahbmx.supabase.co';
+const SB_KEY = 'sb_publishable_zlR9CE2qi5cK2ap4_Bxyqw_LU-Zgr11';
+const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
+const ASTRO_USER = '650365';
+const ASTRO_KEY = '2f0f8ed601443fd86eb24b9e503b4cabd3aec6b8';
 
-let currentUser = null;
-let memos = [];
-let todos = JSON.parse(localStorage.getItem('memox_todos') || '[]');
-let currentMemoId = null;
-let listTab = 'all';
-let prevScreen = 'home';
-let isProcessing = false;
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+// ── STATE ─────────────────────────────────────────────────────
+var currentUser = null;
+var userProfile = null;
+var chatHistory = [];
+var isTyping = false;
+var selectedGender = 'M';
+var selectedCal = 'solar';
+var selectedMidnight = '0';
+var recognition = null;
+var isRecording = false;
 
 // ── AUTH ──────────────────────────────────────────────────────
-async function loginWithGoogle() {
-  await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: 'https://kkdmb7-blip.github.io/memox/' }
-  });
-}
-
-async function confirmLogout() {
-  if (!confirm('로그아웃 할까요?')) return;
-  await sb.auth.signOut();
-  currentUser = null; memos = [];
-  showScreen('login');
-  document.getElementById('userAvatar').style.display = 'none';
-}
-
 async function initAuth() {
-  // Attach login button
-  var loginBtn = document.getElementById('googleLoginBtn');
-  if (loginBtn) loginBtn.addEventListener('click', loginWithGoogle);
-  const { data: { session } } = await sb.auth.getSession();
-  if (session && session.user) { setUser(session.user); }
-  else { showScreen('login'); }
-  sb.auth.onAuthStateChange(function(_event, session) {
-    if (session && session.user) { setUser(session.user); }
+  makeBgStars();
+  var res = await sb.auth.getSession();
+  if (res.data.session && res.data.session.user) {
+    await setUser(res.data.session.user);
+  } else {
+    showScreen('login');
+  }
+  sb.auth.onAuthStateChange(async function(_e, session) {
+    if (session && session.user) { await setUser(session.user); }
     else { showScreen('login'); }
   });
 }
 
-function setUser(user) {
-  currentUser = user;
-  var avatar = document.getElementById('userAvatar');
-  var avatarImg = document.getElementById('userAvatarImg');
-  if (user.user_metadata && user.user_metadata.avatar_url) {
-    avatarImg.src = user.user_metadata.avatar_url;
-    avatar.style.display = 'flex';
-  }
-  loadMemos();
-  loadApiKeyFromCloud();
-  showScreen('home');
-}
-
-// ── DB ────────────────────────────────────────────────────────
-function fromDb(r) {
-  return {
-    id: r.id, title: r.title, category: r.category, summary: r.summary,
-    keyPoints: r.key_points || [], original: r.original,
-    isTemp: r.is_temp, starred: r.starred, mergedFrom: r.merged_from,
-    createdAt: r.created_at, updatedAt: r.updated_at
-  };
-}
-
-function toDb(m) {
-  return {
-    id: m.id, title: m.title, category: m.category, summary: m.summary,
-    key_points: m.keyPoints || [], original: m.original,
-    is_temp: m.isTemp, starred: m.starred, merged_from: m.mergedFrom || null,
-    created_at: typeof m.createdAt === 'string' ? new Date(m.createdAt).getTime() : (m.createdAt || Date.now()),
-    updated_at: typeof m.updatedAt === 'string' ? new Date(m.updatedAt).getTime() : (m.updatedAt || Date.now()),
-    user_id: currentUser ? currentUser.id : null
-  };
-}
-
-async function loadMemos() {
-  if (!currentUser) return;
-  try {
-    var res = await sb.from('memos').select('*').eq('user_id', currentUser.id).order('updated_at', { ascending: false });
-    if (res.error) throw res.error;
-    memos = (res.data || []).map(fromDb);
-    renderHome();
-  } catch(e) { toast('메모 불러오기 실패: ' + e.message); }
-}
-
-async function saveMemo(memo, embedding) {
-  var data = toDb(memo);
-  if (embedding) data.embedding = JSON.stringify(embedding);
-  console.log('저장 시도:', data.title, 'user_id:', data.user_id);
-  var res = await sb.from('memos').insert(data);
-  if (res.error) {
-    console.error('DB 저장 오류:', res.error);
-    throw new Error(res.error.message);
-  }
-  console.log('저장 성공');
-}
-
-async function updateMemo(memo, embedding) {
-  var data = toDb(memo);
-  if (embedding) data.embedding = JSON.stringify(embedding);
-  var res = await sb.from('memos').update(data).eq('id', memo.id).eq('user_id', currentUser.id);
-  if (res.error) throw new Error(res.error.message);
-}
-
-async function deleteMemoDb(id) {
-  var res = await sb.from('memos').delete().eq('id', id).eq('user_id', currentUser.id);
-  if (res.error) throw new Error(res.error.message);
-}
-
-// ── EMBEDDING ─────────────────────────────────────────────────
-async function getEmbedding(text, apiKey) {
-  try {
-    var res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=' + apiKey,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'models/embedding-001', content: { parts: [{ text: text.substring(0, 2000) }] } })
-      }
-    );
-    if (!res.ok) return null; // 실패해도 null 반환, 오류 안 냄
-    var data = await res.json();
-    return data.embedding ? data.embedding.values : null;
-  } catch(e) {
-    return null; // 네트워크 오류도 null 반환
-  }
-}
-
-async function findSimilarMemos(embedding) {
-  try {
-    var res = await sb.rpc('match_memos', {
-      query_embedding: embedding,
-      match_threshold: 0.75,
-      match_count: 3,
-      user_id_filter: currentUser.id
-    });
-    if (res.error) return [];
-    return res.data || [];
-  } catch(e) { return []; }
-}
-
-// ── SCREENS ───────────────────────────────────────────────────
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
-  var id = 'screen' + name.charAt(0).toUpperCase() + name.slice(1);
-  var el = document.getElementById(id);
-  if (el) el.classList.add('active');
-  if (name === 'home') renderHome();
-  if (name === 'list') renderList();
-}
-
-function goBackFromDetail() {
-  showScreen(prevScreen === 'list' ? 'list' : 'home');
-}
-
-// ── API KEY ───────────────────────────────────────────────────
-function getApiKey() {
-  return document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('memox_gemini_key') || '';
-}
-
-function onApiKeyInput(val) {
-  var dot = document.getElementById('apiDot');
-  var status = document.getElementById('apiStatus');
-  var pill = document.getElementById('apiPill');
-  if (val.length > 10) {
-    dot.classList.add('on'); status.textContent = '연결됨'; pill.classList.add('connected');
-    localStorage.setItem('memox_gemini_key', val);
-    saveApiKeyToCloud(val);
-  } else {
-    dot.classList.remove('on'); status.textContent = 'API 키 설정'; pill.classList.remove('connected');
-    localStorage.removeItem('memox_gemini_key');
-  }
-}
-
-async function saveApiKeyToCloud(key) {
-  if (!currentUser) return;
-  await sb.from('user_settings').upsert({
-    user_id: currentUser.id,
-    gemini_key: key,
-    updated_at: Date.now()
+document.getElementById('googleLoginBtn').addEventListener('click', function() {
+  sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: 'https://kkdmb7-blip.github.io/memox' }
   });
+});
+
+document.getElementById('kakaoLoginBtn').addEventListener('click', function() {
+  sb.auth.signInWithOAuth({
+    provider: 'kakao',
+    options: { redirectTo: 'https://kkdmb7-blip.github.io/memox' }
+  });
+});
+
+async function confirmLogout() {
+  if (!confirm('로그아웃 할까요?')) return;
+  await sb.auth.signOut();
+  currentUser = null; userProfile = null; chatHistory = [];
+  showScreen('login');
 }
 
-async function loadApiKeyFromCloud() {
-  if (!currentUser) return;
-  var local = localStorage.getItem('memox_gemini_key');
-  if (local) return; // 로컬에 있으면 스킵
-  var res = await sb.from('user_settings').select('gemini_key').eq('user_id', currentUser.id).single();
-  if (res.data && res.data.gemini_key) {
-    var key = res.data.gemini_key;
-    document.getElementById('apiKeyInput').value = key;
-    localStorage.setItem('memox_gemini_key', key);
-    onApiKeyInput(key);
-    toast('API 키 자동으로 불러옴');
+async function setUser(user) {
+  currentUser = user;
+  var profile = await loadProfile();
+  if (!profile) {
+    showScreen('onboard');
+  } else {
+    userProfile = profile;
+    await loadChatHistory();
+    showScreen('chat');
+    updateChatHeader();
+    if (chatHistory.length === 0) showWelcome();
   }
 }
 
-// ── TODO ──────────────────────────────────────────────────────
-function saveTodos() { localStorage.setItem('memox_todos', JSON.stringify(todos)); }
-
-function addTodo() {
-  var input = document.getElementById('todoInput');
-  var text = input.value.trim();
-  if (!text) return;
-  todos.unshift({ id: genId(), text: text, done: false });
-  input.value = '';
-  saveTodos(); renderTodos();
+// ── PROFILE ───────────────────────────────────────────────────
+async function loadProfile() {
+  var res = await sb.from('chat_users').select('*').eq('id', currentUser.id).single();
+  if (res.error || !res.data) return null;
+  return res.data;
 }
 
-function toggleTodo(id) {
-  var t = todos.find(function(t) { return t.id === id; });
-  if (t) { t.done = !t.done; saveTodos(); renderTodos(); }
+async function saveProfile(data) {
+  var res = await sb.from('chat_users').upsert(data);
+  if (res.error) throw new Error(res.error.message);
 }
 
-function deleteTodo(id) {
-  todos = todos.filter(function(t) { return t.id !== id; });
-  saveTodos(); renderTodos();
+function updateChatHeader() {
+  if (!userProfile) return;
+  document.getElementById('chatHeaderName').textContent = (userProfile.name || '운명') + '님의 운명 챗봇';
+  document.getElementById('chatHeaderSub').textContent = '사주 · 점성술 기반 AI';
 }
 
-function clearDoneTodos() {
-  var doneCount = todos.filter(function(t) { return t.done; }).length;
-  if (doneCount === 0) return toast('완료된 항목이 없어');
-  todos = todos.filter(function(t) { return !t.done; });
-  saveTodos(); renderTodos();
-  toast('완료 항목 ' + doneCount + '개 삭제됨');
+function renderProfile() {
+  if (!userProfile) return;
+  var d = userProfile;
+  var sajuData = d.saju_data || {};
+  var astroData = d.astro_data || {};
+
+  document.getElementById('profileBody').innerHTML =
+    '<div class="profile-card">' +
+    '<div class="profile-card-title">기본 정보</div>' +
+    '<div class="profile-row"><span class="profile-row-label">이름</span><span class="profile-row-value">' + (d.name||'-') + '</span></div>' +
+    '<div class="profile-row"><span class="profile-row-label">성별</span><span class="profile-row-value">' + (d.gender==='M'?'남성':'여성') + '</span></div>' +
+    '<div class="profile-row"><span class="profile-row-label">생년월일</span><span class="profile-row-value">' + (d.birth_date||'-') + '</span></div>' +
+    '<div class="profile-row"><span class="profile-row-label">출생시간</span><span class="profile-row-value">' + (d.birth_time||'-') + '</span></div>' +
+    '<div class="profile-row"><span class="profile-row-label">출생지</span><span class="profile-row-value">' + (d.birth_place||'-') + '</span></div>' +
+    '</div>' +
+    '<div class="profile-card">' +
+    '<div class="profile-card-title">사주 정보</div>' +
+    (sajuData.gan_ji ? '<div class="profile-row"><span class="profile-row-label">사주</span><span class="profile-row-value">' + sajuData.gan_ji + '</span></div>' : '<div style="font-size:12px;color:var(--text3)">사주 데이터 없음</div>') +
+    '</div>' +
+    '<div class="profile-card">' +
+    '<div class="profile-card-title">점성술</div>' +
+    (astroData.sun ? '<div class="profile-row"><span class="profile-row-label">태양궁</span><span class="profile-row-value">' + astroData.sun + '</span></div>' : '<div style="font-size:12px;color:var(--text3)">점성 데이터 없음</div>') +
+    (astroData.moon ? '<div class="profile-row"><span class="profile-row-label">달궁</span><span class="profile-row-value">' + astroData.moon + '</span></div>' : '') +
+    (astroData.ascendant ? '<div class="profile-row"><span class="profile-row-label">어센던트</span><span class="profile-row-value">' + astroData.ascendant + '</span></div>' : '') +
+    '</div>' +
+    '<div style="padding:0 0 16px">' +
+    '<button class="btn btn-ghost" style="width:100%;margin-bottom:8px;" onclick="showApiModal()">🔑 API 키 변경</button>' +
+    '<button class="btn btn-ghost" style="width:100%;color:var(--danger);border-color:var(--danger);" onclick="resetProfile()">⚠️ 정보 초기화</button>' +
+    '</div>';
 }
 
-function renderTodos() {
-  var list = document.getElementById('todoList');
-  var count = document.getElementById('todoCount');
-  var remaining = todos.filter(function(t) { return !t.done; }).length;
-  var done = todos.filter(function(t) { return t.done; }).length;
-  if (count) count.textContent = remaining > 0 ? remaining + '개' : (done > 0 ? '모두완료!' : '');
-  if (todos.length === 0) {
-    list.innerHTML = '<div class="panel-empty">할일을 추가해봐</div>';
-    return;
+async function resetProfile() {
+  if (!confirm('모든 정보와 대화 내역이 삭제돼요. 계속할까요?')) return;
+  await sb.from('chat_users').delete().eq('id', currentUser.id);
+  await sb.from('chat_messages').delete().eq('user_id', currentUser.id);
+  userProfile = null; chatHistory = [];
+  showScreen('onboard');
+}
+
+// ── ONBOARDING ────────────────────────────────────────────────
+function selectGender(g) {
+  selectedGender = g;
+  document.getElementById('genderM').className = 'radio-btn' + (g==='M'?' selected':'');
+  document.getElementById('genderF').className = 'radio-btn' + (g==='F'?' selected':'');
+}
+function selectCal(c) {
+  selectedCal = c;
+  document.getElementById('calSolar').className = 'radio-btn' + (c==='solar'?' selected':'');
+  document.getElementById('calLunar').className = 'radio-btn' + (c==='lunar'?' selected':'');
+}
+function selectMidnight(m) {
+  selectedMidnight = m;
+  document.getElementById('mid0').className = 'midnight-btn' + (m==='0'?' selected':'');
+  document.getElementById('mid1').className = 'midnight-btn' + (m==='1'?' selected':'');
+}
+
+document.getElementById('inputBirthTime').addEventListener('change', function() {
+  var t = this.value;
+  var h = parseInt(t.split(':')[0]);
+  document.getElementById('midnightGroup').style.display = (h === 0 || h === 1) ? 'block' : 'none';
+});
+
+async function submitOnboard() {
+  var name = document.getElementById('inputName').value.trim();
+  var birth = document.getElementById('inputBirth').value;
+  var birthTime = document.getElementById('inputBirthTime').value;
+  var city = document.getElementById('inputCity').value.trim();
+  var apiKey = document.getElementById('inputApiKey').value.trim();
+
+  if (!name) return toast('이름을 입력해주세요');
+  if (!birth) return toast('생년월일을 입력해주세요');
+  if (!birthTime) return toast('출생시간을 입력해주세요');
+  if (!city) return toast('출생지역을 입력해주세요');
+  if (!apiKey) return toast('Gemini API 키를 입력해주세요');
+
+  var btn = document.getElementById('onboardSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 운명 데이터 불러오는 중...';
+
+  try {
+    // Ablecity API 사주 계산
+    var sajuData = await fetchSaju(birth, birthTime, city, selectedGender, selectedCal, selectedMidnight);
+
+    // AstrologyAPI 점성 계산
+    var astroData = await fetchAstro(birth, birthTime, city);
+
+    // 저장
+    var profile = {
+      id: currentUser.id,
+      email: currentUser.email,
+      name: name,
+      birth_date: birth,
+      birth_time: birthTime,
+      birth_place: city,
+      gender: selectedGender,
+      saju_data: sajuData,
+      astro_data: astroData,
+      gemini_key: apiKey,
+      created_at: Date.now(),
+      updated_at: Date.now()
+    };
+
+    await saveProfile(profile);
+    localStorage.setItem('memox_gemini_key', apiKey);
+    userProfile = profile;
+    await loadChatHistory();
+    showScreen('chat');
+    updateChatHeader();
+    showWelcome();
+    toast('🔮 ' + name + '님의 운명 데이터가 저장됐어요!');
+
+  } catch(e) {
+    console.error(e);
+    toast('오류: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '🔮 운명 분석 시작하기';
   }
-  var sorted = todos.filter(function(t){return !t.done;}).concat(todos.filter(function(t){return t.done;}));
-  list.innerHTML = sorted.map(function(t) {
-    return '<div class="todo-item ' + (t.done ? 'done' : '') + '" onclick="toggleTodo(\'' + t.id + '\')">'
-      + '<div class="todo-check"></div>'
-      + '<div class="todo-text">' + escHtml(t.text) + '</div>'
-      + '<button class="todo-del" onclick="event.stopPropagation();deleteTodo(\'' + t.id + '\')">✕</button>'
-      + '</div>';
+}
+
+// ── SAJU API ──────────────────────────────────────────────────
+async function fetchSaju(birth, birthTime, city, gender, cal, midnight) {
+  try {
+    var birthFormatted = birth.replace(/-/g, '');
+    var timeFormatted = birthTime.replace(':', '');
+    var params = new URLSearchParams({
+      birth: birthFormatted + timeFormatted,
+      gender: gender,
+      city: city,
+      calendar: cal === 'solar' ? '1' : '2',
+      midnightType: midnight
+    });
+    var res = await fetch(WORKER_URL + '/api/saju?' + params.toString());
+    if (!res.ok) throw new Error('사주 API 오류');
+    var data = await res.json();
+    return data;
+  } catch(e) {
+    console.warn('사주 API 실패, 기본값 사용:', e);
+    return { error: e.message, birth: birth };
+  }
+}
+
+// ── ASTRO API ─────────────────────────────────────────────────
+async function fetchAstro(birth, birthTime, city) {
+  try {
+    var parts = birth.split('-');
+    var timeParts = birthTime.split(':');
+    var cityCoords = getCityCoords(city);
+
+    var body = {
+      day: parseInt(parts[2]),
+      month: parseInt(parts[1]),
+      year: parseInt(parts[0]),
+      hour: parseInt(timeParts[0]),
+      min: parseInt(timeParts[1]),
+      lat: cityCoords.lat,
+      lon: cityCoords.lon,
+      tzone: 9.0
+    };
+
+    var res = await fetch('https://json.astrologyapi.com/v1/planets/tropical', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa(ASTRO_USER + ':' + ASTRO_KEY)
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error('점성 API 오류');
+    var data = await res.json();
+
+    // 주요 행성만 추출
+    var result = {};
+    if (Array.isArray(data)) {
+      data.forEach(function(p) {
+        if (p.name === 'Sun') result.sun = p.sign;
+        if (p.name === 'Moon') result.moon = p.sign;
+        if (p.name === 'Mercury') result.mercury = p.sign;
+        if (p.name === 'Venus') result.venus = p.sign;
+        if (p.name === 'Mars') result.mars = p.sign;
+        if (p.name === 'Jupiter') result.jupiter = p.sign;
+        if (p.name === 'Saturn') result.saturn = p.sign;
+        if (p.name === 'Ascendant') result.ascendant = p.sign;
+      });
+    }
+    return result;
+  } catch(e) {
+    console.warn('점성 API 실패:', e);
+    return { error: e.message };
+  }
+}
+
+function getCityCoords(city) {
+  var coords = {
+    '서울': {lat:37.5665, lon:126.9780}, '부산': {lat:35.1796, lon:129.0756},
+    '대구': {lat:35.8714, lon:128.6014}, '인천': {lat:37.4563, lon:126.7052},
+    '광주': {lat:35.1595, lon:126.8526}, '대전': {lat:36.3504, lon:127.3845},
+    '울산': {lat:35.5384, lon:129.3114}, '제주': {lat:33.4996, lon:126.5312},
+    '수원': {lat:37.2636, lon:127.0286}, '성남': {lat:37.4449, lon:127.1388}
+  };
+  for (var key in coords) {
+    if (city.includes(key)) return coords[key];
+  }
+  return {lat:37.5665, lon:126.9780}; // 기본값 서울
+}
+
+// ── CHAT ──────────────────────────────────────────────────────
+async function loadChatHistory() {
+  var res = await sb.from('chat_messages')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: true })
+    .limit(50);
+  if (res.error) return;
+  chatHistory = (res.data || []).map(function(m) {
+    return { role: m.role, content: m.content };
+  });
+  renderChatHistory();
+}
+
+function renderChatHistory() {
+  var container = document.getElementById('chatMessages');
+  container.innerHTML = '';
+  chatHistory.forEach(function(m) {
+    appendMessage(m.role, m.content, false);
+  });
+  scrollToBottom();
+  updateSuggestChips();
+}
+
+function showWelcome() {
+  if (!userProfile) return;
+  var name = userProfile.name || '당신';
+  var astro = userProfile.astro_data || {};
+  var sun = astro.sun || '';
+  var welcome = name + '님, 안녕하세요! 🔮\n\n저는 ' + name + '님의 사주와 별자리를 기반으로 운명을 읽어드리는 AI예요.\n\n' +
+    (sun ? '태양궁 ' + sun + '인 ' + name + '님에 대해 ' : '') +
+    '무엇이든 편하게 물어보세요. 올해 운세, 연애운, 직업운, 대인관계 등 궁금한 것 뭐든지요!';
+  appendMessage('assistant', welcome, true);
+  updateSuggestChips();
+}
+
+function updateSuggestChips() {
+  var chips = document.getElementById('suggestChips');
+  var questions = [
+    '올해 내 운세는?', '연애운 어때?', '직업/취업운은?',
+    '이번 달 조심할 것', '내 성격과 기질', '재물운 알려줘'
+  ];
+  chips.innerHTML = questions.map(function(q) {
+    return '<button class="chip" onclick="sendChip(\'' + q + '\')">' + q + '</button>';
   }).join('');
 }
 
-// ── HOME ──────────────────────────────────────────────────────
-function renderHome() {
-  renderTodos();
-  var starred = memos.filter(function(m) { return m.starred && !m.isTemp; });
-  var list = document.getElementById('starredList');
-  if (!list) return;
-  if (starred.length === 0) {
-    list.innerHTML = '<div class="panel-empty">즐겨찾기한 메모가 없어<br>메모에서 ☆ 눌러봐</div>';
-    return;
-  }
-  list.innerHTML = starred.map(function(m) { return memoRowHtml(m, 'home'); }).join('');
+function sendChip(text) {
+  document.getElementById('chatInput').value = text;
+  sendMessage();
 }
 
-function memoRowHtml(m, from) {
-  return '<div class="memo-row" onclick="openMemo(\'' + m.id + '\',\'' + from + '\')">'
-    + '<div class="memo-row-cat">' + escHtml(m.category || '기타') + '</div>'
-    + '<div class="memo-row-title">' + escHtml(m.title || '제목없음') + (m.isTemp ? ' <span class="temp-badge">임시</span>' : '') + '</div>'
-    + '<div class="memo-row-date">' + formatDate(m.updatedAt) + '</div>'
-    + '<div class="memo-row-arrow">›</div>'
-    + '</div>';
-}
+async function sendMessage() {
+  var input = document.getElementById('chatInput');
+  var text = input.value.trim();
+  if (!text || isTyping) return;
 
-// ── LIST ──────────────────────────────────────────────────────
-function renderList() {
-  var query = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').toLowerCase();
-  var filtered = memos.filter(function(m) {
-    if (listTab === 'star') return m.starred;
-    if (listTab === 'temp') return m.isTemp;
-    return !m.isTemp;
-  });
-  if (query) {
-    filtered = filtered.filter(function(m) {
-      return (m.title||'').toLowerCase().includes(query)
-        || (m.summary||'').toLowerCase().includes(query)
-        || (m.original||'').toLowerCase().includes(query);
-    });
-  }
-  filtered.sort(function(a,b) { return b.updatedAt - a.updatedAt; });
-  var body = document.getElementById('memoListBody');
-  if (!body) return;
-  if (filtered.length === 0) {
-    body.innerHTML = '<div class="panel-empty" style="padding:32px">메모 없음</div>';
-    return;
-  }
-  body.innerHTML = filtered.map(function(m) { return memoRowHtml(m, 'list'); }).join('');
-}
+  var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || '';
+  if (!apiKey) { showApiModal(); return; }
 
-function switchListTab(tab) {
-  listTab = tab;
-  ['ltabAll','ltabStar','ltabTemp'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.classList.remove('active');
-  });
-  var activeId = tab === 'all' ? 'ltabAll' : tab === 'star' ? 'ltabStar' : 'ltabTemp';
-  var activeEl = document.getElementById(activeId);
-  if (activeEl) activeEl.classList.add('active');
-  renderList();
-}
+  input.value = '';
+  autoResize(input);
+  appendMessage('user', text, true);
+  chatHistory.push({ role: 'user', content: text });
+  await saveMessage('user', text);
 
-// ── DETAIL ────────────────────────────────────────────────────
-function openMemo(id, from) {
-  currentMemoId = id;
-  prevScreen = from || 'home';
-  var memo = memos.find(function(m) { return m.id === id; });
-  if (!memo) return;
-  document.getElementById('detailCat').textContent = '📂 ' + (memo.category || '기타');
-  document.getElementById('detailTitle').textContent = memo.title || '제목없음';
-  document.getElementById('detailTitle').style.display = '';
-  document.getElementById('detailTitleInput').style.display = 'none';
-  var starBtn = document.getElementById('starBtn');
-  starBtn.textContent = memo.starred ? '⭐' : '☆';
-  starBtn.className = 'icon-btn' + (memo.starred ? ' starred' : '');
-
-  var kpHtml = '';
-  if (memo.keyPoints && memo.keyPoints.length > 0) {
-    kpHtml = '<ul class="key-points">' + memo.keyPoints.map(function(p) {
-      return '<li class="key-point-item"><div class="key-point-bullet"></div><span>' + escHtml(p) + '</span></li>';
-    }).join('') + '</ul>';
-  } else {
-    kpHtml = '<div class="original-content">' + escHtml(memo.summary || '') + '</div>';
-  }
-
-  var mergeNotice = memo.mergedFrom ? '<div class="merge-notice">🔗 다른 메모와 병합된 내용 포함</div>' : '';
-  document.getElementById('detailBody').innerHTML = mergeNotice
-    + '<div class="content-block"><div class="block-label summary"><div class="dot"></div>AI 정리본</div>' + kpHtml + '</div>'
-    + '<button class="show-original-btn" id="origToggleBtn" onclick="toggleOriginal()">📄 원본 보기</button>'
-    + '<div id="originalBlock" style="display:none"><div class="content-block"><div class="block-label"><div class="dot"></div>원문</div>'
-    + '<div class="original-content">' + escHtml(memo.original || '') + '</div></div></div>';
-
-  showScreen('detail');
-}
-
-function toggleOriginal() {
-  var block = document.getElementById('originalBlock');
-  var btn = document.getElementById('origToggleBtn');
-  if (block.style.display === 'none') { block.style.display = 'block'; btn.textContent = '📄 원본 숨기기'; }
-  else { block.style.display = 'none'; btn.textContent = '📄 원본 보기'; }
-}
-
-async function toggleStarCurrent() {
-  var m = memos.find(function(m) { return m.id === currentMemoId; });
-  if (!m) return;
-  m.starred = !m.starred; m.updatedAt = Date.now();
-  await updateMemo(m);
-  openMemo(m.id, prevScreen); renderHome();
-  toast(m.starred ? '⭐ 즐겨찾기 추가' : '☆ 즐겨찾기 해제');
-}
-
-async function deleteCurrentMemo() {
-  if (!confirm('이 메모를 삭제할까요?')) return;
-  await deleteMemoDb(currentMemoId);
-  memos = memos.filter(function(m) { return m.id !== currentMemoId; });
-  currentMemoId = null;
-  goBackFromDetail(); renderHome();
-  toast('삭제됨');
-}
-
-// ── TITLE EDIT ────────────────────────────────────────────────
-function startTitleEdit() {
-  var titleEl = document.getElementById('detailTitle');
-  var inputEl = document.getElementById('detailTitleInput');
-  inputEl.value = titleEl.textContent;
-  titleEl.style.display = 'none';
-  inputEl.style.display = 'block';
-  inputEl.focus(); inputEl.select();
-}
-
-function cancelTitleEdit() {
-  document.getElementById('detailTitle').style.display = '';
-  document.getElementById('detailTitleInput').style.display = 'none';
-}
-
-async function saveTitleEdit() {
-  var inputEl = document.getElementById('detailTitleInput');
-  var newTitle = inputEl.value.trim();
-  if (!newTitle) return cancelTitleEdit();
-  var m = memos.find(function(m) { return m.id === currentMemoId; });
-  if (!m) return cancelTitleEdit();
-  m.title = newTitle; m.updatedAt = Date.now();
-  await updateMemo(m);
-  document.getElementById('detailTitle').textContent = newTitle;
-  cancelTitleEdit(); renderHome();
-  toast('제목 수정됨');
-}
-
-// ── PROCESS INPUT ─────────────────────────────────────────────
-async function processInput() {
-  var input = document.getElementById('memoInput').value.trim();
-  if (!input) return toast('내용을 입력해줘');
-  var apiKey = getApiKey();
-  if (!apiKey) return toast('API 키 먼저 설정해줘');
-  if (isProcessing) return;
-  isProcessing = true;
-  document.getElementById('processBtn').disabled = true;
+  isTyping = true;
+  document.getElementById('sendBtn').disabled = true;
+  showTyping();
 
   try {
-    setProcessing('🔢 벡터 변환 중...');
-    var embedding = null;
-    try { embedding = await getEmbedding(input, apiKey); } catch(e) {}
-
-    setProcessing('🔍 유사 메모 검색 중...');
-    var similarMemos = [];
-    if (embedding) {
-      try { similarMemos = await findSimilarMemos(embedding); } catch(e) {}
-    }
-
-    var similarContext = similarMemos.length > 0
-      ? similarMemos.map(function(m) {
-          return 'ID:' + m.id + ' title:' + m.title + ' similarity:' + (m.similarity*100).toFixed(0) + '% summary:' + (m.summary||'').substring(0,100);
-        }).join('\n')
-      : 'none';
-
-    var promptParts = [
-      'Respond with valid JSON only. No markdown. Just raw JSON object.',
-      'You are a Korean memo organizer. Analyze this input and respond with JSON.',
-      'Preserve all key info, numbers, names, dates. Write keyPoints specifically in Korean.',
-      'Similar existing memos (similarity >= 75%): ' + similarContext,
-      'New input: ' + input,
-      'If similar memo exists on same topic set decision=merge, otherwise decision=new.',
-      'Response format: {"title":"Korean title max 20 chars","category":"one of: 아이디어/계획/인물/프로젝트/일상/기타","summary":"5-8 sentences in Korean","keyPoints":["specific point 1 in Korean","point 2","point 3","point 4"],"similarMemoId":null,"similarMemoTitle":null,"decision":"new","decisionReason":"reason in Korean"}'
-    ];
-    var prompt = promptParts.join('\n');
-
-    setProcessing('🤖 AI 정리 중...');
-    var response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=' + apiKey,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2000 } })
-      }
-    );
-    if (!response.ok) {
-      var errData = await response.json();
-      throw new Error(errData.error ? errData.error.message : 'API 오류');
-    }
-    var data = await response.json();
-    var rawText = data.candidates && data.candidates[0] ? data.candidates[0].content.parts.map(function(p){return p.text||'';}).join('') : '';
-    var jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('AI 응답 파싱 실패');
-    var result;
-    try { result = JSON.parse(jsonMatch[0]); }
-    catch(e) { var fixed = jsonMatch[0].replace(/,\s*([}\]])/g, '$1'); result = JSON.parse(fixed); }
-
-    setProcessing('💾 저장 중...');
-    if (result.decision === 'merge' && result.similarMemoId) {
-      var existing = memos.find(function(m) { return m.id === result.similarMemoId; });
-      if (existing) { stopProcessing(); showMergeDecision(input, result, existing); return; }
-    }
-
-    var newMemo = {
-      id: genId(), title: result.title, category: result.category,
-      summary: result.summary, keyPoints: result.keyPoints,
-      original: input, isTemp: false, starred: false,
-      createdAt: Date.now(), updatedAt: Date.now()
-    };
-    await saveMemo(newMemo, embedding);
-    memos.unshift(newMemo);
-    stopProcessing();
-    document.getElementById('memoInput').value = '';
-    updateCharCount(); renderHome();
-    showSaveSuccess(newMemo);
-
+    var reply = await callGemini(text, apiKey);
+    hideTyping();
+    appendMessage('assistant', reply, true);
+    chatHistory.push({ role: 'assistant', content: reply });
+    await saveMessage('assistant', reply);
   } catch(e) {
-    console.error(e); stopProcessing();
-    toast('오류: ' + e.message);
+    hideTyping();
+    appendMessage('assistant', '죄송해요, 오류가 발생했어요: ' + e.message, true);
   } finally {
-    isProcessing = false;
-    document.getElementById('processBtn').disabled = false;
+    isTyping = false;
+    document.getElementById('sendBtn').disabled = false;
   }
 }
 
-function showMergeDecision(input, result, existingMemo) {
-  var inputStr = JSON.stringify(input);
-  var resultStr = JSON.stringify(result);
-  var body = document.getElementById('mergeBody');
-  body.innerHTML = '<div style="padding:4px 0 14px;font-size:13px;color:var(--text2);">' + escHtml(result.decisionReason) + '</div>'
-    + '<div class="content-block" style="border-color:rgba(124,92,252,0.3);background:rgba(124,92,252,0.05)">'
-    + '<div class="block-label" style="color:#a58af8"><div class="dot"></div>기존 메모 — ' + escHtml(existingMemo.title) + '</div>'
-    + '<div class="original-content">' + escHtml(existingMemo.summary||'') + '</div></div>'
-    + '<div class="content-block"><div class="block-label summary"><div class="dot"></div>새로 추가될 내용</div>'
-    + '<div class="original-content">' + escHtml(result.summary) + '</div></div>'
-    + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">'
-    + '<button class="btn btn-primary" onclick="doMerge(\'' + existingMemo.id + '\', this)">🔗 기존 메모에 합치기</button>'
-    + '<button class="btn btn-secondary" onclick="saveAsNew(this)">✨ 새 메모로 저장</button>'
-    + '<button class="btn btn-ghost" onclick="saveTemp(this)">📥 임시보관</button>'
-    + '</div>';
-  // Store data
-  body.dataset.input = JSON.stringify(input);
-  body.dataset.result = JSON.stringify(result);
-  body.dataset.existingId = existingMemo.id;
-  showScreen('merge');
-}
+async function callGemini(userMsg, apiKey) {
+  var profile = userProfile || {};
+  var saju = profile.saju_data || {};
+  var astro = profile.astro_data || {};
 
-async function doMerge(existingId) {
-  var body = document.getElementById('mergeBody');
-  var rawInput = JSON.parse(body.dataset.input);
-  var result = JSON.parse(body.dataset.result);
-  var existing = memos.find(function(m) { return m.id === existingId; });
-  if (!existing) return;
-  var apiKey = getApiKey();
-  setProcessing('🔄 병합 중...');
-  try {
-    var mergePrompt = 'Respond with valid JSON only.\nMerge these two memos into one in Korean.\nExisting: ' + existing.summary + '\nNew: ' + result.summary + '\nFormat: {"summary":"merged 5-7 sentences in Korean","keyPoints":["pt1","pt2","pt3","pt4"]}';
-    var res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=' + apiKey,
-      { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ contents:[{parts:[{text:mergePrompt}]}], generationConfig:{maxOutputTokens:1000} }) }
-    );
-    if (res.ok) {
-      var data = await res.json();
-      var raw = data.candidates && data.candidates[0] ? data.candidates[0].content.parts.map(function(p){return p.text||'';}).join('') : '';
-      var match = raw.match(/\{[\s\S]*\}/);
-      if (match) {
-        try { var merged = JSON.parse(match[0]); existing.summary = merged.summary; existing.keyPoints = merged.keyPoints; } catch(e){}
-      }
+  var systemPrompt = '당신은 사주와 서양 점성술을 기반으로 운명을 분석하는 AI 상담사예요.\n\n' +
+    '【내담자 정보】\n' +
+    '이름: ' + (profile.name || '미상') + '\n' +
+    '성별: ' + (profile.gender === 'M' ? '남성' : '여성') + '\n' +
+    '생년월일: ' + (profile.birth_date || '미상') + '\n' +
+    '출생시간: ' + (profile.birth_time || '미상') + '\n' +
+    '출생지: ' + (profile.birth_place || '미상') + '\n\n' +
+    '【사주 데이터】\n' + JSON.stringify(saju, null, 2) + '\n\n' +
+    '【점성술 데이터】\n' +
+    '태양궁: ' + (astro.sun||'미상') + '\n' +
+    '달궁: ' + (astro.moon||'미상') + '\n' +
+    '어센던트: ' + (astro.ascendant||'미상') + '\n' +
+    '수성: ' + (astro.mercury||'미상') + '\n' +
+    '금성: ' + (astro.venus||'미상') + '\n' +
+    '화성: ' + (astro.mars||'미상') + '\n\n' +
+    '위 데이터를 바탕으로 친근하고 따뜻하게 상담해주세요. ' +
+    '답변은 3-5문장으로 간결하게, 너무 딱딱하지 않게 대화하듯이 해주세요. ' +
+    '이모지를 적절히 사용해서 읽기 편하게 해주세요.';
+
+  // 최근 10개 대화만 포함
+  var recentHistory = chatHistory.slice(-10);
+  var messages = recentHistory.map(function(m) {
+    return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] };
+  });
+
+  var res = await fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=' + apiKey,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: messages,
+        generationConfig: { maxOutputTokens: 1000 }
+      })
     }
-    existing.original = (existing.original||'') + '\n\n---\n\n' + rawInput;
-    existing.mergedFrom = existing.title;
-    existing.updatedAt = Date.now();
-    var emb = null;
-    try { emb = await getEmbedding(existing.summary + ' ' + existing.original.substring(0,500), apiKey); } catch(e){}
-    await updateMemo(existing, emb);
-    stopProcessing();
-    document.getElementById('memoInput').value = '';
-    updateCharCount(); renderHome();
-    openMemo(existing.id, 'home');
-    toast(existing.title + '에 병합됨');
-  } catch(e) { stopProcessing(); toast('병합 오류: ' + e.message); }
-}
-
-async function saveAsNew() {
-  var body = document.getElementById('mergeBody');
-  var rawInput = JSON.parse(body.dataset.input);
-  var result = JSON.parse(body.dataset.result);
-  var memo = { id:genId(), title:result.title, category:result.category, summary:result.summary, keyPoints:result.keyPoints, original:rawInput, isTemp:false, starred:false, createdAt:Date.now(), updatedAt:Date.now() };
-  await saveMemo(memo);
-  memos.unshift(memo);
-  document.getElementById('memoInput').value = '';
-  updateCharCount(); renderHome();
-  showSaveSuccess(memo);
-}
-
-async function saveTemp() {
-  var body = document.getElementById('mergeBody');
-  var rawInput = JSON.parse(body.dataset.input);
-  var result = JSON.parse(body.dataset.result);
-  var memo = { id:genId(), title:result.title, category:result.category, summary:result.summary, keyPoints:result.keyPoints, original:rawInput, isTemp:true, starred:false, createdAt:Date.now(), updatedAt:Date.now() };
-  await saveMemo(memo);
-  memos.unshift(memo);
-  document.getElementById('memoInput').value = '';
-  renderHome(); showScreen('home');
-  toast('임시보관함에 저장됨');
-}
-
-async function saveDirect() {
-  var input = document.getElementById('memoInput').value.trim();
-  if (!input) return toast('내용을 입력해줘');
-  if (!currentUser) return toast('로그인이 필요해');
-  var title = input.substring(0,20) + (input.length > 20 ? '...' : '');
-  var memo = { id:genId(), title:title, category:'일반', summary:input, keyPoints:[], original:input, isTemp:false, starred:false, createdAt:Date.now(), updatedAt:Date.now() };
-  try {
-    await saveMemo(memo);
-    memos.unshift(memo);
-    document.getElementById('memoInput').value = '';
-    updateCharCount(); renderHome();
-    showSaveSuccess(memo);
-  } catch(e) {
-    console.error('저장 오류:', e);
-    toast('저장 실패: ' + e.message);
+  );
+  if (!res.ok) {
+    var err = await res.json();
+    throw new Error(err.error ? err.error.message : 'API 오류');
   }
+  var data = await res.json();
+  return data.candidates[0].content.parts[0].text;
+}
+
+async function saveMessage(role, content) {
+  await sb.from('chat_messages').insert({
+    id: genId(),
+    user_id: currentUser.id,
+    role: role,
+    content: content,
+    created_at: Date.now()
+  });
 }
 
 // ── UI ────────────────────────────────────────────────────────
-function setProcessing(text) {
-  document.getElementById('processingStep').textContent = text;
-  document.getElementById('processingOverlay').classList.add('open');
-}
-function stopProcessing() {
-  document.getElementById('processingOverlay').classList.remove('open');
-}
+function appendMessage(role, content, animate) {
+  var container = document.getElementById('chatMessages');
+  var isUser = role === 'user';
+  var time = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
 
-function showSaveSuccess(memo) {
-  document.getElementById('saveCardTitle').textContent = memo.title || '제목없음';
-  document.getElementById('saveCardCat').textContent = memo.category || '';
-  var points = (memo.keyPoints && memo.keyPoints.length > 0) ? memo.keyPoints.slice(0,3) : [memo.summary ? memo.summary.substring(0,80) : '저장됨'];
-  document.getElementById('saveCardPoints').innerHTML = points.map(function(p) {
-    return '<div class="save-card-point"><div class="save-card-point-dot"></div><span>' + escHtml(p) + '</span></div>';
-  }).join('');
-  document.getElementById('saveCardViewBtn').onclick = function() { closeSaveSuccess(); openMemo(memo.id, 'home'); };
-  document.getElementById('saveSuccess').classList.add('open');
-}
+  var div = document.createElement('div');
+  div.className = 'msg' + (isUser ? ' user' : '') + (animate ? '' : '');
+  if (!animate) div.style.animation = 'none';
 
-function closeSaveSuccess() {
-  document.getElementById('saveSuccess').classList.remove('open');
+  div.innerHTML =
+    '<div class="msg-avatar">' + (isUser ? '👤' : '🔮') + '</div>' +
+    '<div>' +
+      '<div class="msg-bubble">' + escHtml(content).replace(/\n/g, '<br>') + '</div>' +
+      '<div class="msg-time">' + time + '</div>' +
+    '</div>';
+
+  container.appendChild(div);
+  scrollToBottom();
 }
 
-function updateCharCount() {
-  var len = document.getElementById('memoInput') ? document.getElementById('memoInput').value.length : 0;
-  var el = document.getElementById('charCount');
-  if (el) el.textContent = len.toLocaleString() + '자';
+function showTyping() {
+  var container = document.getElementById('chatMessages');
+  var div = document.createElement('div');
+  div.className = 'msg';
+  div.id = 'typingIndicator';
+  div.innerHTML = '<div class="msg-avatar">🔮</div><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+  container.appendChild(div);
+  scrollToBottom();
 }
 
-function toast(msg) {
-  var c = document.getElementById('toastContainer');
-  var el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  c.appendChild(el);
-  setTimeout(function() { el.remove(); }, 3000);
+function hideTyping() {
+  var el = document.getElementById('typingIndicator');
+  if (el) el.remove();
 }
 
-function genId() { return 'memo_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
-
-function formatDate(ts) {
-  if (!ts) return '';
-  var d = new Date(ts), now = new Date(), diff = now - d;
-  if (diff < 60000) return '방금';
-  if (diff < 3600000) return Math.floor(diff/60000) + '분 전';
-  if (diff < 86400000) return Math.floor(diff/3600000) + '시간 전';
-  return (d.getMonth()+1) + '/' + d.getDate();
+function scrollToBottom() {
+  var c = document.getElementById('chatMessages');
+  if (c) c.scrollTop = c.scrollHeight;
 }
 
-function escHtml(str) {
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
 }
 
-document.addEventListener('keydown', function(e) {
-  if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') processInput();
-});
-
-var savedKey = localStorage.getItem('memox_gemini_key');
-if (savedKey) {
-  document.getElementById('apiKeyInput').value = savedKey;
-  onApiKeyInput(savedKey);
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  var el = document.getElementById('screen' + name.charAt(0).toUpperCase() + name.slice(1));
+  if (el) el.classList.add('active');
+  if (name === 'profile') renderProfile();
+  if (name === 'chat') scrollToBottom();
 }
 
-// ── PWA 설치 ──────────────────────────────────────────────────
-var deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  deferredPrompt = e;
-  var btn = document.getElementById('installBtn');
-  if (btn) btn.style.display = 'block';
-});
+function showApiModal() {
+  var saved = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || '';
+  document.getElementById('apiKeyInput').value = saved;
+  document.getElementById('apiModal').classList.add('open');
+}
 
-document.getElementById('installBtn').addEventListener('click', function() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
-});
+function onApiKeyChange(val) {
+  if (val.length > 10) {
+    localStorage.setItem('memox_gemini_key', val);
+    if (userProfile) {
+      userProfile.gemini_key = val;
+      sb.from('chat_users').update({ gemini_key: val }).eq('id', currentUser.id);
+    }
+  }
+}
 
-window.addEventListener('appinstalled', function() {
-  var btn = document.getElementById('installBtn');
-  if (btn) btn.style.display = 'none';
-  toast('앱이 홈화면에 추가됐어!');
-});
+function openFortuna() {
+  window.open('https://fortuna.kkdmb7.workers.dev', '_blank');
+}
 
-// ── SPEECH RECOGNITION ───────────────────────────────────────
-var recognition = null;
-var isRecording = false;
+function makeBgStars() {
+  var bg = document.getElementById('loginBg');
+  if (!bg) return;
+  for (var i = 0; i < 40; i++) {
+    var s = document.createElement('div');
+    s.className = 'login-star';
+    var size = Math.random() * 3 + 1;
+    s.style.cssText = 'width:' + size + 'px;height:' + size + 'px;' +
+      'top:' + Math.random() * 100 + '%;left:' + Math.random() * 100 + '%;' +
+      'animation-delay:' + Math.random() * 3 + 's;animation-duration:' + (2 + Math.random() * 3) + 's;';
+    bg.appendChild(s);
+  }
+}
 
+// ── SPEECH ────────────────────────────────────────────────────
 function initSpeech() {
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return;
-  recognition = new SpeechRecognition();
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  recognition = new SR();
   recognition.lang = 'ko-KR';
   recognition.continuous = true;
   recognition.interimResults = true;
-  var lastFinalIdx = 0;
+  var lastIdx = 0;
 
   recognition.onstart = function() {
-    lastFinalIdx = 0;
-    isRecording = true;
+    lastIdx = 0; isRecording = true;
     var btn = document.getElementById('micBtn');
     if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
   };
-
   recognition.onend = function() {
-    if (isRecording) {
-      try { recognition.start(); } catch(e) {}
-    } else {
+    if (isRecording) { try { recognition.start(); } catch(e){} }
+    else {
       var btn = document.getElementById('micBtn');
       if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
     }
   };
-
   recognition.onerror = function(e) {
     if (e.error === 'aborted' || e.error === 'no-speech') return;
     isRecording = false;
     var btn = document.getElementById('micBtn');
     if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
-    toast('음성 오류: ' + e.error);
   };
-
   recognition.onresult = function(e) {
-    var textarea = document.getElementById('memoInput');
-    if (!textarea) return;
-    for (var i = lastFinalIdx; i < e.results.length; i++) {
+    var ta = document.getElementById('chatInput');
+    if (!ta) return;
+    for (var i = lastIdx; i < e.results.length; i++) {
       if (e.results[i].isFinal) {
         var text = e.results[i][0].transcript.trim();
         if (text) {
-          textarea.value = textarea.value + (textarea.value ? ' ' : '') + text;
-          updateCharCount();
-          lastFinalIdx = i + 1;
+          ta.value = ta.value + (ta.value ? ' ' : '') + text;
+          autoResize(ta);
+          lastIdx = i + 1;
         }
       }
     }
@@ -1248,39 +997,43 @@ function initSpeech() {
 }
 
 function toggleMic() {
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return toast('크롬에서만 작동해!');
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return toast('크롬에서만 작동해요!');
   if (!recognition) initSpeech();
   if (isRecording) {
-    isRecording = false; // 먼저 false로 해야 onend에서 재시작 안 함
+    isRecording = false;
     recognition.stop();
-    toast('🎤 음성 입력 완료! AI 정리하기 눌러봐');
+    toast('🎤 음성 입력 완료! 전송 버튼을 눌러주세요');
   } else {
     isRecording = false;
-    initSpeech(); // 매번 새로 초기화해서 인덱스 리셋
+    initSpeech();
     recognition.start();
-    toast('🎤 말해봐! 다 하면 ⏹ 눌러줘');
+    toast('🎤 말씀해주세요!');
   }
 }
 
-// ── PWA MANIFEST ─────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────
+function genId() { return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function toast(msg) {
+  var c = document.getElementById('toastContainer');
+  var el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(function() { el.remove(); }, 3000);
+}
+
+// ── PWA ───────────────────────────────────────────────────────
 (function() {
   var manifest = {
-    name: 'MEMOX',
-    short_name: 'MEMOX',
+    name: '운명에게 물어봐', short_name: '운명챗봇',
     start_url: 'https://kkdmb7-blip.github.io/memox/',
-    display: 'standalone',
-    background_color: '#0a0a0a',
-    theme_color: '#0a0a0a',
-    icons: [{
-      src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%230a0a0a"/><text y=".9em" font-size="80" x="10">🧠</text></svg>',
-      sizes: '192x192',
-      type: 'image/svg+xml'
-    }]
+    display: 'standalone', background_color: '#09090f', theme_color: '#09090f'
   };
-  var blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-  var url = URL.createObjectURL(blob);
-  document.getElementById('pwaManifest').href = url;
+  var blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  document.getElementById('pwaManifest').href = URL.createObjectURL(blob);
 })();
 
 initAuth();
