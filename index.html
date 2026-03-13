@@ -695,21 +695,25 @@ async function submitOnboard() {
 // ── SAJU API ──────────────────────────────────────────────────
 async function fetchSaju(birth, birthTime, city, gender, cal, midnight) {
   try {
-    var birthFormatted = birth.replace(/-/g, '');
-    var timeFormatted = birthTime.replace(':', '');
-    var params = new URLSearchParams({
-      birth: birthFormatted + timeFormatted,
-      gender: gender,
+    // birth: "1983-03-27", birthTime: "00:45" → "1983-03-27T00:45:00"
+    var birthISO = birth + 'T' + birthTime + ':00';
+    var body = {
+      birth: birthISO,
+      gender: gender === 'M' ? 'male' : 'female',
       city: city,
-      calendar: cal === 'solar' ? '1' : '2',
-      midnightType: midnight
+      calendar: cal === 'solar' ? 'solar' : 'lunar',
+      midnightType: parseInt(midnight) || 0
+    };
+    var res = await fetch(WORKER_URL + '/saju', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
     });
-    var res = await fetch(WORKER_URL + '/api/saju?' + params.toString());
-    if (!res.ok) throw new Error('사주 API 오류');
+    if (!res.ok) throw new Error('사주 API 오류: ' + res.status);
     var data = await res.json();
     return data;
   } catch(e) {
-    console.warn('사주 API 실패, 기본값 사용:', e);
+    console.warn('사주 API 실패:', e);
     return { error: e.message, birth: birth };
   }
 }
@@ -732,6 +736,18 @@ async function fetchAstro(birth, birthTime, city) {
       tzone: 9.0
     };
 
+    // Fetch aspects too
+    var aspectsRes = null;
+    try {
+      var aspectBody = JSON.parse(JSON.stringify(body));
+      var ar = await fetch('https://json.astrologyapi.com/v1/planets/aspects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + btoa(ASTRO_USER + ':' + ASTRO_KEY) },
+        body: JSON.stringify(aspectBody)
+      });
+      if (ar.ok) aspectsRes = await ar.json();
+    } catch(e) {}
+
     var res = await fetch('https://json.astrologyapi.com/v1/planets/tropical', {
       method: 'POST',
       headers: {
@@ -744,8 +760,8 @@ async function fetchAstro(birth, birthTime, city) {
     if (!res.ok) throw new Error('점성 API 오류');
     var data = await res.json();
 
-    // 주요 행성만 추출
-    var result = {};
+    // 전체 행성 데이터 저장
+    var result = { planets_json: data };
     if (Array.isArray(data)) {
       data.forEach(function(p) {
         if (p.name === 'Sun') result.sun = p.sign;
@@ -755,8 +771,18 @@ async function fetchAstro(birth, birthTime, city) {
         if (p.name === 'Mars') result.mars = p.sign;
         if (p.name === 'Jupiter') result.jupiter = p.sign;
         if (p.name === 'Saturn') result.saturn = p.sign;
+        if (p.name === 'Uranus') result.uranus = p.sign;
+        if (p.name === 'Neptune') { result.neptune = p.sign; result.dominant_planet = 'Neptune'; }
+        if (p.name === 'Pluto') result.pluto = p.sign;
         if (p.name === 'Ascendant') result.ascendant = p.sign;
       });
+    }
+    // Add aspects summary
+    if (aspectsRes && Array.isArray(aspectsRes)) {
+      var aspectNames = {"conjunction":"합","trine":"삼각","square":"사각","opposition":"대립","sextile":"육각"};
+      result.aspects_summary = aspectsRes.slice(0,10).map(function(a) {
+        return a.planet1 + '-' + a.planet2 + ' ' + (aspectNames[a.type]||a.type) + '(' + (a.orb||'').toFixed(1) + '°)';
+      }).join(', ');
     }
     return result;
   } catch(e) {
@@ -869,24 +895,80 @@ async function callGemini(userMsg, apiKey) {
   var saju = profile.saju_data || {};
   var astro = profile.astro_data || {};
 
-  var systemPrompt = '당신은 사주와 서양 점성술을 기반으로 운명을 분석하는 AI 상담사예요.\n\n' +
+  var bigLuck = saju.big_luck || saju.saju_big_luck || [];
+  var fivePct = saju.saju_five_pct || saju.five_pct || {};
+  var lucky = saju.saju_lucky || saju.lucky || {};
+  var branchRel = saju.saju_branch_relations || saju.branch_relations || {};
+  var zodiacComp = saju.saju_zodiac_compatibility || saju.zodiac_compatibility || [];
+
+  if (typeof bigLuck === 'string') try { bigLuck = JSON.parse(bigLuck); } catch(e) { bigLuck = []; }
+  if (typeof fivePct === 'string') try { fivePct = JSON.parse(fivePct); } catch(e) { fivePct = {}; }
+  if (typeof lucky === 'string') try { lucky = JSON.parse(lucky); } catch(e) { lucky = {}; }
+  if (typeof branchRel === 'string') try { branchRel = JSON.parse(branchRel); } catch(e) { branchRel = {}; }
+  if (typeof zodiacComp === 'string') try { zodiacComp = JSON.parse(zodiacComp); } catch(e) { zodiacComp = []; }
+
+  // 현재 대운 찾기
+  var currentYear = 2026;
+  var currentBigLuck = '';
+  if (Array.isArray(bigLuck)) {
+    bigLuck.forEach(function(bl) {
+      var range = bl.year_range || '';
+      var start = parseInt(range.split('–')[0] || range.split('-')[0]);
+      var end = parseInt(range.split('–')[1] || range.split('-')[1]);
+      if (currentYear >= start && currentYear <= end) {
+        currentBigLuck = bl.pillar_kor + ' 대운 (' + bl.age_range + '세)';
+      }
+    });
+  }
+
+  var systemPrompt = '당신은 사주와 서양 점성술을 기반으로 운명을 분석하는 전문 AI 상담사예요. 오늘 날짜는 ' + dateStr + ' 입니다.\n\n' +
     '【내담자 정보】\n' +
     '이름: ' + (profile.name || '미상') + '\n' +
     '성별: ' + (profile.gender === 'M' ? '남성' : '여성') + '\n' +
     '생년월일: ' + (profile.birth_date || '미상') + '\n' +
     '출생시간: ' + (profile.birth_time || '미상') + '\n' +
     '출생지: ' + (profile.birth_place || '미상') + '\n\n' +
-    '【사주 데이터】\n' + JSON.stringify(saju, null, 2) + '\n\n' +
+    '【사주 핵심 정보】\n' +
+    '사주 기둥: ' + (saju.saju_pillars || saju.pillars || JSON.stringify(saju)) + '\n' +
+    '띠: ' + (saju.saju_zodiac || saju.zodiac || '미상') + '\n' +
+    '신강/신약: ' + (saju.saju_strength || saju.strength || '미상') + '\n' +
+    '격국: ' + (saju.saju_geokguk || saju.geokguk || '미상') + '\n' +
+    '용신(주): ' + (saju.saju_yongshin_primary || '미상') + '\n' +
+    '용신(보조): ' + (saju.saju_yongshin_secondary || '미상') + '\n\n' +
+    '【오행 비율】\n' +
+    '목(木): ' + (fivePct.wood || 0) + '% / 화(火): ' + (fivePct.fire || 0) + '% / 토(土): ' + (fivePct.earth || 0) + '% / 금(金): ' + (fivePct.metal || 0) + '% / 수(水): ' + (fivePct.water || 0) + '%\n\n' +
+    '【대운 흐름】\n' +
+    '현재 대운: ' + (currentBigLuck || '미상') + '\n' +
+    '전체 대운: ' + (Array.isArray(bigLuck) ? bigLuck.map(function(b){ return b.year_range + ' ' + b.pillar_kor; }).join(' / ') : '미상') + '\n\n' +
+    '【길흉 정보】\n' +
+    '길방: ' + (lucky.good_dir || '미상') + ' / 흉방: ' + (lucky.bad_dir || '미상') + '\n' +
+    '길수: ' + (lucky.good_num || '미상') + ' / 흉수: ' + (lucky.bad_num || '미상') + '\n\n' +
+    '【지지 관계】\n' +
+    '합: ' + JSON.stringify(branchRel.harmonies || []) + '\n' +
+    '충: ' + JSON.stringify(branchRel.clashes || []) + '\n' +
+    '형: ' + JSON.stringify(branchRel.punishments || []) + '\n\n' +
+    '【띠 궁합】\n' +
+    (Array.isArray(zodiacComp) ? zodiacComp.slice(0,4).map(function(z){ return z.animal + '(' + z.score + '점): ' + z.desc; }).join('\n') : '미상') + '\n\n' +
     '【점성술 데이터】\n' +
-    '태양궁: ' + (astro.sun||'미상') + '\n' +
-    '달궁: ' + (astro.moon||'미상') + '\n' +
+    '지배행성: ' + (astro.dominant_planet||'미상') + '\n' +
     '어센던트: ' + (astro.ascendant||'미상') + '\n' +
-    '수성: ' + (astro.mercury||'미상') + '\n' +
-    '금성: ' + (astro.venus||'미상') + '\n' +
-    '화성: ' + (astro.mars||'미상') + '\n\n' +
+    (function() {
+      var planets = astro.planets_json || astro.planets || [];
+      if (typeof planets === "string") try { planets = JSON.parse(planets); } catch(e) { planets = []; }
+      if (!Array.isArray(planets) || planets.length === 0) {
+        return "태양: " + (astro.sun||"미상") + " / 달: " + (astro.moon||"미상") + "\n수성: " + (astro.mercury||"미상") + " / 금성: " + (astro.venus||"미상") + " / 화성: " + (astro.mars||"미상") + "\n목성: " + (astro.jupiter||"미상") + " / 토성: " + (astro.saturn||"미상") + "\n";
+      }
+      var nameMap = {"Sun":"태양","Moon":"달","Mercury":"수성","Venus":"금성","Mars":"화성","Jupiter":"목성","Saturn":"토성","Uranus":"천왕성","Neptune":"해왕성","Pluto":"명왕성","Ascendant":"어센던트"};
+      return planets.filter(function(p){ return p.name !== "Ascendant"; }).map(function(p) {
+        return (nameMap[p.name]||p.name) + ": " + p.sign + " " + p.house + "하우스" + (p.isRetro==="true"?" (역행)":"");
+      }).join("\n") + "\n";
+    })() +
+    '【어스펙트】\n' + (astro.aspects_summary||'미상') + '\n\n' +
     '위 데이터를 바탕으로 친근하고 따뜻하게 상담해주세요. ' +
-    '답변은 3-5문장으로 간결하게, 너무 딱딱하지 않게 대화하듯이 해주세요. ' +
-    '이모지를 적절히 사용해서 읽기 편하게 해주세요.';
+    '질문에 따라 충분히 자세하게 답변하되, 핵심을 명확히 짚어주세요. ' +
+    '단순 질문은 3-5문장, 운세/분석 질문은 7-10문장으로 답변해주세요. ' +
+    '이모지를 적절히 사용하고 단락을 나눠서 읽기 편하게 해주세요. ' +
+    '항상 내담자의 실제 사주 데이터를 근거로 구체적으로 답변하세요.';
 
   // 최근 10개 대화만 포함
   var recentHistory = chatHistory.slice(-10);
@@ -902,7 +984,7 @@ async function callGemini(userMsg, apiKey) {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: messages,
-        generationConfig: { maxOutputTokens: 1000 }
+        generationConfig: { maxOutputTokens: 2000 }
       })
     }
   );
