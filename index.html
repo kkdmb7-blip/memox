@@ -564,11 +564,16 @@ function renderProfile() {
     '<div class="profile-card-title">점성술</div>' +
     (astroData.sun ?
       '<div class="profile-row"><span class="profile-row-label">지배행성</span><span class="profile-row-value">' + (astroData.dominant_planet||'-') + '</span></div>' +
-      '<div class="profile-row"><span class="profile-row-label">태양궁</span><span class="profile-row-value">' + (astroData.sun||'-') + '</span></div>' +
-      '<div class="profile-row"><span class="profile-row-label">달궁</span><span class="profile-row-value">' + (astroData.moon||'-') + '</span></div>' +
-      '<div class="profile-row"><span class="profile-row-label">어센던트</span><span class="profile-row-value">' + (astroData.ascendant||'-') + '</span></div>' +
-      '<div class="profile-row"><span class="profile-row-label">수성/금성/화성</span><span class="profile-row-value">' + (astroData.mercury||'-') + ' / ' + (astroData.venus||'-') + ' / ' + (astroData.mars||'-') + '</span></div>' +
-      '<div class="profile-row"><span class="profile-row-label">목성/토성</span><span class="profile-row-value">' + (astroData.jupiter||'-') + ' / ' + (astroData.saturn||'-') + '</span></div>'
+      (function(){
+        var sMap = {"Aries":"양자리","Taurus":"황소자리","Gemini":"쌍둥이자리","Cancer":"게자리","Leo":"사자자리","Virgo":"처녀자리","Libra":"천칭자리","Scorpio":"전갈자리","Sagittarius":"사수자리","Capricorn":"염소자리","Aquarius":"물병자리","Pisces":"물고기자리"};
+        var dMap = {"Sun":"태양","Moon":"달","Mercury":"수성","Venus":"금성","Mars":"화성","Jupiter":"목성","Saturn":"토성","Uranus":"천왕성","Neptune":"해왕성","Pluto":"명왕성"};
+        function ks(v){ return sMap[v]||v||'-'; }
+        return '<div class="profile-row"><span class="profile-row-label">태양궁</span><span class="profile-row-value">' + ks(astroData.sun) + '</span></div>' +
+        '<div class="profile-row"><span class="profile-row-label">달궁</span><span class="profile-row-value">' + ks(astroData.moon) + '</span></div>' +
+        '<div class="profile-row"><span class="profile-row-label">어센던트</span><span class="profile-row-value">' + ks(astroData.ascendant) + '</span></div>' +
+        '<div class="profile-row"><span class="profile-row-label">수성/금성/화성</span><span class="profile-row-value">' + ks(astroData.mercury) + ' / ' + ks(astroData.venus) + ' / ' + ks(astroData.mars) + '</span></div>' +
+        '<div class="profile-row"><span class="profile-row-label">목성/토성</span><span class="profile-row-value">' + ks(astroData.jupiter) + ' / ' + ks(astroData.saturn) + '</span></div>';
+      })()
       : '<div style="font-size:12px;color:var(--text3);padding:8px 0;">아직 점성 데이터가 없어요.<br>정보를 다시 입력해주세요.</div>') +
     '</div>' +
     '<div style="padding:0 0 16px">' +
@@ -954,6 +959,7 @@ async function callGemini(userMsg, apiKey) {
     });
   }
 
+  var _today = new Date(); var dateStr = _today.getFullYear() + '년 ' + (_today.getMonth()+1) + '월 ' + _today.getDate() + '일';
   var systemPrompt = '당신은 사주와 서양 점성술을 기반으로 운명을 분석하는 전문 AI 상담사예요. 오늘 날짜는 ' + dateStr + ' 입니다.\n\n' +
     '【내담자 정보】\n' +
     '이름: ' + (profile.name || '미상') + '\n' +
@@ -992,8 +998,9 @@ async function callGemini(userMsg, apiKey) {
         return "태양: " + (astro.sun||"미상") + " / 달: " + (astro.moon||"미상") + "\n수성: " + (astro.mercury||"미상") + " / 금성: " + (astro.venus||"미상") + " / 화성: " + (astro.mars||"미상") + "\n목성: " + (astro.jupiter||"미상") + " / 토성: " + (astro.saturn||"미상") + "\n";
       }
       var nameMap = {"Sun":"태양","Moon":"달","Mercury":"수성","Venus":"금성","Mars":"화성","Jupiter":"목성","Saturn":"토성","Uranus":"천왕성","Neptune":"해왕성","Pluto":"명왕성","Ascendant":"어센던트"};
+      var signMap = {"Aries":"양자리","Taurus":"황소자리","Gemini":"쌍둥이자리","Cancer":"게자리","Leo":"사자자리","Virgo":"처녀자리","Libra":"천칭자리","Scorpio":"전갈자리","Sagittarius":"사수자리","Capricorn":"염소자리","Aquarius":"물병자리","Pisces":"물고기자리"};
       return planets.filter(function(p){ return p.name !== "Ascendant"; }).map(function(p) {
-        return (nameMap[p.name]||p.name) + ": " + p.sign + " " + p.house + "하우스" + (p.isRetro==="true"?" (역행)":"");
+        return (nameMap[p.name]||p.name) + ": " + (signMap[p.sign]||p.sign) + " " + p.house + "하우스" + (p.isRetro==="true"?" (역행)":"");
       }).join("\n") + "\n";
     })() +
     '【어스펙트】\n' + (astro.aspects_summary||'미상') + '\n\n' +
