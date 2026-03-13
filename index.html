@@ -197,20 +197,15 @@
   .chat-textarea:focus { border-color:var(--accent2); }
   .chat-textarea::placeholder { color:var(--text3); }
   .send-btn {
-    width:40px; height:40px; border-radius:50%; border:none;
+    height:40px; padding:0 16px; border-radius:20px; border:none;
     background:linear-gradient(135deg,var(--accent2),var(--accent));
-    color:#fff; font-size:16px; cursor:pointer; flex-shrink:0;
+    color:#fff; font-size:13px; font-weight:700; cursor:pointer; flex-shrink:0;
     display:flex; align-items:center; justify-content:center; transition:all 0.2s;
+    font-family:'Noto Sans KR',sans-serif; white-space:nowrap;
   }
   .send-btn:hover { transform:scale(1.05); }
   .send-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
-  .mic-btn {
-    width:40px; height:40px; border-radius:50%; border:1px solid var(--border);
-    background:var(--surface2); color:var(--text2); font-size:16px; cursor:pointer;
-    flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.2s;
-  }
-  .mic-btn.recording { background:rgba(255,60,60,0.15); border-color:#ff3c3c; color:#ff3c3c; animation:pulse 1s infinite; }
-  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,60,60,0.3)} 50%{box-shadow:0 0 0 6px rgba(255,60,60,0)} }
+
 
   /* 타이핑 인디케이터 */
   .typing { display:flex; gap:4px; padding:8px 12px; }
@@ -375,8 +370,8 @@
       <div class="chat-header-sub" id="chatHeaderSub">사주 · 점성술 기반 AI</div>
     </div>
     <div class="chat-header-actions">
-      <button class="icon-btn" onclick="showScreen('profile')" title="내 정보">👤</button>
-      <button class="icon-btn" onclick="confirmLogout()">⏻</button>
+      <button onclick="showScreen('profile')" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">내 정보</button>
+      <button onclick="confirmLogout()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">로그아웃</button>
     </div>
   </div>
 
@@ -384,22 +379,29 @@
 
   <div class="suggest-chips" id="suggestChips"></div>
 
-  <div class="fortuna-banner" onclick="openFortuna()">
-    <div style="font-size:20px;">✨</div>
-    <div class="fortuna-banner-text">
-      <div class="fortuna-banner-title">더 자세한 운세 리포트 보기</div>
-      <div class="fortuna-banner-sub">포르투나에서 심층 분석 · 대운 · 궁합</div>
-    </div>
-    <div style="color:var(--text3);font-size:14px;">›</div>
+  <div style="display:flex;gap:8px;padding:0 16px 10px;">
+    <button onclick="openFortuna()" style="
+      flex:1;padding:11px 10px;border-radius:12px;border:1px solid rgba(200,162,245,0.3);
+      background:linear-gradient(135deg,rgba(124,92,252,0.15),rgba(200,162,245,0.08));
+      color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;
+      font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;
+      display:flex;align-items:center;justify-content:center;gap:6px;
+    ">✨ 리포트 보기</button>
+    <button onclick="openKakao()" style="
+      flex:1;padding:11px 10px;border-radius:12px;border:1px solid rgba(255,230,0,0.3);
+      background:rgba(255,230,0,0.08);
+      color:#fee500;font-size:12px;font-weight:700;cursor:pointer;
+      font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;
+      display:flex;align-items:center;justify-content:center;gap:6px;
+    ">💬 카카오 채널</button>
   </div>
 
   <div class="chat-input-wrap">
     <div class="chat-input-row">
-      <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</button>
       <textarea class="chat-textarea" id="chatInput" placeholder="운명에 대해 무엇이든 물어보세요..." rows="1"
         oninput="autoResize(this)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendMessage()"></textarea>
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">전송</button>
     </div>
   </div>
 </div>
@@ -446,9 +448,6 @@ var isTyping = false;
 var selectedGender = 'M';
 var selectedCal = 'solar';
 var selectedMidnight = '0';
-var recognition = null;
-var isRecording = false;
-
 // ── AUTH ──────────────────────────────────────────────────────
 async function initAuth() {
   makeBgStars();
@@ -529,13 +528,24 @@ function renderProfile() {
     '</div>' +
     '<div class="profile-card">' +
     '<div class="profile-card-title">사주 정보</div>' +
-    (sajuData.gan_ji ? '<div class="profile-row"><span class="profile-row-label">사주</span><span class="profile-row-value">' + sajuData.gan_ji + '</span></div>' : '<div style="font-size:12px;color:var(--text3)">사주 데이터 없음</div>') +
+    (sajuData.saju_pillars || sajuData.pillars ?
+      '<div class="profile-row"><span class="profile-row-label">사주기둥</span><span class="profile-row-value">' + (sajuData.saju_pillars||sajuData.pillars||'-') + '</span></div>' +
+      '<div class="profile-row"><span class="profile-row-label">신강/신약</span><span class="profile-row-value">' + (sajuData.saju_strength||sajuData.strength||'-') + '</span></div>' +
+      '<div class="profile-row"><span class="profile-row-label">격국</span><span class="profile-row-value">' + (sajuData.saju_geokguk||sajuData.geokguk||'-') + '</span></div>' +
+      '<div class="profile-row"><span class="profile-row-label">용신</span><span class="profile-row-value">' + (sajuData.saju_yongshin_primary||'-') + '</span></div>' +
+      '<div class="profile-row"><span class="profile-row-label">띠</span><span class="profile-row-value">' + (sajuData.saju_zodiac||sajuData.zodiac||'-') + '</span></div>'
+      : '<div style="font-size:12px;color:var(--text3);padding:8px 0;">아직 사주 데이터가 없어요.<br>정보를 다시 입력해주세요.</div>') +
     '</div>' +
     '<div class="profile-card">' +
     '<div class="profile-card-title">점성술</div>' +
-    (astroData.sun ? '<div class="profile-row"><span class="profile-row-label">태양궁</span><span class="profile-row-value">' + astroData.sun + '</span></div>' : '<div style="font-size:12px;color:var(--text3)">점성 데이터 없음</div>') +
-    (astroData.moon ? '<div class="profile-row"><span class="profile-row-label">달궁</span><span class="profile-row-value">' + astroData.moon + '</span></div>' : '') +
-    (astroData.ascendant ? '<div class="profile-row"><span class="profile-row-label">어센던트</span><span class="profile-row-value">' + astroData.ascendant + '</span></div>' : '') +
+    (astroData.sun ?
+      '<div class="profile-row"><span class="profile-row-label">지배행성</span><span class="profile-row-value">' + (astroData.dominant_planet||'-') + '</span></div>' +
+      '<div class="profile-row"><span class="profile-row-label">태양궁</span><span class="profile-row-value">' + (astroData.sun||'-') + '</span></div>' +
+      '<div class="profile-row"><span class="profile-row-label">달궁</span><span class="profile-row-value">' + (astroData.moon||'-') + '</span></div>' +
+      '<div class="profile-row"><span class="profile-row-label">어센던트</span><span class="profile-row-value">' + (astroData.ascendant||'-') + '</span></div>' +
+      '<div class="profile-row"><span class="profile-row-label">수성/금성/화성</span><span class="profile-row-value">' + (astroData.mercury||'-') + ' / ' + (astroData.venus||'-') + ' / ' + (astroData.mars||'-') + '</span></div>' +
+      '<div class="profile-row"><span class="profile-row-label">목성/토성</span><span class="profile-row-value">' + (astroData.jupiter||'-') + ' / ' + (astroData.saturn||'-') + '</span></div>'
+      : '<div style="font-size:12px;color:var(--text3);padding:8px 0;">아직 점성 데이터가 없어요.<br>정보를 다시 입력해주세요.</div>') +
     '</div>' +
     '<div style="padding:0 0 16px">' +
     '<button class="btn btn-ghost" style="width:100%;margin-bottom:8px;" onclick="showApiModal()">🔑 API 키 변경</button>' +
@@ -844,8 +854,7 @@ function showWelcome() {
 function updateSuggestChips() {
   var chips = document.getElementById('suggestChips');
   var questions = [
-    '올해 내 운세는?', '연애운 어때?', '직업/취업운은?',
-    '이번 달 조심할 것', '내 성격과 기질', '재물운 알려줘'
+    '올해 내 운세는?', '지금 연애운 어때?', '재물운이랑 직업운 알려줘'
   ];
   chips.innerHTML = questions.map(function(q) {
     return '<button class="chip" onclick="sendChip(\'' + q + '\')">' + q + '</button>';
@@ -1076,8 +1085,12 @@ function onApiKeyChange(val) {
   }
 }
 
+function openKakao() {
+  window.open('http://pf.kakao.com/_krjxjn', '_blank');
+}
+
 function openFortuna() {
-  window.open('https://fortuna.kkdmb7.workers.dev', '_blank');
+  window.open('https://fortuna-silk.vercel.app', '_blank');
 }
 
 function makeBgStars() {
@@ -1094,65 +1107,7 @@ function makeBgStars() {
   }
 }
 
-// ── SPEECH ────────────────────────────────────────────────────
-function initSpeech() {
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return;
-  recognition = new SR();
-  recognition.lang = 'ko-KR';
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  var lastIdx = 0;
 
-  recognition.onstart = function() {
-    lastIdx = 0; isRecording = true;
-    var btn = document.getElementById('micBtn');
-    if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
-  };
-  recognition.onend = function() {
-    if (isRecording) { try { recognition.start(); } catch(e){} }
-    else {
-      var btn = document.getElementById('micBtn');
-      if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
-    }
-  };
-  recognition.onerror = function(e) {
-    if (e.error === 'aborted' || e.error === 'no-speech') return;
-    isRecording = false;
-    var btn = document.getElementById('micBtn');
-    if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
-  };
-  recognition.onresult = function(e) {
-    var ta = document.getElementById('chatInput');
-    if (!ta) return;
-    for (var i = lastIdx; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        var text = e.results[i][0].transcript.trim();
-        if (text) {
-          ta.value = ta.value + (ta.value ? ' ' : '') + text;
-          autoResize(ta);
-          lastIdx = i + 1;
-        }
-      }
-    }
-  };
-}
-
-function toggleMic() {
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return toast('크롬에서만 작동해요!');
-  if (!recognition) initSpeech();
-  if (isRecording) {
-    isRecording = false;
-    recognition.stop();
-    toast('🎤 음성 입력 완료! 전송 버튼을 눌러주세요');
-  } else {
-    isRecording = false;
-    initSpeech();
-    recognition.start();
-    toast('🎤 말씀해주세요!');
-  }
-}
 
 // ── HELPERS ───────────────────────────────────────────────────
 function genId() { return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
