@@ -96,6 +96,7 @@
   .form-input:focus { border-color:var(--accent); }
   .form-input::placeholder { color:var(--text3); }
   .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .form-row.three { grid-template-columns:1fr 1fr 1fr; }
   .radio-group { display:flex; gap:8px; }
   .radio-btn {
     flex:1; padding:10px; border-radius:8px; border:1px solid var(--border);
@@ -307,14 +308,29 @@
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">생년월일</label>
-        <input class="form-input" id="inputBirth" type="date" />
+    <div class="form-group">
+      <label class="form-label">생년월일</label>
+      <div class="form-row">
+        <select class="form-input" id="inputYear">
+          <option value="">년도</option>
+        </select>
+        <select class="form-input" id="inputMonth">
+          <option value="">월</option>
+        </select>
+        <select class="form-input" id="inputDay">
+          <option value="">일</option>
+        </select>
       </div>
-      <div class="form-group">
-        <label class="form-label">출생시간</label>
-        <input class="form-input" id="inputBirthTime" type="time" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">출생시간</label>
+      <div class="form-row">
+        <select class="form-input" id="inputHour">
+          <option value="">시</option>
+        </select>
+        <select class="form-input" id="inputMin">
+          <option value="">분</option>
+        </select>
       </div>
     </div>
 
@@ -552,22 +568,83 @@ function selectMidnight(m) {
   document.getElementById('mid1').className = 'midnight-btn' + (m==='1'?' selected':'');
 }
 
-document.getElementById('inputBirthTime').addEventListener('change', function() {
-  var t = this.value;
-  var h = parseInt(t.split(':')[0]);
+document.getElementById('inputHour').addEventListener('change', function() {
+  var h = parseInt(this.value);
   document.getElementById('midnightGroup').style.display = (h === 0 || h === 1) ? 'block' : 'none';
 });
 
+document.getElementById('inputMonth').addEventListener('change', function() {
+  updateDays();
+});
+document.getElementById('inputYear').addEventListener('change', function() {
+  updateDays();
+});
+
+function updateDays() {
+  var year = parseInt(document.getElementById('inputYear').value) || 2000;
+  var month = parseInt(document.getElementById('inputMonth').value) || 1;
+  var daysInMonth = new Date(year, month, 0).getDate();
+  var dayEl = document.getElementById('inputDay');
+  var current = dayEl.value;
+  dayEl.innerHTML = '<option value="">일</option>';
+  for (var d = 1; d <= daysInMonth; d++) {
+    var opt = document.createElement('option');
+    opt.value = String(d).padStart(2, '0');
+    opt.textContent = d + '일';
+    if (current === opt.value) opt.selected = true;
+    dayEl.appendChild(opt);
+  }
+}
+
+// Init dropdowns
+(function() {
+  var yearEl = document.getElementById('inputYear');
+  var monthEl = document.getElementById('inputMonth');
+  var hourEl = document.getElementById('inputHour');
+  var minEl = document.getElementById('inputMin');
+
+  var currentYear = new Date().getFullYear();
+  for (var y = currentYear; y >= 1930; y--) {
+    var opt = document.createElement('option');
+    opt.value = y; opt.textContent = y + '년';
+    yearEl.appendChild(opt);
+  }
+  for (var m = 1; m <= 12; m++) {
+    var opt = document.createElement('option');
+    opt.value = String(m).padStart(2, '0'); opt.textContent = m + '월';
+    monthEl.appendChild(opt);
+  }
+  updateDays();
+  for (var h = 0; h <= 23; h++) {
+    var opt = document.createElement('option');
+    opt.value = String(h).padStart(2, '0');
+    opt.textContent = h + '시';
+    hourEl.appendChild(opt);
+  }
+  for (var min = 0; min < 60; min += 5) {
+    var opt = document.createElement('option');
+    opt.value = String(min).padStart(2, '0');
+    opt.textContent = min + '분';
+    minEl.appendChild(opt);
+  }
+})();
+
 async function submitOnboard() {
   var name = document.getElementById('inputName').value.trim();
-  var birth = document.getElementById('inputBirth').value;
-  var birthTime = document.getElementById('inputBirthTime').value;
+  var year = document.getElementById('inputYear').value;
+  var month = document.getElementById('inputMonth').value;
+  var day = document.getElementById('inputDay').value;
+  var hour = document.getElementById('inputHour').value;
+  var min = document.getElementById('inputMin').value;
+  if (!year || !month || !day) return toast('생년월일을 선택해주세요');
+  if (!hour) return toast('출생시간을 선택해주세요');
+  var birth = year + '-' + month + '-' + day;
+  var birthTime = hour + ':' + (min || '00');
   var city = document.getElementById('inputCity').value.trim();
   var apiKey = document.getElementById('inputApiKey').value.trim();
 
   if (!name) return toast('이름을 입력해주세요');
-  if (!birth) return toast('생년월일을 입력해주세요');
-  if (!birthTime) return toast('출생시간을 입력해주세요');
+
   if (!city) return toast('출생지역을 입력해주세요');
   if (!apiKey) return toast('Gemini API 키를 입력해주세요');
 
