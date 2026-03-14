@@ -41,8 +41,9 @@
   }
   @keyframes twinkle { 0%,100%{opacity:0.1} 50%{opacity:0.6} }
   .login-wrap {
-    position:relative; z-index:1; display:flex; flex-direction:column;
+    position:relative; z-index:10; display:flex; flex-direction:column;
     align-items:center; justify-content:center; height:100%; padding:32px 24px;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
   .login-icon {
     width:88px; height:88px; border-radius:24px; margin-bottom:20px;
@@ -71,6 +72,8 @@
     font-family:'Noto Sans KR',sans-serif;
     display:flex; align-items:center; justify-content:center; gap:10px;
     transition:all 0.2s; box-shadow:0 4px 20px rgba(0,0,0,0.4); margin-bottom:10px;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+    position:relative; z-index:10;
   }
   .google-btn:hover { border-color:rgba(200,162,245,0.4); transform:translateY(-1px); }
 
@@ -1389,6 +1392,7 @@ async function callGemini(userMsg, apiKey) {
     '【말하는 방식】\n' +
     '- 사주와 점성 데이터는 머릿속 배경 지식으로만 써요. 수치나 용어를 직접 꺼내는 건 꼭 필요할 때만, 아주 자연스럽게.\n' +
     '- 이미 나눈 대화가 있으면 그 맥락 위에서 이어가세요. 처음 만난 사람처럼 굴지 마세요.\n' +
+    '- 【현재 질문 최우선】 반드시 지금 이 질문이 무엇인지 먼저 파악하라. 히스토리에 이직 얘기가 있어도 지금 질문이 주식이면 주식만 답해라. 이전 주제를 끌고 오지 마라.\n' +
     '- 매번 같은 구조로 대답하지 마세요. 어떤 때는 짧고 직관적으로, 어떤 때는 천천히 풀어가듯, 어떤 때는 되물으며 — 흐름에 맞게 달라지세요.\n' +
     '- "~인 것 같은데, 요즘 실제로 어떠세요?" 처럼 가끔 되물어도 좋아요. 대화가 살아있어야 해요.\n' +
     '- 정형화된 서론/본론/결론 구조는 쓰지 마세요. 사람이 말하듯 자연스럽게 흘러가세요.\n\n' +
