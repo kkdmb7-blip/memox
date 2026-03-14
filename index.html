@@ -492,7 +492,6 @@ const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 // ── STATE ─────────────────────────────────────────────────────
 var currentUser = null;
-
 var userProfile = null;
 var chatHistory = [];
 var isTyping = false;
@@ -641,6 +640,28 @@ function renderProfile() {
       })()
       : '<div style="font-size:12px;color:var(--text3);padding:8px 0;">아직 점성 데이터가 없어요.<br>정보를 다시 입력해주세요.</div>') +
     '</div>' +
+    (function(){
+      var cur = (userProfile && userProfile.persona) || 'warm';
+      var personas = [
+        { key: 'warm',    icon: '🌸', label: '따뜻한 상담가', desc: '공감·위로 중심' },
+        { key: 'analyst', icon: '🔭', label: '신중한 분석가', desc: '논리·데이터 중심' },
+        { key: 'coach',   icon: '⚡', label: '직설 코치',    desc: '핵심·행동 중심' }
+      ];
+      var cards = personas.map(function(p){
+        var active = cur === p.key;
+        var border = active ? '#8b5cf6' : '#333';
+        var bg     = active ? 'rgba(139,92,246,0.08)' : 'transparent';
+        var color  = active ? '#8b5cf6' : '#e5e7eb';
+        var check  = active ? '<span style="color:#8b5cf6;font-size:16px;">✓</span>' : '';
+        return '<div onclick="setPersona(\'' + p.key + '\')" style="display:flex;align-items:center;gap:12px;padding:12px;margin-bottom:8px;border-radius:12px;border:1.5px solid ' + border + ';background:' + bg + ';cursor:pointer;">' +
+          '<span style="font-size:22px;">' + p.icon + '</span>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:14px;font-weight:600;color:' + color + ';">' + p.label + '</div>' +
+            '<div style="font-size:11px;color:#6b7280;margin-top:2px;">' + p.desc + '</div>' +
+          '</div>' + check + '</div>';
+      }).join('');
+      return '<div class="profile-card"><div class="profile-card-title">AI 상담 스타일</div>' + cards + '</div>';
+    })() +
     '<div style="padding:0 0 16px">' +
     '<button class="btn btn-ghost" style="width:100%;margin-bottom:8px;" onclick="showApiModal()">🔑 API 키 변경</button>' +
     '<button class="btn btn-ghost" style="width:100%;margin-bottom:8px;color:var(--danger);border-color:var(--danger);" onclick="resetProfile()">⚠️ 정보 초기화 (API키 유지)</button>' +
@@ -648,6 +669,14 @@ function renderProfile() {
     '</div>';
 }
 
+
+async function setPersona(key) {
+  if (!currentUser || !userProfile) return;
+  userProfile.persona = key;
+  await sb.from('chat_users').update({ persona: key }).eq('id', currentUser.id);
+  renderProfile();
+  toast('상담 스타일이 변경됐어요 ✨');
+}
 async function resetProfile() {
   if (!confirm('사주/점성 정보와 대화 내역이 초기화돼요. API 키는 유지됩니다. 계속할까요?')) return;
   // API 키 보존
@@ -1153,8 +1182,17 @@ async function callGemini(userMsg, apiKey) {
     });
   }
 
+  // 페르소나 프롬프트
+  var personaKey = (profile && profile.persona) || 'warm';
+  var personaPrompts = {
+    warm: '당신은 따뜻하고 공감 능력이 뛰어난 운명 상담가예요. 내담자의 감정을 먼저 헤아리고, 위로와 희망을 담아 이야기해요. 답변은 7-10문장으로 따뜻하게, 이모지를 적절히 써서 마음이 편안해지는 느낌을 주세요. 조언보다는 공감을 먼저, 구체적인 데이터는 부드럽게 녹여서 전달해요.',
+    analyst: '당신은 명리학과 점성술에 정통한 신중한 분석가예요. 감정보다는 데이터와 논리 중심으로 설명하고, 사주와 점성 데이터를 구체적 근거로 제시해요. 답변은 5-8문장으로 간결하고 정확하게, 이모지는 최소한으로 사용해요. "○○ 기운이 강해지면서", "대운의 흐름상" 같은 전문적인 표현을 자연스럽게 써요.',
+    coach: '당신은 직설적이고 단호한 운명 코치예요. 핵심만 빠르게, 행동 지침 중심으로 말해요. 답변은 3-5문장으로 짧고 강하게, 이모지는 거의 쓰지 않아요. "지금은 ○○할 때입니다", "움직이세요", "기다리지 마세요" 같이 명확한 조언을 해요. 사주/점성 데이터를 근거로 쓰되 설명은 최소화해요.'
+  };
+  var personaPrompt = personaPrompts[personaKey] || personaPrompts.warm;
+
   var _now = new Date(); var dateStr = _now.getFullYear() + '년 ' + (_now.getMonth()+1) + '월 ' + _now.getDate() + '일';
-  var systemPrompt = '당신은 사주와 서양 점성술을 기반으로 운명을 분석하는 전문 AI 상담사예요. 오늘 날짜는 ' + dateStr + ' 입니다.\n\n' +
+  var systemPrompt = personaPrompt + '\n\n오늘 날짜는 ' + dateStr + ' 입니다.\n\n' +
     '【내담자 정보】\n' +
     '이름: ' + (profile.name || '미상') + '\n' +
     '성별: ' + (profile.gender === 'M' ? '남성' : '여성') + '\n' +
