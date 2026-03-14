@@ -1170,13 +1170,15 @@ function renderDailyCard(card) {
 }
 
 async function loadChatHistory() {
+  // 최근 50개를 내림차순으로 가져온 뒤 다시 오름차순 정렬
   var res = await sb.from('chat_messages')
     .select('*')
     .eq('user_id', currentUser.id)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(50);
   if (res.error) return;
-  chatHistory = (res.data || []).map(function(m) {
+  var msgs = (res.data || []).reverse();
+  chatHistory = msgs.map(function(m) {
     return { role: m.role, content: m.content };
   });
   renderChatHistory();
