@@ -1435,7 +1435,13 @@ async function callGemini(userMsg, apiKey) {
   // Worker에서 받은 응답 바로 표시
   hideTyping();
   var replyText = resData.reply || '';
-  var cleanReply = replyText.replace(/<[^>]*>/g, '').replace(/&lt;[^&]*&gt;/g, '');
+  var cleanReply = replyText
+    .replace(/<[^>]*>/g, '')
+    .replace(/&lt;[^&]*&gt;/g, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/【([^】]+)】/g, '$1');
   bubble.innerHTML = escHtml(cleanReply).replace(/\n/g, '<br>');
   scrollToBottom();
   return cleanReply;
