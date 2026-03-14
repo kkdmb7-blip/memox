@@ -191,7 +191,7 @@
     padding:10px 12px 14px; border-top:1px solid var(--border);
     background:var(--surface); flex-shrink:0;
   }
-  .chat-input-row { display:flex; gap:8px; align-items:flex-end; }
+  .chat-input-row { display:flex; gap:6px; align-items:flex-end; }
   .chat-textarea {
     flex:1; background:var(--surface2); border:1px solid var(--border);
     border-radius:20px; padding:10px 14px; color:var(--text); font-size:14px;
@@ -456,7 +456,7 @@
       <textarea class="chat-textarea" id="chatInput" placeholder="운명에 대해 무엇이든 물어보세요..." rows="1"
         oninput="autoResize(this)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendMessage()"></textarea>
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()">전송</button>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">🔮 묻기</button>
     </div>
   </div>
 </div>
@@ -1747,15 +1747,18 @@ async function setPersona(key) {
 document.addEventListener('visibilitychange', async function() {
   if (document.hidden) return;
 
+  // 항상 입력창/버튼 강제 활성화
+  var sendBtn = document.getElementById('sendBtn');
+  var inp = document.getElementById('chatInput');
+  if (sendBtn) sendBtn.disabled = false;
+  if (inp) inp.disabled = false;
+
   // isTyping stuck 강제 해제
   if (isTyping) {
     hideTyping();
     isTyping = false;
-    var sendBtn = document.getElementById('sendBtn');
-    if (sendBtn) sendBtn.disabled = false;
-    var inp = document.getElementById('chatInput');
-    if (inp) inp.disabled = false;
   }
+  window._typingStart = null;
 
   // 세션 갱신
   if (!currentUser) return;
@@ -1769,8 +1772,11 @@ document.addEventListener('visibilitychange', async function() {
       return;
     }
     await sb.auth.refreshSession();
+    console.log('세션 갱신 완료');
   } catch(e) {
     console.warn('세션 갱신 실패:', e);
+    // 갱신 실패해도 버튼은 살려둠
+    if (sendBtn) sendBtn.disabled = false;
   }
 });
 
