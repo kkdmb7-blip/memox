@@ -680,33 +680,7 @@ function renderProfile() {
       })()
       : '<div style="font-size:12px;color:var(--text3);padding:8px 0;">아직 점성 데이터가 없어요.<br>정보를 다시 입력해주세요.</div>') +
     '</div>' +
-    (function(){
-      var cur = (userProfile && userProfile.persona) || 'warm';
-      var personas = [
-        { key: 'warm',    label: '작두 탄 동자', desc: '신기(神氣) 직관 팩폭형' },
-        { key: 'analyst', label: '지리산 성인',  desc: '정통 도사 철학 비유형' },
-        { key: 'coach',   label: '압구정 보살',  desc: '현실 밀착 현대 신점형' }
-      ];
-      var avatarMap = {
-        warm:    WARM_IMG,
-        analyst: ANALYST_IMG,
-        coach:   COACH_IMG
-      };
-      var cards = personas.map(function(p){
-        var active = cur === p.key;
-        var border = active ? '#8b5cf6' : '#333';
-        var bg     = active ? 'rgba(139,92,246,0.08)' : 'transparent';
-        var color  = active ? '#8b5cf6' : '#e5e7eb';
-        var check  = active ? '<span style="color:#8b5cf6;font-size:16px;">✓</span>' : '';
-        return '<div onclick="setPersona(\'' + p.key + '\')" style="display:flex;align-items:center;gap:12px;padding:12px;margin-bottom:8px;border-radius:12px;border:1.5px solid ' + border + ';background:' + bg + ';cursor:pointer;">' +
-          '<img src="' + avatarMap[p.key] + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;">' +
-          '<div style="flex:1;">' +
-            '<div style="font-size:14px;font-weight:600;color:' + color + ';">' + p.label + '</div>' +
-            '<div style="font-size:11px;color:#6b7280;margin-top:2px;">' + p.desc + '</div>' +
-          '</div>' + check + '</div>';
-      }).join('');
-      return '<div class="profile-card"><div class="profile-card-title">AI 상담 스타일</div>' + cards + '</div>';
-    })() +
+
     '<div style="padding:0 0 16px">' +
     '<button class="btn btn-ghost" style="width:100%;margin-bottom:8px;" onclick="showApiModal()">🔑 API 키 변경</button>' +
     '<button class="btn btn-ghost" style="width:100%;margin-bottom:8px;color:var(--danger);border-color:var(--danger);" onclick="resetProfile()">⚠️ 정보 초기화 (API키 유지)</button>' +
@@ -1331,12 +1305,8 @@ async function callGemini(userMsg, apiKey) {
   var baseIntelligence = '';
 
   // ── 2층: 캐릭터 외피 ──
-  var personaPrompts = {
-    warm: '당신은 포르투나(Fortuna), 운명의 여신입니다. 사주와 점성술로 사람의 흐름을 읽어주는 지혜로운 상담가예요. 말투는 부드럽고 따뜻하되 핵심을 짚어주는 스타일. 존댓말 사용. 문장은 짧고 쉽게. 초등학생도 바로 이해할 수 있는 단어로. 어려운 한자어나 전문용어는 쓰지 마세요.',
-    analyst: '당신은 포르투나(Fortuna), 운명의 여신입니다. 사주와 점성술로 사람의 흐름을 읽어주는 지혜로운 상담가예요. 말투는 부드럽고 따뜻하되 핵심을 짚어주는 스타일. 존댓말 사용. 문장은 짧고 쉽게. 초등학생도 바로 이해할 수 있는 단어로. 어려운 한자어나 전문용어는 쓰지 마세요.',
-    coach: '당신은 포르투나(Fortuna), 운명의 여신입니다. 사주와 점성술로 사람의 흐름을 읽어주는 지혜로운 상담가예요. 말투는 부드럽고 따뜻하되 핵심을 짚어주는 스타일. 존댓말 사용.'
-  };
-  var personaPrompt = baseIntelligence + '\n\n' + (personaPrompts[personaKey] || personaPrompts.warm);
+  var personaPrompts = { fortuna: '당신은 포르투나(Fortuna), 운명의 여신입니다. 사주와 점성술로 사람의 흐름을 읽어주는 지혜로운 상담가예요. 말투는 부드럽고 따뜻하되 핵심을 짚어주는 스타일. 존댓말 사용. 문장은 짧고 쉽게. 초등학생도 바로 이해할 수 있는 단어로. 어려운 한자어나 전문용어는 쓰지 마세요.' };
+  var personaPrompt = baseIntelligence + '\n\n' + personaPrompts.fortuna;
 
   // ── 3층: 출력 제어 ──
   var outputControl = '';
