@@ -425,6 +425,7 @@
     <div class="chat-avatar" id="chatHeaderAvatar">🔮</div>
     <div class="chat-header-info">
       <div class="chat-header-name" id="chatHeaderName">운명 챗봇</div>
+      <div class="chat-header-sub" id="quotaDisplay" style="font-size:11px;color:var(--accent);"></div>
       <div class="chat-header-sub" id="chatHeaderSub">사주 · 점성술 기반 AI</div>
     </div>
     <div class="chat-header-actions">
@@ -1387,22 +1388,33 @@ async function callGemini(userMsg, apiKey) {
     messages = [{ role: 'user', parts: [{ text: userMsg }] }];
   }
 
-  var res = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=' + apiKey,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: messages,
-        generationConfig: { maxOutputTokens: 4000 }
-      })
-    }
-  );
+  // Worker /chat 호출 (Claude Haiku)
+  var claudeMessages = messages.map(function(m) {
+    return { role: m.role === 'model' ? 'assistant' : 'user', content: m.parts[0].text };
+  });
+
+  var res = await fetch(WORKER_URL + '/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: currentUser.id,
+      messages: claudeMessages,
+      system_prompt: systemPrompt
+    })
+  });
   if (!res.ok) {
-    var err = await res.json();
-    throw new Error(err.error ? err.error.message : 'API 오류');
+    var errData = await res.json();
+    if (errData.error === 'limit_exceeded') {
+      // 한도 초과 → 결제 유도
+      hideTyping(); isTyping = false;
+      showLimitModal(errData.free_left, errData.paid_left);
+      return '';
+    }
+    throw new Error(errData.error || 'API 오류');
   }
+  var resData = await res.json();
+  // 남은 횟수 업데이트
+  updateQuotaDisplay(resData.free_left, resData.paid_left);
 
   // 스트리밍 말풍선 생성
   var container = document.getElementById('chatMessages');
@@ -1420,64 +1432,13 @@ async function callGemini(userMsg, apiKey) {
   scrollToBottom();
 
   var bubble = document.getElementById(bubbleId);
-  var fullText = '';
-  var displayText = '';
-  var reader = res.body.getReader();
-  var decoder = new TextDecoder();
-  var buf = '';
-  var firstChunk = true;
-
-  // 글자 단위로 타이핑 효과 (첫 50자 80ms / 본문 40ms / 마지막 50자 60ms)
-  async function typeChars(newText) {
-    displayText += newText;
-    bubble.innerHTML = escHtml(displayText).replace(/\n/g, '<br>');
-    scrollToBottom();
-  }
-
-  while (true) {
-    var _r = await reader.read();
-    if (_r.done) break;
-    buf += decoder.decode(_r.value, { stream: true });
-    var lines = buf.split('\n');
-    buf = lines.pop();
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      if (!line.startsWith('data:')) continue;
-      var jsonStr = line.slice(5).trim();
-      if (!jsonStr || jsonStr === '[DONE]') continue;
-      try {
-        var chunk = JSON.parse(jsonStr);
-        var candidate = chunk.candidates && chunk.candidates[0];
-        var part = candidate && candidate.content && candidate.content.parts &&
-                   candidate.content.parts[0] && candidate.content.parts[0].text;
-        if (part) {
-          if (firstChunk) {
-            hideTyping();
-            firstChunk = false;
-          }
-          var cleanPart = part.replace(/<[^>]*>/g, '').replace(/&lt;[^&]*&gt;/g, '');
-          fullText += cleanPart;
-          await typeChars(cleanPart);
-        }
-        // 끊김 감지
-        var finishReason = candidate && candidate.finishReason;
-        if (finishReason && finishReason !== 'STOP') {
-          window._lastIncomplete = true;
-        }
-      } catch(e) { /* 파싱 오류 무시 */ }
-    }
-  }
-
-  // 끊김 감지 시 다시 받기 버튼 추가
-  if (window._lastIncomplete) {
-    window._lastIncomplete = false;
-    var retryBtn = document.createElement('div');
-    retryBtn.style.cssText = 'margin:4px 0 8px 44px;';
-    retryBtn.innerHTML = '<button onclick="retryLastMessage()" style="font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--accent);color:var(--accent);background:transparent;cursor:pointer;">🔄 답변 다시 받기</button>';
-    document.getElementById('chatMessages').appendChild(retryBtn);
-    scrollToBottom();
-  }
-  return fullText;
+  // Worker에서 받은 응답 바로 표시
+  hideTyping();
+  var replyText = resData.reply || '';
+  var cleanReply = replyText.replace(/<[^>]*>/g, '').replace(/&lt;[^&]*&gt;/g, '');
+  bubble.innerHTML = escHtml(cleanReply).replace(/\n/g, '<br>');
+  scrollToBottom();
+  return cleanReply;
 }
 
 async function retryLastMessage() {
@@ -1657,6 +1618,38 @@ function makeBgStars() {
 
 
 // ── HELPERS ───────────────────────────────────────────────────
+function updateQuotaDisplay(freeLeft, paidLeft) {
+  var el = document.getElementById('quotaDisplay');
+  if (!el) return;
+  if (paidLeft > 0) {
+    el.textContent = '남은 질문 ' + paidLeft + '개';
+  } else {
+    el.textContent = '오늘 무료 ' + freeLeft + '/3개';
+  }
+}
+
+function showLimitModal() {
+  var overlay = document.createElement('div');
+  overlay.id = 'limitOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="background:var(--surface2);border-radius:20px;padding:32px 24px;max-width:320px;width:90%;text-align:center;">' +
+      '<div style="font-size:36px;margin-bottom:12px;">🔮</div>' +
+      '<div style="font-size:18px;font-weight:700;margin-bottom:8px;">오늘 무료 질문을 다 썼어요</div>' +
+      '<div style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6;">1,900원으로 질문 20개를 충전하면<br>내일까지 계속 물어볼 수 있어요.</div>' +
+      '<button onclick="startPayment()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;">1,900원으로 20개 충전</button>' +
+      '<button onclick="closeLimitModal()" style="width:100%;padding:12px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:12px;font-size:14px;cursor:pointer;">내일 다시 올게요</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function closeLimitModal() { var o = document.getElementById("limitOverlay"); if(o) o.remove(); }
+
+function startPayment() {
+  // Toss Payments 연동 예정
+  alert('결제 기능 준비 중이에요! 곧 오픈할게요 🙏');
+}
+
 function genId() { return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
 function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
