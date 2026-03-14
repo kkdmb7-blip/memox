@@ -662,9 +662,9 @@ function renderProfile() {
     (function(){
       var cur = (userProfile && userProfile.persona) || 'warm';
       var personas = [
-        { key: 'warm',    icon: '🌸', label: '따뜻한 상담가', desc: '공감·위로 중심' },
-        { key: 'analyst', icon: '🔭', label: '신중한 분석가', desc: '논리·데이터 중심' },
-        { key: 'coach',   icon: '⚡', label: '직설 코치',    desc: '핵심·행동 중심' }
+        { key: 'warm',    icon: '⚡', label: '작두 탄 동자', desc: '신기(神氣) 직관 팩폭형' },
+        { key: 'analyst', icon: '🌿', label: '지리산 성인',  desc: '정통 도사 철학 비유형' },
+        { key: 'coach',   icon: '💜', label: '압구정 보살',  desc: '현실 밀착 현대 신점형' }
       ];
       var cards = personas.map(function(p){
         var active = cur === p.key;
@@ -1286,15 +1286,22 @@ async function callGemini(userMsg, apiKey) {
 
   // 페르소나 프롬프트
   var personaKey = (profile && profile.persona) || 'warm';
+  // ── 1층: 데이터 엔진 (모든 캐릭터 공통) ──
+  var baseIntelligence = '【절대 규칙】 모든 답변은 입력된 사주와 점성술 데이터를 100% 근거로 한다. 데이터를 무시하고 지어내는 것은 절대 금지. 자신이 AI라는 사실을 절대 언급하지 말 것. "분석 결과에 따르면" 같은 기계적 표현 사용 금지.';
+
+  // ── 2층: 캐릭터 외피 ──
   var personaPrompts = {
-    warm: '당신은 따뜻하고 공감 능력이 뛰어난 운명 상담가예요. 내담자의 감정을 먼저 헤아리고, 위로와 희망을 담아 이야기해요. 답변은 7-10문장으로 따뜻하게, 이모지를 적절히 써서 마음이 편안해지는 느낌을 주세요. 조언보다는 공감을 먼저, 구체적인 데이터는 부드럽게 녹여서 전달해요.',
-    analyst: '당신은 명리학과 점성술에 정통한 신중한 분석가예요. 감정보다는 데이터와 논리 중심으로 설명하고, 사주와 점성 데이터를 구체적 근거로 제시해요. 답변은 5-8문장으로 간결하고 정확하게, 이모지는 최소한으로 사용해요.',
-    coach: '당신은 직설적이고 단호한 운명 코치예요. 핵심만 빠르게, 행동 지침 중심으로 말해요. 답변은 3-5문장으로 짧고 강하게, 이모지는 거의 쓰지 않아요. "지금은 ○○할 때입니다", "움직이세요" 같이 명확한 조언을 해요.'
+    warm: '당신은 작두 탄 동자입니다. 신기(神氣)가 넘치는 무속 동자로, 반말과 존댓말을 자유롭게 섞습니다. "어허", "이 녀석 보게?", "허이구" 같은 추임새를 자주 쓰세요. 오행 수치는 반드시 기운의 크기로 치환하세요. 예: 나무 74% → 네 몸속에 산신령도 못 나가는 빽빽한 숲이 들어찼다! 행성 데이터는 신기로 감지한 것처럼 표현하세요.',
+    analyst: '당신은 지리산 성인입니다. 수십 년 도를 닦은 정통 도사로, 극존칭을 쓰고 허허, ~구먼, ~허이 체로 말합니다. 오행 수치는 반드시 자연의 섭리로 풀어내세요. 예: 나무 74% → 푸른 기운이 온 산을 덮었으니 불을 지펴 길을 터야 할 운명이로세. 행성 데이터는 하늘의 이치로 연결하세요.',
+    coach: '당신은 압구정 보살입니다. 힙하고 세속적인 현대 신점 보살로, 자기야, 언니가 말해주는데, 진짜로? 같은 표현을 씁니다. 오행 수치는 반드시 세속적 성공/실패와 연결하세요. 예: 나무 74% → 자기야 이 정도면 고집이 강남 빌딩도 세우겠어. 근데 유연함이 없잖아? 행성 데이터는 연애·재물·이직에 직접 연결하세요.'
   };
-  var personaPrompt = personaPrompts[personaKey] || personaPrompts.warm;
+  var personaPrompt = baseIntelligence + '\n\n' + (personaPrompts[personaKey] || personaPrompts.warm);
+
+  // ── 3층: 출력 제어 ──
+  var outputControl = '\n\n【출력 규칙】 답변은 3~4문단으로 나누어 가독성 있게 작성하세요. 시작과 끝에 캐릭터 전용 추임새와 이모지를 1~2개 배치하세요. 포르투나 리포트 언급은 적절할 때만 자연스럽게 한 번만.';
 
   var _now = new Date(); var dateStr = _now.getFullYear() + '년 ' + (_now.getMonth()+1) + '월 ' + _now.getDate() + '일';
-  var systemPrompt = personaPrompt + '\n\n오늘 날짜는 ' + dateStr + ' 입니다.\n\n' +
+  var systemPrompt = personaPrompt + outputControl + '\n\n오늘 날짜는 ' + dateStr + ' 입니다.\n\n' +
     '【내담자 정보】\n' +
     '이름: ' + (profile.name || '미상') + '\n' +
     '성별: ' + (profile.gender === 'M' ? '남성' : '여성') + '\n' +
@@ -1504,15 +1511,28 @@ function showTyping() {
   var div = document.createElement('div');
   div.className = 'msg';
   div.id = 'typingIndicator';
-  var phrases = [
-    '🔮 별자리와 사주를 읽는 중...',
-    '✨ 운명의 실마리를 찾는 중...',
-    '🌙 천체의 흐름을 분석하는 중...',
-    '🌟 사주 기운을 살피는 중...',
-    '🔭 운명의 지도를 그리는 중...',
-    '💫 신중히 분석하는 중...',
-    '🌌 우주의 기운을 모으는 중...',
-  ];
+  var personaK = (userProfile && userProfile.persona) || 'warm';
+  var phraseMap = {
+    warm: [
+      '⚡ 동자가 쌀알을 던져 기운을 살피는 중...',
+      '🔮 동자가 신기(神氣)로 팔자를 읽는 중...',
+      '✨ 동자가 하늘의 뜻을 살피는 중...',
+      '🌀 동자가 기운을 모으는 중...'
+    ],
+    analyst: [
+      '🌿 도사가 괘를 풀며 하늘의 뜻을 읽는 중...',
+      '☁️ 도사가 오행의 흐름을 살피는 중...',
+      '🍃 도사가 천지의 기운을 헤아리는 중...',
+      '🌄 도사가 운명의 이치를 풀어내는 중...'
+    ],
+    coach: [
+      '💜 보살님이 영험한 기운으로 팔자를 훑는 중...',
+      '✨ 보살님이 자기 운을 들여다보는 중...',
+      '🔮 보살님이 신통력을 발휘하는 중...',
+      '💫 보살님이 언니의 혜안으로 보는 중...'
+    ]
+  };
+  var phrases = phraseMap[personaK] || phraseMap.warm;
   var phrase = phrases[Math.floor(Math.random() * phrases.length)];
   div.innerHTML = '<div class="msg-avatar">🔮</div><div class="msg-bubble" style="color:var(--text3);font-size:13px;font-style:italic;">' +
     '<div id="typingText">' + phrase + '</div>' +
@@ -1668,10 +1688,18 @@ window.addEventListener('appinstalled', function() {
 
 async function setPersona(key) {
   if (!currentUser || !userProfile) return;
+  if (userProfile.persona === key) return; // 같은 캐릭터면 무시
   userProfile.persona = key;
   await sb.from('chat_users').update({ persona: key }).eq('id', currentUser.id);
+
+  // 캐릭터 변경 시 대화 컨텍스트 초기화 (말투 섞임 방지)
+  chatHistory = [];
+  var container = document.getElementById('chatMessages');
+  if (container) container.innerHTML = '';
+  showWelcome();
+
   renderProfile();
-  toast('상담 스타일이 변경됐어요 ✨');
+  toast('상담사가 바뀌었어요! 대화를 새로 시작합니다 ✨');
 }
 
 // 백그라운드 복귀 감지 (갤럭시 홈버튼 후 재진입 대응)
