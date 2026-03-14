@@ -424,7 +424,7 @@
   <div class="chat-header">
     <div class="chat-avatar" id="chatHeaderAvatar">🔮</div>
     <div class="chat-header-info">
-      <div class="chat-header-name" id="chatHeaderName">운명 챗봇</div>
+      <div class="chat-header-name" id="chatHeaderName">포르투나 여신</div>
       <div class="chat-header-sub" id="quotaDisplay" style="font-size:11px;color:var(--accent);"></div>
       <div class="chat-header-sub" id="chatHeaderSub">사주 · 점성술 기반 AI</div>
     </div>
@@ -460,7 +460,7 @@
       <textarea class="chat-textarea" id="chatInput" placeholder="운명에 대해 무엇이든 물어보세요..." rows="1"
         oninput="autoResize(this)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendMessage()"></textarea>
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()">🔮 묻기</button>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">🌟 여신께 묻기</button>
     </div>
   </div>
 </div>
@@ -599,7 +599,7 @@ function updateChatHeader() {
   if (headerAvatar) headerAvatar.innerHTML = getAvatar();
   // 캐릭터별 전송 버튼 텍스트
   var persona = (userProfile && userProfile.persona) || 'warm';
-  var btnTextMap = { warm: '⚡ 점사 받기', analyst: '🌿 운명 묻기', coach: '💜 운 봐줘' };
+  var btnTextMap = { warm: '🌟 여신께 묻기', analyst: '🌟 여신께 묻기', coach: '🌟 여신께 묻기', fortuna: '🌟 여신께 묻기' };
   var sendBtn = document.getElementById('sendBtn');
   if (sendBtn) sendBtn.textContent = btnTextMap[persona] || '🔮 묻기';
   if (!userProfile) return;
@@ -683,9 +683,7 @@ function renderProfile() {
     '</div>' +
 
     '<div style="padding:0 0 16px">' +
-    '<button class="btn btn-ghost" style="width:100%;margin-bottom:8px;" onclick="showApiModal()">🔑 API 키 변경</button>' +
-    '<button class="btn btn-ghost" style="width:100%;margin-bottom:8px;color:var(--danger);border-color:var(--danger);" onclick="resetProfile()">⚠️ 정보 초기화 (API키 유지)</button>' +
-    '<button class="btn btn-ghost" style="width:100%;color:var(--danger);border-color:var(--danger);opacity:0.7;" onclick="resetProfileFull()">🗑️ 완전 초기화 (API키 포함)</button>' +
+    '<button class="btn btn-ghost" style="width:100%;color:var(--danger);border-color:var(--danger);" onclick="resetProfileFull()">🗑️ 내 정보 초기화</button>' +
     '</div>';
 }
 
@@ -1202,16 +1200,16 @@ function updateSuggestChips() {
   var persona = (userProfile && userProfile.persona) || 'warm';
   var questionMap = {
     warm: [
-      '⚡ 올해 내 기운 어때?', '🔮 연애운 봐줘', '💰 재물 기운은?',
-      '🌀 지금 내 운 맞아?', '🎯 이직해도 돼?', '👥 지금 인간관계 어때?'
+      '🌟 올해 제 운세가 궁금해요', '💫 연애운을 알려주세요', '💰 재물운은 어떤가요?',
+      '🔮 지금 제 흐름이 맞나요?', '🎯 이직해도 될까요?', '👥 인간관계가 걱정돼요'
     ],
     analyst: [
       '🌿 올해 운세 봐주시게', '🍃 연애 인연이 있는가?', '☁️ 재물운은 어떠한가',
-      '🌄 지금이 기회인가?', '🌊 이직 괜찮은가?', '🍂 올해 건강은?'
+      '🌟 올해 제 운세가 궁금해요', '💫 연애운을 알려주세요', '💰 재물운은 어떤가요?'
     ],
     coach: [
-      '💜 올해 운 어때 언니?', '💕 연애운 좀 봐줘', '💸 돈 들어와?',
-      '✨ 이직 타이밍 맞아?', '👀 지금 기회야 아니야?', '🛍️ 올해 뭐가 풀려?'
+      '🌟 올해 제 운세가 궁금해요', '💫 연애운을 알려주세요', '💰 재물운은 어떤가요?',
+      '✨ 이직해도 될까요?', '👀 지금 기회인가요?', '💸 돈이 들어올까요?'
     ]
   };
   var questions = questionMap[persona] || questionMap.warm;
