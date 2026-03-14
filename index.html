@@ -1439,7 +1439,7 @@ async function callGemini(userMsg, apiKey) {
       displayText += newText[ci];
       bubble.innerHTML = escHtml(displayText).replace(/\n/g, '<br>');
       scrollToBottom();
-      await new Promise(function(r){ setTimeout(r, 144); });
+      await new Promise(function(r){ setTimeout(r, 70); });
     }
   }
 
