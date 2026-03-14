@@ -1107,7 +1107,7 @@ async function loadDailyCard() {
         '{"title":"한 줄 오늘의 테마(이모지 포함)","summary":"2-3문장 오늘의 흐름","keywords":["키워드1","키워드2","키워드3"],"avoid":"오늘 피할 것 한 줄"}';
 
       var gemRes = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=' + apiKey,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1430,7 +1430,7 @@ async function callGemini(userMsg, apiKey) {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: messages,
-        generationConfig: { maxOutputTokens: 2000 }
+        generationConfig: { maxOutputTokens: 4000 }
       })
     }
   );
@@ -1501,10 +1501,9 @@ async function callGemini(userMsg, apiKey) {
       if (!jsonStr || jsonStr === '[DONE]') continue;
       try {
         var chunk = JSON.parse(jsonStr);
-        var part = chunk.candidates && chunk.candidates[0] &&
-                   chunk.candidates[0].content && chunk.candidates[0].content.parts &&
-                   chunk.candidates[0].content.parts[0] &&
-                   chunk.candidates[0].content.parts[0].text;
+        var candidate = chunk.candidates && chunk.candidates[0];
+        var part = candidate && candidate.content && candidate.content.parts &&
+                   candidate.content.parts[0] && candidate.content.parts[0].text;
         if (part) {
           if (firstChunk) {
             hideTyping();
@@ -1514,11 +1513,59 @@ async function callGemini(userMsg, apiKey) {
           fullText += cleanPart;
           await typeChars(cleanPart);
         }
+        // 끊김 감지
+        var finishReason = candidate && candidate.finishReason;
+        if (finishReason && finishReason !== 'STOP') {
+          window._lastIncomplete = true;
+        }
       } catch(e) { /* 파싱 오류 무시 */ }
     }
   }
 
+  // 끊김 감지 시 다시 받기 버튼 추가
+  if (window._lastIncomplete) {
+    window._lastIncomplete = false;
+    var retryBtn = document.createElement('div');
+    retryBtn.style.cssText = 'margin:4px 0 8px 44px;';
+    retryBtn.innerHTML = '<button onclick="retryLastMessage()" style="font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--accent);color:var(--accent);background:transparent;cursor:pointer;">🔄 답변 다시 받기</button>';
+    document.getElementById('chatMessages').appendChild(retryBtn);
+    scrollToBottom();
+  }
   return fullText;
+}
+
+async function retryLastMessage() {
+  // 마지막 user 메시지 찾기
+  var lastUser = null;
+  for (var i = chatHistory.length - 1; i >= 0; i--) {
+    if (chatHistory[i].role === 'user') { lastUser = chatHistory[i].content; break; }
+  }
+  if (!lastUser) return;
+  // 마지막 assistant 답변 제거
+  if (chatHistory.length > 0 && chatHistory[chatHistory.length-1].role === 'assistant') {
+    chatHistory.pop();
+  }
+  // 버튼 제거
+  var btns = document.querySelectorAll('#chatMessages button');
+  btns.forEach(function(b){ if(b.textContent.includes('다시 받기')) b.parentNode.remove(); });
+  // 재전송
+  var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || '';
+  if (!apiKey) return;
+  isTyping = true;
+  document.getElementById('sendBtn').disabled = true;
+  showTyping();
+  try {
+    var reply = await callGemini(lastUser, apiKey);
+    chatHistory.push({ role: 'assistant', content: reply });
+    await saveMessage('assistant', reply);
+  } catch(e) {
+    hideTyping();
+    appendMessage('assistant', '죄송해요, 다시 시도해주세요. (' + e.message + ')', true);
+  } finally {
+    isTyping = false;
+    document.getElementById('sendBtn').disabled = false;
+    hideTyping();
+  }
 }
 
 async function saveMessage(role, content) {
