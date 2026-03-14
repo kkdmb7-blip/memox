@@ -1238,7 +1238,7 @@ async function sendMessage() {
   if (!text) return;
   // isTyping stuck 방지: 5초 이상 지나면 강제 해제
   if (isTyping) {
-    if (!window._typingStart || Date.now() - window._typingStart > 30000) {
+    if (!window._typingStart || Date.now() - window._typingStart > 10000) {
       isTyping = false;
       document.getElementById('sendBtn').disabled = false;
       hideTyping();
@@ -1460,21 +1460,27 @@ async function callGemini(userMsg, apiKey) {
 
   // 글자 단위로 타이핑 효과 (첫 50자 80ms / 본문 40ms / 마지막 50자 60ms)
   async function typeChars(newText) {
-    for (var ci = 0; ci < newText.length; ci++) {
-      displayText += newText[ci];
-      bubble.innerHTML = escHtml(displayText).replace(/\n/g, '<br>');
-      scrollToBottom();
-      var totalLen = fullText.length;
-      var curPos = displayText.length;
-      var delay;
-      if (curPos <= 50) {
-        delay = 80;
-      } else if (totalLen > 0 && curPos >= totalLen - 50) {
-        delay = 60;
-      } else {
-        delay = 40;
+    try {
+      for (var ci = 0; ci < newText.length; ci++) {
+        displayText += newText[ci];
+        bubble.innerHTML = escHtml(displayText).replace(/\n/g, '<br>');
+        scrollToBottom();
+        var totalLen = fullText.length;
+        var curPos = displayText.length;
+        var delay;
+        if (curPos <= 50) {
+          delay = 25;
+        } else if (totalLen > 0 && curPos >= totalLen - 50) {
+          delay = 20;
+        } else {
+          delay = 15;
+        }
+        await new Promise(function(r){ setTimeout(r, delay); });
       }
-      await new Promise(function(r){ setTimeout(r, delay); });
+    } catch(e) {
+      // 타이핑 도중 오류나도 텍스트는 전부 표시
+      displayText = fullText;
+      bubble.innerHTML = escHtml(displayText).replace(/\n/g, '<br>');
     }
   }
 
