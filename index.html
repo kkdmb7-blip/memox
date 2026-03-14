@@ -1145,7 +1145,6 @@ async function sendMessage() {
   showTyping();
 
   try {
-    hideTyping();
     var reply = await callGemini(text, apiKey);
     chatHistory.push({ role: 'assistant', content: reply });
     await saveMessage('assistant', reply);
@@ -1327,9 +1326,21 @@ async function callGemini(userMsg, apiKey) {
 
   var bubble = document.getElementById(bubbleId);
   var fullText = '';
+  var displayText = '';
   var reader = res.body.getReader();
   var decoder = new TextDecoder();
   var buf = '';
+  var firstChunk = true;
+
+  // 글자 단위로 타이핑 효과 주는 함수
+  async function typeChars(newText) {
+    for (var ci = 0; ci < newText.length; ci++) {
+      displayText += newText[ci];
+      bubble.innerHTML = escHtml(displayText).replace(/\n/g, '<br>');
+      scrollToBottom();
+      await new Promise(function(r){ setTimeout(r, 18); });
+    }
+  }
 
   while (true) {
     var _r = await reader.read();
@@ -1349,9 +1360,12 @@ async function callGemini(userMsg, apiKey) {
                    chunk.candidates[0].content.parts[0] &&
                    chunk.candidates[0].content.parts[0].text;
         if (part) {
+          if (firstChunk) {
+            hideTyping();
+            firstChunk = false;
+          }
           fullText += part;
-          bubble.innerHTML = escHtml(fullText).replace(/\n/g, '<br>');
-          scrollToBottom();
+          await typeChars(part);
         }
       } catch(e) { /* 파싱 오류 무시 */ }
     }
