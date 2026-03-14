@@ -1393,7 +1393,7 @@ async function callGemini(userMsg, apiKey) {
     return { role: m.role === 'model' ? 'assistant' : 'user', content: m.parts[0].text };
   });
 
-  var res = await fetch(WORKER_URL + '/chat', {
+  var res = await fetch('https://fortuna-silk.vercel.app/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
