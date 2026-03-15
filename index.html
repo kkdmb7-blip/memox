@@ -124,7 +124,7 @@
     background:var(--surface);
   }
   .chat-avatar {
-    width:36px; height:36px; border-radius:50%;
+    width:44px; height:44px; border-radius:50%;
     background:linear-gradient(135deg,var(--accent2),var(--accent));
     display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;
   }
@@ -156,7 +156,7 @@
   }
   .msg.user .msg-avatar { background:var(--surface3); }
   .msg-bubble {
-    padding:11px 14px; border-radius:16px; font-size:14px; line-height:1.7;
+    padding:14px 18px; border-radius:18px; font-size:14px; line-height:1.8;
     background:var(--surface2); border:1px solid var(--border); color:var(--text);
   }
   .msg.user .msg-bubble {
@@ -178,11 +178,21 @@
   .chip:active { transform:scale(0.96); }
 
   /* 리포트 연결 버튼 */
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
   .fortuna-banner {
     margin:0 16px 10px; padding:12px 16px; border-radius:12px;
     background:linear-gradient(135deg,rgba(124,92,252,0.15),rgba(200,162,245,0.08));
     border:1px solid rgba(124,92,252,0.3); cursor:pointer; transition:all 0.2s;
-    display:flex; align-items:center; gap:10px;
+    display:flex; align-items:center; gap:10px; position:relative; overflow:hidden;
+  }
+  .fortuna-banner::after {
+    content:''; position:absolute; top:0; left:0; right:0; bottom:0;
+    background:linear-gradient(90deg, transparent 0%, rgba(200,162,245,0.15) 50%, transparent 100%);
+    background-size:200% 100%;
+    animation:shimmer 2.5s infinite linear;
   }
   .fortuna-banner:hover { border-color:rgba(200,162,245,0.5); }
   .fortuna-banner-text { flex:1; }
@@ -197,9 +207,9 @@
   .chat-input-row { display:flex; gap:6px; align-items:flex-end; }
   .chat-textarea {
     flex:1; background:var(--surface2); border:1px solid var(--border);
-    border-radius:20px; padding:10px 14px; color:var(--text); font-size:14px;
+    border-radius:24px; padding:11px 18px; color:var(--text); font-size:14px;
     font-family:'Noto Sans KR',sans-serif; line-height:1.5; resize:none; outline:none;
-    max-height:100px; transition:border-color 0.2s; min-height:40px;
+    max-height:100px; transition:border-color 0.2s; min-height:42px;
   }
   .chat-textarea:focus { border-color:var(--accent2); }
   .chat-textarea::placeholder { color:var(--text3); }
@@ -424,7 +434,8 @@
   <div class="chat-header">
     <div class="chat-avatar" id="chatHeaderAvatar">🔮</div>
     <div class="chat-header-info">
-      <div class="chat-header-name" id="chatHeaderName">포르투나 여신</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:1px;" id="chatHeaderUserName"></div>
+      <div class="chat-header-name" id="chatHeaderName" style="font-size:16px;font-weight:800;letter-spacing:-0.3px;">포르투나</div>
       <div class="chat-header-sub" id="quotaDisplay" style="font-size:11px;color:var(--accent);"></div>
       <div class="chat-header-sub" id="chatHeaderSub">사주 · 점성술 기반 AI</div>
     </div>
@@ -457,7 +468,7 @@
 
   <div class="chat-input-wrap">
     <div class="chat-input-row">
-      <textarea class="chat-textarea" id="chatInput" placeholder="운명에 대해 무엇이든 물어보세요..." rows="1"
+      <textarea class="chat-textarea" id="chatInput" placeholder="🔮 무엇이든 물어보세요..." rows="1"
         oninput="autoResize(this)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendMessage()"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">💫 운명 열기</button>
@@ -603,7 +614,9 @@ function updateChatHeader() {
   var sendBtn = document.getElementById('sendBtn');
   if (sendBtn) sendBtn.textContent = btnTextMap[persona] || '🔮 묻기';
   if (!userProfile) return;
-  document.getElementById('chatHeaderName').textContent = (userProfile.name || '운명') + '님의 포르투나 여신';
+  document.getElementById('chatHeaderName').textContent = '포르투나';
+  var userNameEl = document.getElementById('chatHeaderUserName');
+  if (userNameEl) userNameEl.textContent = (userProfile.name || '') + '님의 운명 상담';
   document.getElementById('chatHeaderSub').textContent = '운명의 여신 · 사주 · 점성술';
 }
 
