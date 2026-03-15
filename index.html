@@ -1453,7 +1453,7 @@ async function callGemini(userMsg, apiKey) {
     .replace(/\*([^*]+)\*/g, '$1')
     .replace(/#{1,6}\s/g, '')
     .replace(/【([^】]+)】/g, '$1');
-  bubble.innerHTML = escHtml(cleanReply).replace(/\n/g, '<br>');
+  bubble.innerHTML = renderMarkdown(cleanReply);
   scrollToBottom();
   return cleanReply;
 }
@@ -1515,7 +1515,7 @@ function appendMessage(role, content, animate) {
   div.innerHTML =
     '<div class="msg-avatar">' + (isUser ? '👤' : getAvatar()) + '</div>' +
     '<div>' +
-      '<div class="msg-bubble">' + escHtml(content).replace(/\n/g, '<br>') + '</div>' +
+      '<div class="msg-bubble">' + renderMarkdown(content) + '</div>' +
       '<div class="msg-time">' + time + '</div>' +
     '</div>';
 
@@ -1668,6 +1668,21 @@ function startPayment() {
 }
 
 function genId() { return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
+
+function renderMarkdown(str) {
+  if (!str) return '';
+  var s = String(str);
+  // HTML 이스케이프 먼저
+  s = s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // **bold**
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#e2d0ff;">$1</strong>');
+  // - 불렛 (줄 시작)
+  s = s.replace(/(^|\n)- ([^\n]+)/g, '$1<span style="display:inline-block;margin-left:4px;">• $2</span>');
+  // 줄바꿈
+  s = s.replace(/\n/g, '<br>');
+  return s;
+}
+
 function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
