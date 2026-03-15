@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>포르투나 - 운명의 여신</title>
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" crossorigin="anonymous"></script>
 <meta name="theme-color" content="#0a0a0a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -164,6 +165,15 @@
   }
   .msg-time { font-size:10px; color:var(--text3); margin-top:4px; text-align:right; }
   .msg.user .msg-time { text-align:left; }
+  .share-kakao-btn {
+    display:inline-flex; align-items:center; gap:5px;
+    margin-top:8px; padding:6px 12px;
+    background:#FEE500; color:#191600; border:none; border-radius:20px;
+    font-size:12px; font-weight:600; cursor:pointer;
+    transition:opacity 0.2s; opacity:0.9;
+  }
+  .share-kakao-btn:hover { opacity:1; }
+  .share-kakao-btn img { width:16px; height:16px; }
 
   /* 추천 질문 */
   .suggest-chips { display:flex; flex-wrap:nowrap; gap:8px; padding:0 16px 12px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
@@ -507,6 +517,17 @@ const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
 
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+// ── 카카오 SDK 초기화 ─────────────────────────────────────────
+// 카카오 앱 키가 있으면 초기화 (없어도 클립보드 fallback으로 동작)
+(function() {
+  try {
+    if (window.Kakao && !window.Kakao.isInitialized()) {
+      // 실제 앱 키로 교체 시 아래 주석 해제
+      // window.Kakao.init('YOUR_KAKAO_JS_APP_KEY');
+    }
+  } catch(e) {}
+})();
 
 // ── STATE ─────────────────────────────────────────────────────
 var currentUser = null;
@@ -1512,10 +1533,19 @@ function appendMessage(role, content, animate) {
   div.className = 'msg' + (isUser ? ' user' : '') + (animate ? '' : '');
   if (!animate) div.style.animation = 'none';
 
+  var shareBtn = '';
+  if (!isUser) {
+    var shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+    shareBtn = '<button class="share-kakao-btn" onclick="shareKakao(\'' + shareId + '\')" id="' + shareId + '" data-content="' + encodeURIComponent(content.slice(0, 200)) + '">' +
+      '<img src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium_vert.png" onerror="this.style.display=\'none\'"/>' +
+      '💬 카카오톡 공유</button>';
+  }
+
   div.innerHTML =
     '<div class="msg-avatar">' + (isUser ? '👤' : getAvatar()) + '</div>' +
     '<div>' +
       '<div class="msg-bubble">' + renderMarkdown(content) + '</div>' +
+      shareBtn +
       '<div class="msg-time">' + time + '</div>' +
     '</div>';
 
@@ -1613,6 +1643,45 @@ function onApiKeyChange(val) {
 function openKakao() {
   window.open('http://pf.kakao.com/_krjxjn', '_blank');
 }
+
+function shareKakao(btnId) {
+  var btn = document.getElementById(btnId);
+  var rawContent = btn ? decodeURIComponent(btn.getAttribute('data-content')) : '';
+  var name = (userProfile && userProfile.name) ? userProfile.name : '나';
+
+  // 공유 문구 - 소름돋는 느낌으로
+  var titleText = '✨ AI가 분석한 내 사주 결과';
+  var descText = name + '님의 운명 분석이 나왔어요. 진짜 소름돋네요 🔮\n' + rawContent.slice(0, 80) + (rawContent.length > 80 ? '...' : '');
+
+  var pageUrl = window.location.href.split('?')[0];
+
+  // 카카오 SDK 방식 시도, 실패시 URL 스킴 fallback
+  try {
+    if (window.Kakao && window.Kakao.isInitialized && window.Kakao.isInitialized()) {
+      Kakao.Share.sendDefault({
+        objectType: 'text',
+        text: titleText + '\n\n' + descText + '\n\n👉 포르투나에서 내 운명 확인하기',
+        link: { mobileWebUrl: pageUrl, webUrl: pageUrl },
+        buttons: [{ title: '나도 확인하기 🔮', link: { mobileWebUrl: pageUrl, webUrl: pageUrl } }]
+      });
+    } else {
+      // 카카오톡 URL 스킴 fallback
+      var shareText = encodeURIComponent(titleText + '\n\n' + descText + '\n\n👉 ' + pageUrl);
+      window.open('https://sharer.kakao.com/talk/friends/picker/link?app_key=&msg=' + shareText, '_blank', 'width=400,height=600');
+    }
+  } catch(e) {
+    // 최후 fallback: 클립보드 복사
+    var copyText = titleText + '\n\n' + descText + '\n\n👉 포르투나에서 내 운명 확인하기\n' + pageUrl;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(copyText).then(function() {
+        alert('📋 내용이 복사되었어요!\n카카오톡에 붙여넣기 해주세요 😊');
+      });
+    } else {
+      alert('카카오톡을 열고 공유하려면 아래 내용을 복사하세요:\n\n' + copyText);
+    }
+  }
+}
+
 
 function openFortuna() {
   window.open('https://fortuna-silk.vercel.app', '_blank');
