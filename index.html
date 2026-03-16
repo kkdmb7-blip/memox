@@ -1536,13 +1536,18 @@ function appendMessage(role, content, animate) {
   div.className = 'msg' + (isUser ? ' user' : '') + (animate ? '' : '');
   if (!animate) div.style.animation = 'none';
 
-  var shareBtn = '';
-  if (!isUser) {
-    var shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
-    shareBtn = '<button class="share-kakao-btn" onclick="shareKakao(\'' + shareId + '\')" id="' + shareId + '" data-content="' + encodeURIComponent(content.slice(0, 200)) + '">' +
-      '<img src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium_vert.png" onerror="this.style.display=\'none\'"/>' +
-      '💬 카카오톡 공유</button>';
-  }
+var shareBtn = '';
+
+if (!isUser) {
+
+  var shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+
+  shareBtn =
+  '<button class="share-kakao-btn" onclick="shareKakao(\'' + shareId + '\')" id="' + shareId + '" data-content="' + encodeURIComponent(content.slice(0, 200)) + '">' +
+  '💬 카카오톡 공유' +
+  '</button>';
+
+}
 
   div.innerHTML =
     '<div class="msg-avatar">' + (isUser ? '👤' : getAvatar()) + '</div>' +
@@ -1691,7 +1696,10 @@ function shareKakao(btnId) {
   }
 }
 
-
+<script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+<script>
+if (window.Kakao && !Kakao.isInitialized()) Kakao.init('2543c896dead8185e2edfa0976396f25');
+</script>
 function openFortuna() {
   window.open('https://fortuna-silk.vercel.app', '_blank');
 }
