@@ -1538,7 +1538,9 @@ function appendMessage(role, content, animate) {
 
 var shareBtn = '';
 
-var shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  if (!isUser) {
+
+ var shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
 
   shareBtn =
   '<button class="share-kakao-btn" onclick="shareKakao(\'' + shareId + '\')" id="' + shareId + '" data-content="' + encodeURIComponent(content.slice(0, 200)) + '">' +
