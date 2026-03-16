@@ -1756,7 +1756,7 @@ function getTodayGanji() {
   var today = new Date();
   today.setHours(0,0,0,0);
   base.setHours(0,0,0,0);
-  var diff = Math.round((today - base) / 86400000);
+  var diff = Math.floor((today - base) / 86400000));
   var idx = ((diff % 60) + 60) % 60;
   return heavenly[idx % 10] + earthly[idx % 12];
 }
