@@ -1748,19 +1748,33 @@ function startPayment() {
   alert('결제 기능 준비 중이에요! 곧 오픈할게요 🙏');
 }
 
-function getTodayGanji() {
-  // 2026-02-19 = 갑자일 기준으로 60갑자 순환 계산
-  var heavenly = ['갑','을','병','정','무','기','경','신','임','계'];
-  var earthly  = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
-  var base = new Date(2026, 1, 19); // 2026-02-19 = 갑자일
-  var today = new Date();
-  today.setHours(0,0,0,0);
-  base.setHours(0,0,0,0);
-  var diff = Math.round((today - base) / 86400000);
-  var idx = ((diff % 60) + 60) % 60;
+function getTodayGanji(targetDate = new Date()) {
+  const heavenly = ['갑','을','병','정','무','기','경','신','임','계'];
+  const earthly  = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+
+  // 네가 직접 확인한 기준일: 2024-02-10 = 갑진일
+  // 갑진은 60갑자 index 40
+  const baseIndex = 40;
+  const baseUtc = Date.UTC(2024, 1, 10); // 2024-02-10
+
+  // 한국시간(KST) 기준 날짜만 잘라서 계산
+  function toKSTDateOnlyUTC(date) {
+    const kstMs = date.getTime() + 9 * 60 * 60 * 1000;
+    const kst = new Date(kstMs);
+    return Date.UTC(
+      kst.getUTCFullYear(),
+      kst.getUTCMonth(),
+      kst.getUTCDate()
+    );
+  }
+
+  const todayUtc = toKSTDateOnlyUTC(targetDate);
+
+  const diffDays = Math.floor((todayUtc - baseUtc) / 86400000);
+  const idx = ((baseIndex + diffDays) % 60 + 60) % 60;
+
   return heavenly[idx % 10] + earthly[idx % 12];
 }
-
 function genId() { return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
 
 function renderMarkdown(str) {
