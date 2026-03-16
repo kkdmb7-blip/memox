@@ -1695,7 +1695,25 @@ function shareKakao(btnId) {
     }
   }
 }
+(function loadKakaoSdk() {
+  if (window.Kakao) {
+    if (!window.Kakao.isInitialized()) {
+      window.Kakao.init('2543c896dead8185e2edfa0976396f25');
+    }
+    return;
+  }
 
+  var s = document.createElement('script');
+  s.src = 'https://developers.kakao.com/sdk/js/kakao.js';
+  s.onload = function() {
+    if (!window.Kakao.isInitialized()) {
+      window.Kakao.init('2543c896dead8185e2edfa0976396f25');
+    }
+    console.log('Kakao SDK 로드 완료');
+  };
+  document.head.appendChild(s);
+})();
+  
 function openFortuna() {
   window.open('https://fortuna-silk.vercel.app', '_blank');
 }
