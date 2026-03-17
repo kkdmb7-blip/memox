@@ -1449,6 +1449,7 @@ for (var i = 1; i <= 60; i++) {
     return { role: m.role === 'model' ? 'assistant' : 'user', content: m.parts[0].text };
   });
 
+  console.log('[systemPrompt]', systemPrompt);
   var res = await fetch('https://fortuna-silk.vercel.app/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
