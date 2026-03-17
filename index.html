@@ -1142,8 +1142,11 @@ async function loadDailyCard() {
 
       var prompt = '사주:' + (saju.saju_pillars||'') + ' 용신:' + (saju.saju_yongshin_primary||'') +
         ' 태양궁:' + (astro.sun||'') + ' 달궁:' + (astro.moon||'') +
-        '\n오늘(' + today + ') ' + name + '님 데일리 운세. 반드시 JSON 객체만 출력하고 코드블록 없이 { 로 시작해서 } 로 끝내라. 설명, 마크다운, 줄바꿈 금지.\n' +
-        '{"title":"테마(이모지포함,6자이내)","summary":"오늘흐름(15자이내)","keywords":["키1","키2"],"avoid":"피할것(8자이내)"}';
+        '\n오늘(' + today + ') ' + name + '님 데일리 운세를 아래 형식으로 정확히 4줄만 출력하라. 설명, 번호, 마크다운 금지.\n' +
+        '줄1: 오늘 테마 (이모지 포함, 10자 이내)\n' +
+        '줄2: 오늘 흐름 요약 (20자 이내)\n' +
+        '줄3: 키워드 2개 (쉼표로 구분)\n' +
+        '줄4: 오늘 피할 것 (10자 이내)';
 
       var gemRes = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
@@ -1162,21 +1165,17 @@ async function loadDailyCard() {
         return;
       }
       var raw = gemData.candidates[0].content.parts[0].text || '';
-      // 코드블록 태그 제거 (닫힘 없는 경우도 대응)
-      raw = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
-      var jsonStart = raw.indexOf('{');
-      var jsonEnd = raw.lastIndexOf('}');
-      if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-        console.warn('데일리 카드 JSON 추출 실패:', raw.slice(0, 200));
+      var lines = raw.trim().split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l; });
+      if (lines.length < 4) {
+        console.warn('데일리 카드 줄 수 부족:', raw.slice(0, 200));
         return;
       }
-      var parsed;
-      try {
-        parsed = JSON.parse(raw.slice(jsonStart, jsonEnd + 1));
-      } catch(parseErr) {
-        console.warn('데일리 카드 JSON 파싱 실패:', parseErr.message, raw.slice(jsonStart, jsonEnd + 1).slice(0, 200));
-        return;
-      }
+      var parsed = {
+        title:    lines[0],
+        summary:  lines[1],
+        keywords: lines[2].split(',').map(function(k) { return k.trim(); }),
+        avoid:    lines[3]
+      };
 
       // Supabase에 저장
       await sb.from('daily_cards').upsert({
