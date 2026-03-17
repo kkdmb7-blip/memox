@@ -1806,6 +1806,21 @@ function getTodayGanji(targetDate = new Date()) {
 
   return heavenly[idx % 10] + earthly[idx % 12];
 }
+// 월건 계산 (getTodayGanji와 동일한 기준일 방식)
+// 기준: 2024년 2월 = 병인(丙寅) = 60갑자 index 2
+function getMonthGanji(year, month) {
+  const heavenly = ['갑','을','병','정','무','기','경','신','임','계'];
+  const earthly  = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+
+  const baseIndex = 2; // 병인(丙寅)
+  const baseYear = 2024, baseMonth = 2;
+
+  const diffMonths = (year - baseYear) * 12 + (month - baseMonth);
+  const idx = ((baseIndex + diffMonths) % 60 + 60) % 60;
+
+  return heavenly[idx % 10] + earthly[idx % 12];
+}
+
 function genId() { return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
 
 function renderMarkdown(str) {
