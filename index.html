@@ -1142,8 +1142,13 @@ async function loadDailyCard() {
 
       var prompt = '사주:' + (saju.saju_pillars||'') + ' 용신:' + (saju.saju_yongshin_primary||'') +
         ' 태양궁:' + (astro.sun||'') + ' 달궁:' + (astro.moon||'') +
-        '\n오늘(' + today + ') ' + name + '님 데일리 운세를 아래 형식으로 정확히 4줄만 출력하라. 설명, 번호, 마크다운 금지.\n' +
-        '줄1:제목\n줄2:요약\n줄3:키워드(쉼표구분)\n줄4:피할것';
+        '\n오늘(' + today + ') ' + name + '님 데일리 운세를 아래 형식으로 정확히 4줄만 출력해. 다른 말 절대 하지마.\n' +
+        '첫째줄에 제목, 둘째줄에 요약, 셋째줄에 키워드, 넷째줄에 피할것을 출력해.\n' +
+        '예시:\n' +
+        '✨오늘의 기운\n' +
+        '새로운 시작의 날\n' +
+        '집중,인내,소통\n' +
+        '무리한 결정';
 
       var gemRes = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
