@@ -1132,51 +1132,48 @@ async function loadDailyCard() {
     if (res.data) {
       cardData = res.data;
     } else {
-      // 없으면 Gemini로 생성
-      var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || '';
-      if (!apiKey) return;
-
+      // 로컬에서 사주 데이터를 활용해 생성
       var saju = userProfile.saju_data || {};
       var astro = userProfile.astro_data || {};
       var name = userProfile.name || '당신';
 
-      var prompt = '사주:' + (saju.saju_pillars||'') + ' 용신:' + (saju.saju_yongshin_primary||'') +
-        ' 태양궁:' + (astro.sun||'') + ' 달궁:' + (astro.moon||'') +
-        '\n오늘(' + today + ') ' + name + '님 데일리 운세를 아래 형식으로 정확히 4줄만 출력해. 다른 말 절대 하지마.\n' +
-        '첫째줄에 제목, 둘째줄에 요약, 셋째줄에 키워드, 넷째줄에 피할것을 출력해.\n' +
-        '예시:\n' +
-        '✨오늘의 기운\n' +
-        '새로운 시작의 날\n' +
-        '집중,인내,소통\n' +
-        '무리한 결정';
+      // 사주 데이터를 기반으로 카드 생성
+      var day = new Date().getDate();
+      var iljin = saju.iljin || '';
+      var wolgeon = saju.wolgeon || '';
+      var ohangRatio = saju.ohang_ratio || {};
+      var daewoon = saju.daewoon || '';
 
-      var gemRes = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 200, temperature: 0.7 }
-          })
-        }
-      );
-      var gemData = await gemRes.json();
-      if (!gemData.candidates || !gemData.candidates[0]) {
-        console.warn('데일리 카드 Gemini 응답 없음:', JSON.stringify(gemData).slice(0, 200));
-        return;
+      // 간단한 로직: 일진의 첫 글자 코드에 따라 인덱스 계산
+      var baseIndex = 0;
+      if (iljin) {
+        baseIndex = iljin.charCodeAt(0) % 3;
       }
-      var raw = gemData.candidates[0].content.parts[0].text || '';
-      var lines = raw.trim().split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l; });
-      if (lines.length < 4) {
-        console.warn('데일리 카드 줄 수 부족:', raw.slice(0, 200));
-        return;
+      var index = (baseIndex + day) % 3;
+
+      var titles = ['✨ 좋은 기운', '🌟 행운의 날', '🔮 새로운 시작'];
+      var summaries = ['오늘은 긍정적인 에너지가 가득합니다.', '행운이 찾아올 수 있는 날입니다.', '새로운 기회를 잡을 수 있습니다.'];
+      var keywordsList = [['행운', '성공'], ['집중', '인내'], ['소통', '창의']];
+      var avoids = ['무리한 결정 피하기', '충동적인 행동 자제', '과도한 스트레스 피하기'];
+
+      var title = titles[index];
+      var summary = summaries[index];
+      var keywords = keywordsList[index];
+      var avoid = avoids[index];
+
+      // 오행비율 활용: 예를 들어, 금속 비율이 높으면 키워드 추가
+      if (ohangRatio.gold && ohangRatio.gold > 20) {
+        keywords.push('안정');
       }
+      if (ohangRatio.wood && ohangRatio.wood > 20) {
+        keywords.push('성장');
+      }
+
       var parsed = {
-        title:    lines[0],
-        summary:  lines[1],
-        keywords: lines[2].split(',').map(function(k) { return k.trim(); }),
-        avoid:    lines[3]
+        title: title,
+        summary: summary,
+        keywords: keywords,
+        avoid: avoid
       };
 
       // Supabase에 저장
