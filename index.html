@@ -1162,8 +1162,8 @@ async function loadDailyCard() {
         return;
       }
       var raw = gemData.candidates[0].content.parts[0].text || '';
-      // 코드블록 제거 후 첫 번째 { } 블록 추출
-      raw = raw.replace(/```[\s\S]*?```/g, '').trim();
+      // 코드블록 태그 제거 (닫힘 없는 경우도 대응)
+      raw = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
       var jsonStart = raw.indexOf('{');
       var jsonEnd = raw.lastIndexOf('}');
       if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
