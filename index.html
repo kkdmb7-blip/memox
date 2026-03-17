@@ -450,6 +450,7 @@
       <div class="chat-header-sub" id="chatHeaderSub">사주 · 점성술 기반 AI</div>
     </div>
     <div class="chat-header-actions">
+      <button onclick="newChat()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">새 채팅</button>
       <button onclick="showScreen('profile')" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">내 정보</button>
       <button onclick="confirmLogout()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">로그아웃</button>
     </div>
@@ -624,6 +625,14 @@ async function loadProfile() {
 async function saveProfile(data) {
   var res = await sb.from('chat_users').upsert(data);
   if (res.error) throw new Error(res.error.message);
+}
+
+function newChat() {
+  chatHistory = [];
+  var container = document.getElementById('chatMessages');
+  if (container) container.innerHTML = '';
+  showWelcome();
+  toast('새 채팅을 시작했어요!');
 }
 
 function updateChatHeader() {
