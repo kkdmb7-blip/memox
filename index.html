@@ -1366,7 +1366,14 @@ for (var i = 1; i <= 60; i++) {
   fd.setDate(fd.getDate() + i);
   futureGanji += fd.getFullYear() + '년 ' + (fd.getMonth()+1) + '월 ' + fd.getDate() + '일: ' + getTodayGanji(fd) + '일\n';
 }
+  var futureMonthGanji = '';
+for (var i = 1; i <= 6; i++) {
+  var fm = new Date(_now.getFullYear(), _now.getMonth() + i, 1);
+  var fy = fm.getFullYear(); var fmo = fm.getMonth() + 1;
+  futureMonthGanji += fy + '년 ' + fmo + '월: ' + getMonthGanji(fy, fmo) + '월\n';
+}
   var systemPrompt = personaPrompt + outputControl + '\n\n【중요】오늘 날짜는 ' + dateStr + ' (' + todayGanji + '일, ' + monthGanji + '월) 입니다. 반드시 이 일진과 월건을 기준으로 답하라.\n\n' +
+'【향후 6개월 월건 - 월운 질문 시 반드시 이 표를 참고하라】\n' + futureMonthGanji + '\n' +
 '【향후 60일 일진 - 미래 날짜 질문 시 반드시 이 표를 참고하라】\n' + futureGanji + '\n' +
     '【내담자 정보】\n' +
     '이름: ' + (profile.name || '미상') + '\n' +
