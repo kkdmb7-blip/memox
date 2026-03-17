@@ -1359,13 +1359,14 @@ async function callGemini(userMsg, apiKey) {
 
   var _now = new Date(); var dateStr = _now.getFullYear() + '년 ' + (_now.getMonth()+1) + '월 ' + _now.getDate() + '일';
   var todayGanji = getTodayGanji();
+  var monthGanji = getMonthGanji(_now.getFullYear(), _now.getMonth() + 1);
   var futureGanji = '';
 for (var i = 1; i <= 60; i++) {
   var fd = new Date(_now);
   fd.setDate(fd.getDate() + i);
   futureGanji += fd.getFullYear() + '년 ' + (fd.getMonth()+1) + '월 ' + fd.getDate() + '일: ' + getTodayGanji(fd) + '일\n';
 }
-  var systemPrompt = personaPrompt + outputControl + '\n\n【중요】오늘 날짜는 ' + dateStr + ' (' + todayGanji + '일) 입니다. 반드시 이 일진을 기준으로 답하라.\n\n' +
+  var systemPrompt = personaPrompt + outputControl + '\n\n【중요】오늘 날짜는 ' + dateStr + ' (' + todayGanji + '일, ' + monthGanji + '월) 입니다. 반드시 이 일진과 월건을 기준으로 답하라.\n\n' +
 '【향후 60일 일진 - 미래 날짜 질문 시 반드시 이 표를 참고하라】\n' + futureGanji + '\n' +
     '【내담자 정보】\n' +
     '이름: ' + (profile.name || '미상') + '\n' +
