@@ -1140,11 +1140,10 @@ async function loadDailyCard() {
       var astro = userProfile.astro_data || {};
       var name = userProfile.name || '당신';
 
-      var prompt = '사주: ' + (saju.saju_pillars||'') + ', 신강신약: ' + (saju.saju_strength||'') +
-        ', 용신: ' + (saju.saju_yongshin_primary||'') + ', 태양궁: ' + (astro.sun||'') +
-        ', 달궁: ' + (astro.moon||'') + ', 지배행성: ' + (astro.dominant_planet||'') +
-        '\n\n오늘(' + today + ') ' + name + '님의 데일리 운세 카드를 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만.\n' +
-        '{"title":"한 줄 오늘의 테마(이모지 포함)","summary":"2-3문장 오늘의 흐름","keywords":["키워드1","키워드2","키워드3"],"avoid":"오늘 피할 것 한 줄"}';
+      var prompt = '사주:' + (saju.saju_pillars||'') + ' 용신:' + (saju.saju_yongshin_primary||'') +
+        ' 태양궁:' + (astro.sun||'') + ' 달궁:' + (astro.moon||'') +
+        '\n오늘(' + today + ') ' + name + '님 데일리 운세. JSON만 출력. 설명 금지.\n' +
+        '{"title":"테마(이모지포함,10자이내)","summary":"오늘흐름(30자이내)","keywords":["키1","키2","키3"],"avoid":"피할것(15자이내)"}';
 
       var gemRes = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
@@ -1153,7 +1152,7 @@ async function loadDailyCard() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 300 }
+            generationConfig: { maxOutputTokens: 150, temperature: 0.7 }
           })
         }
       );
@@ -1162,19 +1161,20 @@ async function loadDailyCard() {
         console.warn('데일리 카드 Gemini 응답 없음:', JSON.stringify(gemData).slice(0, 200));
         return;
       }
-      var raw = gemData.candidates[0].content.parts[0].text.trim();
-      raw = raw.replace(/```json|```/g, '').trim();
-      // JSON 블록만 추출 (앞뒤 불필요한 텍스트 제거)
-      var jsonMatch = raw.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
+      var raw = gemData.candidates[0].content.parts[0].text || '';
+      // 코드블록 제거 후 첫 번째 { } 블록 추출
+      raw = raw.replace(/```[\s\S]*?```/g, '').trim();
+      var jsonStart = raw.indexOf('{');
+      var jsonEnd = raw.lastIndexOf('}');
+      if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
         console.warn('데일리 카드 JSON 추출 실패:', raw.slice(0, 200));
         return;
       }
       var parsed;
       try {
-        parsed = JSON.parse(jsonMatch[0]);
+        parsed = JSON.parse(raw.slice(jsonStart, jsonEnd + 1));
       } catch(parseErr) {
-        console.warn('데일리 카드 JSON 파싱 실패:', parseErr.message, jsonMatch[0].slice(0, 200));
+        console.warn('데일리 카드 JSON 파싱 실패:', parseErr.message, raw.slice(jsonStart, jsonEnd + 1).slice(0, 200));
         return;
       }
 
