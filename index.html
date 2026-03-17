@@ -1977,6 +1977,29 @@ document.addEventListener('visibilitychange', async function() {
 });
 
 initAuth();
+
+// ── Service Worker 등록 ──────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+
+      // Periodic Background Sync (백그라운드 연결 유지)
+      if ('periodicSync' in reg) {
+        try {
+          await reg.periodicSync.register('keep-alive', { minInterval: 60 * 1000 });
+        } catch (_) {}
+      }
+
+      // Background Sync (오프라인 메시지 재전송)
+      if ('sync' in reg) {
+        window._swReg = reg;
+      }
+    } catch (e) {
+      console.warn('SW 등록 실패:', e);
+    }
+  });
+}
 </script>
 </body>
 </html>

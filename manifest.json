@@ -2,18 +2,39 @@
   "name": "운명에게 물어봐",
   "short_name": "운명챗봇",
   "description": "사주와 별자리로 운명을 읽어드려요",
-  "start_url": "/memox/",
-  "scope": "/memox/",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#09090f",
   "theme_color": "#09090f",
+  "prefer_related_applications": false,
+  "categories": ["lifestyle", "entertainment"],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "icons": [
     {
       "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "포르투나 운명 상담 챗봇"
     }
   ]
 }
