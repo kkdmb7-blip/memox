@@ -1210,16 +1210,70 @@ function getCityCoords(city) {
 }
 
 // ── CHAT ──────────────────────────────────────────────────────
+// KST 기준 오늘 날짜 "YYYY-MM-DD"
+function getKSTDate() {
+  var d = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 10);
+}
+
+async function callDailyFortune() {
+  var profile = userProfile || {};
+  var saju = profile.saju_data || {};
+  var astro = profile.astro_data || {};
+  var name = profile.name || '당신';
+  var today = getKSTDate();
+  var now = new Date();
+  var dateLabel = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일';
+
+  var saluteInfo =
+    '이름: ' + name + '\n' +
+    '성별: ' + (profile.gender === 'M' ? '남성' : '여성') + '\n' +
+    '생년월일: ' + (profile.birth_date || '미상') + '\n' +
+    '사주 기둥: ' + (saju.saju_pillars || JSON.stringify(saju).slice(0, 80)) + '\n' +
+    '띠: ' + (saju.saju_zodiac || '미상') + '\n' +
+    '오늘 일진: ' + (saju.iljin || '미상') + '\n' +
+    '지배행성: ' + (astro.dominant_planet || '미상') + '\n' +
+    '태양: ' + (astro.sun || '미상') + ' / 달: ' + (astro.moon || '미상');
+
+  var prompt = '오늘(' + dateLabel + ') ' + name + '님의 운세를 아래 JSON 형식으로만 답해줘.\n다른 말 없이 JSON만 출력해.\n\n내담자 정보:\n' + saluteInfo + '\n\n{\n  "keyword": "오늘의 키워드 단어 1개",\n  "summary": "20자 이내 임팩트 한 줄",\n  "content": "200자 이내 오늘 운세",\n  "caution": "오늘 주의할 것 1가지 15자 이내",\n  "recommendation": "오늘 하면 좋은 것 1가지 15자 이내"\n}';
+
+  async function tryFetch() {
+    var res = await fetch('https://fortuna-silk.vercel.app/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: currentUser.id + '_daily_' + today,
+        messages: [{ role: 'user', content: prompt }],
+        system_prompt: '당신은 사주와 점성술 전문 운세 AI입니다. 요청한 JSON 형식으로만 답하세요. 마크다운 없이 순수 JSON만 출력하세요.'
+      })
+    });
+    if (!res.ok) throw new Error('API 오류');
+    var data = await res.json();
+    var text = (data.reply || '').trim();
+    // JSON 블록 추출
+    var match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('JSON 없음');
+    return JSON.parse(match[0]);
+  }
+
+  try {
+    return await tryFetch();
+  } catch(e) {
+    // 1회 재시도
+    try { return await tryFetch(); } catch(e2) { return null; }
+  }
+}
+
 async function loadDailyCard() {
   if (!currentUser || !userProfile) return;
-  var today = new Date().toISOString().slice(0, 10); // "2026-03-14"
+  var today = getKSTDate();
 
   // 오늘 이미 닫았으면 표시 안 함
   if (localStorage.getItem('fortuna_daily_dismissed') === today) return;
 
-  // 오늘 카드 Supabase에서 확인
   try {
-    var res = await sb.from('daily_cards')
+    // Supabase에서 오늘 운세 조회
+    var res = await sb.from('daily_fortune')
       .select('*')
       .eq('user_id', currentUser.id)
       .eq('card_date', today)
@@ -1229,65 +1283,31 @@ async function loadDailyCard() {
     if (res.data) {
       cardData = res.data;
     } else {
-      // 로컬에서 사주 데이터를 활용해 생성
-      var saju = userProfile.saju_data || {};
-      var astro = userProfile.astro_data || {};
-      var name = userProfile.name || '당신';
-
-      // 사주 데이터를 기반으로 카드 생성
-      var day = new Date().getDate();
-      var iljin = saju.iljin || '';
-      var wolgeon = saju.wolgeon || '';
-      var ohangRatio = saju.ohang_ratio || {};
-      var daewoon = saju.daewoon || '';
-
-      // 간단한 로직: 일진의 첫 글자 코드에 따라 인덱스 계산
-      var baseIndex = 0;
-      if (iljin) {
-        baseIndex = iljin.charCodeAt(0) % 3;
+      // AI 생성 (로딩 카드 먼저 표시)
+      renderDailyCard(null); // 로딩 상태
+      var parsed = await callDailyFortune();
+      if (!parsed) {
+        parsed = {
+          keyword: '오늘',
+          summary: '포르투나가 오늘도 함께해요',
+          content: '오늘 하루도 당신의 길을 응원해요. 작은 선택 하나하나가 운명을 만들어갑니다.',
+          caution: '무리한 결정 자제',
+          recommendation: '잠깐의 휴식과 명상'
+        };
       }
-      var index = (baseIndex + day) % 3;
-
-      var titles = ['✨ 좋은 기운', '🌟 행운의 날', '🔮 새로운 시작'];
-      var summaries = ['오늘은 긍정적인 에너지가 가득합니다.', '행운이 찾아올 수 있는 날입니다.', '새로운 기회를 잡을 수 있습니다.'];
-      var keywordsList = [['행운', '성공'], ['집중', '인내'], ['소통', '창의']];
-      var avoids = ['무리한 결정 피하기', '충동적인 행동 자제', '과도한 스트레스 피하기'];
-
-      var title = titles[index];
-      var summary = summaries[index];
-      var keywords = keywordsList[index];
-      var avoid = avoids[index];
-
-      // 오행비율 활용: 예를 들어, 금속 비율이 높으면 키워드 추가
-      if (ohangRatio.gold && ohangRatio.gold > 20) {
-        keywords.push('안정');
-      }
-      if (ohangRatio.wood && ohangRatio.wood > 20) {
-        keywords.push('성장');
-      }
-
-      var parsed = {
-        title: title,
-        summary: summary,
-        keywords: keywords,
-        avoid: avoid
-      };
-
-      // Supabase에 저장
-      await sb.from('daily_cards').upsert({
+      // Supabase 저장
+      await sb.from('daily_fortune').upsert({
         user_id: currentUser.id,
         card_date: today,
-        title: parsed.title,
+        keyword: parsed.keyword,
         summary: parsed.summary,
-        keywords: parsed.keywords,
-        avoid: parsed.avoid,
-        created_at: Date.now()
+        content: parsed.content,
+        caution: parsed.caution,
+        recommendation: parsed.recommendation
       });
       cardData = parsed;
-      cardData.card_date = today;
     }
 
-    // 카드 렌더링
     renderDailyCard(cardData);
   } catch(e) {
     console.warn('데일리 카드 오류:', e);
@@ -1298,29 +1318,125 @@ function renderDailyCard(card) {
   var existing = document.getElementById('dailyCardWrap');
   if (existing) existing.remove();
 
-  var today = new Date();
-  var dateStr = today.getFullYear() + '년 ' + (today.getMonth()+1) + '월 ' + today.getDate() + '일';
-
-  var keywords = Array.isArray(card.keywords) ? card.keywords : (card.keywords || []);
-  var kwHtml = keywords.map(function(k){
-    return '<span style="background:rgba(139,92,246,0.2);color:#c4b5fd;padding:4px 10px;border-radius:20px;font-size:12px;">' + escHtml(k) + '</span>';
-  }).join(' ');
+  var now = new Date();
+  var dateStr = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일';
 
   var wrap = document.createElement('div');
   wrap.id = 'dailyCardWrap';
-  wrap.style.cssText = 'margin:12px 16px 4px;border-radius:16px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(139,92,246,0.3);padding:16px;';
+
+  // 로딩 상태
+  if (!card) {
+    wrap.style.cssText = 'margin:0 0 8px;border-radius:20px;overflow:hidden;background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);border:1px solid rgba(212,175,55,0.25);';
+    wrap.innerHTML =
+      '<div style="padding:40px 20px;text-align:center;color:rgba(212,175,55,0.6);font-size:13px;letter-spacing:0.05em;">' +
+        '<div style="font-size:28px;margin-bottom:12px;animation:spin 2s linear infinite;display:inline-block;">🔮</div><br>오늘의 운세를 읽는 중...</div>';
+    var chatMessages = document.getElementById('chatMessages');
+    chatMessages.parentNode.insertBefore(wrap, chatMessages);
+    return;
+  }
+
+  // 여신 SVG 실루엣
+  var goddessSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260" width="120" height="156" style="display:block;margin:0 auto;">' +
+    // 후광
+    '<ellipse cx="100" cy="52" rx="38" ry="38" fill="none" stroke="#d4af37" stroke-width="1.5" opacity="0.4"/>' +
+    '<ellipse cx="100" cy="52" rx="44" ry="44" fill="none" stroke="#d4af37" stroke-width="0.8" opacity="0.2"/>' +
+    // 머리
+    '<ellipse cx="100" cy="52" rx="22" ry="24" fill="#d4af37" opacity="0.9"/>' +
+    // 머리카락 (흘러내리는 형태)
+    '<path d="M78 44 Q68 80 72 120" stroke="#c9a84c" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.8"/>' +
+    '<path d="M122 44 Q132 80 128 120" stroke="#c9a84c" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.8"/>' +
+    '<path d="M82 30 Q100 18 118 30" stroke="#c9a84c" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.7"/>' +
+    // 목
+    '<rect x="93" y="73" width="14" height="16" rx="6" fill="#d4af37" opacity="0.85"/>' +
+    // 몸통 (드레이퍼리)
+    '<path d="M68 90 Q58 130 55 180 Q78 190 100 190 Q122 190 145 180 Q142 130 132 90 Q118 84 100 84 Q82 84 68 90Z" fill="#d4af37" opacity="0.8"/>' +
+    // 드레스 주름
+    '<path d="M85 90 Q80 130 78 180" stroke="#c9a84c" stroke-width="1.5" fill="none" opacity="0.5"/>' +
+    '<path d="M100 88 Q100 135 100 180" stroke="#c9a84c" stroke-width="1.5" fill="none" opacity="0.5"/>' +
+    '<path d="M115 90 Q120 130 122 180" stroke="#c9a84c" stroke-width="1.5" fill="none" opacity="0.5"/>' +
+    // 왼팔 (올린 포즈)
+    '<path d="M70 100 Q50 80 44 60 Q42 52 50 50 Q56 62 68 78 Q70 88 70 100Z" fill="#d4af37" opacity="0.75"/>' +
+    // 오른팔 (내린 포즈)
+    '<path d="M130 100 Q148 115 152 135 Q154 143 147 145 Q140 132 132 118 Q130 110 130 100Z" fill="#d4af37" opacity="0.75"/>' +
+    // 왼손에 별
+    '<circle cx="44" cy="48" r="6" fill="#f0d060" opacity="0.9"/>' +
+    '<path d="M44 41 L45.4 45.8 L50.5 45.8 L46.5 48.6 L47.9 53.4 L44 50.6 L40.1 53.4 L41.5 48.6 L37.5 45.8 L42.6 45.8Z" fill="#fffde7" opacity="0.95"/>' +
+    // 치마 하단 (물결)
+    '<path d="M55 180 Q68 195 82 188 Q91 195 100 190 Q109 195 118 188 Q132 195 145 180" stroke="#c9a84c" stroke-width="2" fill="none" opacity="0.6"/>' +
+    // 장식 점
+    '<circle cx="100" cy="76" r="2.5" fill="#f0d060" opacity="0.8"/>' +
+    // 관(冠)
+    '<path d="M82 32 L86 20 L100 16 L114 20 L118 32" stroke="#d4af37" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>' +
+    '<circle cx="100" cy="15" r="4" fill="#f0d060" opacity="0.95"/>' +
+    '<circle cx="86" cy="20" r="2.5" fill="#d4af37" opacity="0.8"/>' +
+    '<circle cx="114" cy="20" r="2.5" fill="#d4af37" opacity="0.8"/>' +
+    '</svg>';
+
+  wrap.style.cssText = 'margin:0 0 8px;border-radius:20px;overflow:hidden;background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);border:1px solid rgba(212,175,55,0.25);';
   wrap.innerHTML =
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">' +
-      '<div style="font-size:11px;color:#6b7280;">✨ ' + dateStr + ' 오늘의 운세</div>' +
-      '<button onclick="dismissDailyCard()" style="background:none;border:none;color:#6b7280;font-size:16px;cursor:pointer;line-height:1;padding:0 0 0 8px;">✕</button>' +
+    // 상단 헤더 (날짜 + 닫기)
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px 0;">' +
+      '<span style="font-size:11px;color:rgba(212,175,55,0.6);letter-spacing:0.08em;">' + dateStr + ' 오늘의 운세</span>' +
+      '<button onclick="dismissDailyCard()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;line-height:1;padding:2px 4px;">✕</button>' +
     '</div>' +
-    '<div style="font-size:16px;font-weight:700;color:#e5e7eb;margin-bottom:10px;">' + escHtml(card.title||'') + '</div>' +
-    '<div style="font-size:13px;color:#9ca3af;line-height:1.6;margin-bottom:12px;">' + escHtml(card.summary||'') + '</div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">' + kwHtml + '</div>' +
-    (card.avoid ? '<div style="font-size:12px;color:#f87171;">⚠️ 오늘 피할 것: ' + escHtml(card.avoid) + '</div>' : '');
+    // 여신 영역
+    '<div style="padding:20px 20px 12px;text-align:center;">' +
+      goddessSvg +
+    '</div>' +
+    // 키워드
+    '<div style="text-align:center;padding:0 20px 8px;">' +
+      '<span style="font-size:28px;font-weight:800;color:#d4af37;letter-spacing:0.06em;text-shadow:0 0 20px rgba(212,175,55,0.4);">' + escHtml(card.keyword || '') + '</span>' +
+    '</div>' +
+    // 요약
+    '<div style="text-align:center;padding:0 24px 16px;">' +
+      '<p style="font-size:14px;font-weight:600;color:#e5e7eb;line-height:1.5;margin:0;">' + escHtml(card.summary || '') + '</p>' +
+    '</div>' +
+    // 구분선
+    '<div style="margin:0 20px;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.3),transparent);"></div>' +
+    // 본문
+    '<div style="padding:14px 20px 12px;">' +
+      '<p style="font-size:13px;color:#9ca3af;line-height:1.75;margin:0;">' + escHtml(card.content || '') + '</p>' +
+    '</div>' +
+    // 주의 / 추천
+    '<div style="padding:0 16px 14px;display:flex;flex-direction:column;gap:7px;">' +
+      (card.caution ? '<div style="background:rgba(248,113,113,0.08);border-left:2px solid #f87171;padding:7px 12px;border-radius:0 8px 8px 0;font-size:12px;color:#f87171;">⚠️ 주의 · ' + escHtml(card.caution) + '</div>' : '') +
+      (card.recommendation ? '<div style="background:rgba(139,92,246,0.08);border-left:2px solid #a78bfa;padding:7px 12px;border-radius:0 8px 8px 0;font-size:12px;color:#c4b5fd;">✨ 추천 · ' + escHtml(card.recommendation) + '</div>' : '') +
+    '</div>' +
+    // 하단 버튼
+    '<div style="display:flex;gap:8px;padding:0 16px 16px;" id="dailyCardBtns"></div>';
 
   var chatMessages = document.getElementById('chatMessages');
   chatMessages.parentNode.insertBefore(wrap, chatMessages);
+
+  // 버튼 이벤트 (DOM 삽입 후 addEventListener)
+  var btnsRow = wrap.querySelector('#dailyCardBtns');
+  if (btnsRow) {
+    var saveBtn = document.createElement('button');
+    saveBtn.style.cssText = 'flex:1;padding:11px;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.3);color:#d4af37;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;';
+    saveBtn.textContent = '저장 📸';
+    (function(c) {
+      saveBtn.addEventListener('click', function() {
+        saveCard(encodeURIComponent(c));
+      });
+    })('[오늘의 운세]\n' + (card.keyword||'') + '\n' + (card.summary||'') + '\n\n' + (card.content||''));
+
+    var chatBtn = document.createElement('button');
+    chatBtn.style.cssText = 'flex:2;padding:11px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;';
+    chatBtn.textContent = '대화하기 💬';
+    (function(s) {
+      chatBtn.addEventListener('click', function() { startDailyChat(s); });
+    })(card.summary || '');
+
+    btnsRow.appendChild(saveBtn);
+    btnsRow.appendChild(chatBtn);
+  }
+}
+
+function startDailyChat(summary) {
+  dismissDailyCard();
+  var msg = '오늘의 운세에서 "' + summary + '"라고 했는데, 더 자세히 알고 싶어요.';
+  var input = document.getElementById('userInput');
+  if (input) { input.value = msg; sendMessage(); }
 }
 
 async function loadChatHistory() {
