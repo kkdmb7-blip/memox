@@ -1,13 +1,17 @@
 // ── 포르투나 Service Worker ──────────────────────────────────
 const CACHE_NAME = 'fortuna-v1';
-const STATIC_ASSETS = ['/', '/index.html', '/manifest.json', '/icon.svg'];
+// self.registration.scope 기반 상대경로 (GitHub Pages 서브경로 대응)
+const BASE = self.registration.scope;
+const STATIC_ASSETS = [BASE, BASE + 'index.html', BASE + 'manifest.json', BASE + 'icon.svg'];
 
-// ── INSTALL: 정적 자원 캐시 ──────────────────────────────────
+// ── INSTALL: 정적 자원 캐시 (개별 add로 하나 실패해도 나머지 캐시) ─
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.allSettled(
+        STATIC_ASSETS.map(url => cache.add(url).catch(() => {}))
+      )
+    ).then(() => self.skipWaiting())
   );
 });
 
