@@ -168,7 +168,7 @@
   .msg.user .msg-time { text-align:left; }
   .share-kakao-btn {
     display:inline-flex; align-items:center; gap:5px;
-    margin-top:8px; padding:6px 12px;
+    padding:6px 14px;
     background:#FEE500; color:#191600; border:none; border-radius:20px;
     font-size:12px; font-weight:600; cursor:pointer;
     transition:opacity 0.2s; opacity:0.9;
@@ -177,15 +177,16 @@
   .share-kakao-btn img { width:16px; height:16px; }
   .copy-msg-btn {
     display:inline-flex; align-items:center; gap:5px;
-    margin-top:8px; margin-left:6px; padding:6px 12px;
+    padding:6px 14px;
     background:var(--surface3); color:var(--text2); border:1px solid var(--border); border-radius:20px;
     font-size:12px; font-weight:600; cursor:pointer;
     transition:all 0.2s;
   }
   .copy-msg-btn:hover { background:var(--surface2); color:var(--text); }
+  .msg-btn-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
   .save-card-btn {
     display:inline-flex; align-items:center; gap:5px;
-    margin-top:8px; margin-left:6px; padding:6px 12px;
+    padding:6px 14px;
     background:linear-gradient(135deg,#1a1a2e,#0f3460); color:#d4af37;
     border:1px solid #d4af37; border-radius:20px;
     font-size:12px; font-weight:600; cursor:pointer;
@@ -1612,10 +1613,27 @@ for (var i = 1; i <= 6; i++) {
   // 버튼 추가
   var streamShareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
   var btnWrap = document.createElement('div');
-  btnWrap.innerHTML =
-    '<button class="save-card-btn" onclick="saveCard(' + JSON.stringify(encodeURIComponent(cleanReply)) + ')">📸 카드로 저장</button>' +
-    '<button class="share-kakao-btn" onclick="shareKakao(\'' + streamShareId + '\')" id="' + streamShareId + '" data-content="' + encodeURIComponent(cleanReply.slice(0,200)) + '">💬 카카오 공유</button>' +
-    '<button class="copy-msg-btn" onclick="copyMessage(this)" data-content="' + encodeURIComponent(cleanReply) + '">📋 복사</button>';
+  var cardBtn = document.createElement('button');
+  cardBtn.className = 'save-card-btn';
+  cardBtn.textContent = '카드로 저장';
+  cardBtn.addEventListener('click', function(){ saveCard(encodeURIComponent(cleanReply)); });
+
+  var kakaoBtn = document.createElement('button');
+  kakaoBtn.className = 'share-kakao-btn';
+  kakaoBtn.id = streamShareId;
+  kakaoBtn.setAttribute('data-content', encodeURIComponent(cleanReply.slice(0,200)));
+  kakaoBtn.textContent = '카카오 공유';
+  kakaoBtn.addEventListener('click', function(){ shareKakao(streamShareId); });
+
+  var copyBtn = document.createElement('button');
+  copyBtn.className = 'copy-msg-btn';
+  copyBtn.setAttribute('data-content', encodeURIComponent(cleanReply));
+  copyBtn.textContent = '📋 복사';
+  copyBtn.addEventListener('click', function(){ copyMessage(copyBtn); });
+
+  btnWrap.appendChild(cardBtn);
+  btnWrap.appendChild(kakaoBtn);
+  btnWrap.appendChild(copyBtn);
   bubble.parentNode.insertBefore(btnWrap, bubble.nextSibling);
   scrollToBottom();
   return cleanReply;
@@ -1681,26 +1699,41 @@ var shareBtn = '';
 
  var shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
 
-  shareBtn =
-  '<button class="save-card-btn" onclick="saveCard(' + JSON.stringify(encodeURIComponent(content)) + ')">' +
-  '📸 카드로 저장' +
-  '</button>' +
-  '<button class="share-kakao-btn" onclick="shareKakao(\'' + shareId + '\')" id="' + shareId + '" data-content="' + encodeURIComponent(content.slice(0, 200)) + '">' +
-  '💬 카카오 공유' +
-  '</button>' +
-  '<button class="copy-msg-btn" onclick="copyMessage(this)" data-content="' + encodeURIComponent(content) + '">' +
-  '📋 복사' +
-  '</button>';
-
 }
 
   div.innerHTML =
     '<div class="msg-avatar">' + (isUser ? '👤' : getAvatar()) + '</div>' +
     '<div>' +
       '<div class="msg-bubble">' + renderMarkdown(content) + '</div>' +
-      shareBtn +
+      '<div class="msg-btn-row"></div>' +
       '<div class="msg-time">' + time + '</div>' +
     '</div>';
+
+  if (!isUser) {
+    var btnRow = div.querySelector('.msg-btn-row');
+
+    var cardBtn2 = document.createElement('button');
+    cardBtn2.className = 'save-card-btn';
+    cardBtn2.textContent = '카드로 저장';
+    (function(c){ cardBtn2.addEventListener('click', function(){ saveCard(encodeURIComponent(c)); }); })(content);
+
+    var kakaoBtn2 = document.createElement('button');
+    kakaoBtn2.className = 'share-kakao-btn';
+    kakaoBtn2.id = shareId;
+    kakaoBtn2.setAttribute('data-content', encodeURIComponent(content.slice(0,200)));
+    kakaoBtn2.textContent = '카카오 공유';
+    kakaoBtn2.addEventListener('click', function(){ shareKakao(shareId); });
+
+    var copyBtn2 = document.createElement('button');
+    copyBtn2.className = 'copy-msg-btn';
+    copyBtn2.setAttribute('data-content', encodeURIComponent(content));
+    copyBtn2.textContent = '📋 복사';
+    copyBtn2.addEventListener('click', function(){ copyMessage(copyBtn2); });
+
+    btnRow.appendChild(cardBtn2);
+    btnRow.appendChild(kakaoBtn2);
+    btnRow.appendChild(copyBtn2);
+  }
 
   container.appendChild(div);
   scrollToBottom();
@@ -2302,8 +2335,8 @@ if ('serviceWorker' in navigator) {
   <div class="modal-card-preview" id="cardPreview"></div>
   <p class="modal-loading" id="cardLoading">카드 생성 중... ✨</p>
   <div class="modal-actions" id="cardActions" style="display:none;">
-    <button class="modal-btn btn-save" onclick="downloadCardImage()">📥 이미지 저장</button>
-    <button class="modal-btn btn-kakao" onclick="shareKakaoFromModal()">💬 카카오 공유</button>
+    <button class="modal-btn btn-save" onclick="downloadCardImage()">이미지 저장</button>
+    <button class="modal-btn btn-kakao" onclick="shareKakaoFromModal()">카카오 공유</button>
     <button class="modal-btn btn-close-modal" onclick="closeCardModal()">닫기</button>
   </div>
 </div>
