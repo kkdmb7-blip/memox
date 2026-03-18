@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>포르투나 - 운명의 여신</title>
 <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <meta name="theme-color" content="#0a0a0a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -182,6 +183,16 @@
     transition:all 0.2s;
   }
   .copy-msg-btn:hover { background:var(--surface2); color:var(--text); }
+  .save-card-btn {
+    display:inline-flex; align-items:center; gap:5px;
+    margin-top:8px; margin-left:6px; padding:6px 12px;
+    background:linear-gradient(135deg,#1a1a2e,#0f3460); color:#d4af37;
+    border:1px solid #d4af37; border-radius:20px;
+    font-size:12px; font-weight:600; cursor:pointer;
+    transition:all 0.2s;
+  }
+  .save-card-btn:hover { background:linear-gradient(135deg,#16213e,#0f3460); opacity:0.9; }
+  #fortunaCardCanvas { position:fixed; left:-9999px; top:-9999px; pointer-events:none; }
 
   /* 추천 질문 */
   .suggest-chips { display:flex; flex-wrap:nowrap; gap:8px; padding:0 16px 12px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
@@ -1557,6 +1568,14 @@ for (var i = 1; i <= 6; i++) {
     .replace(/#{1,6}\s/g, '')
     .replace(/【([^】]+)】/g, '$1');
   bubble.innerHTML = renderMarkdown(cleanReply);
+  // 버튼 추가
+  var streamShareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  var btnWrap = document.createElement('div');
+  btnWrap.innerHTML =
+    '<button class="save-card-btn" onclick="saveCard(' + JSON.stringify(encodeURIComponent(cleanReply)) + ')">📸 카드로 저장</button>' +
+    '<button class="share-kakao-btn" onclick="shareKakao(\'' + streamShareId + '\')" id="' + streamShareId + '" data-content="' + encodeURIComponent(cleanReply.slice(0,200)) + '">💬 카카오 공유</button>' +
+    '<button class="copy-msg-btn" onclick="copyMessage(this)" data-content="' + encodeURIComponent(cleanReply) + '">📋 복사</button>';
+  bubble.parentNode.insertBefore(btnWrap, bubble.nextSibling);
   scrollToBottom();
   return cleanReply;
 }
@@ -1622,8 +1641,11 @@ var shareBtn = '';
  var shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
 
   shareBtn =
+  '<button class="save-card-btn" onclick="saveCard(' + JSON.stringify(encodeURIComponent(content)) + ')">' +
+  '📸 카드로 저장' +
+  '</button>' +
   '<button class="share-kakao-btn" onclick="shareKakao(\'' + shareId + '\')" id="' + shareId + '" data-content="' + encodeURIComponent(content.slice(0, 200)) + '">' +
-  '💬 카카오톡 공유' +
+  '💬 카카오 공유' +
   '</button>' +
   '<button class="copy-msg-btn" onclick="copyMessage(this)" data-content="' + encodeURIComponent(content) + '">' +
   '📋 복사' +
@@ -1745,16 +1767,65 @@ function copyMessage(btn) {
   });
 }
 
+function saveCard(encodedContent) {
+  var content = decodeURIComponent(encodedContent);
+  var name = (userProfile && userProfile.name) ? userProfile.name : '';
+  // 핵심 문장 추출: 첫 문단 첫 문장
+  var firstSentence = content.split(/\n/)[0].trim();
+  firstSentence = firstSentence.replace(/[*#`_~]/g, '').trim();
+  if (firstSentence.length > 80) firstSentence = firstSentence.slice(0, 78) + '…';
+
+  var today = new Date();
+  var dateStr = today.getFullYear() + '년 ' + (today.getMonth()+1) + '월 ' + today.getDate() + '일';
+
+  // 카드 DOM 생성
+  var card = document.createElement('div');
+  card.id = 'fortunaCardEl';
+  card.style.cssText = [
+    'position:fixed', 'left:-9999px', 'top:-9999px',
+    'width:540px', 'height:960px',
+    'background:linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)',
+    'display:flex', 'flex-direction:column',
+    'align-items:center', 'justify-content:center',
+    'padding:60px 48px', 'box-sizing:border-box',
+    'font-family:\'Noto Sans KR\',sans-serif'
+  ].join(';');
+
+  card.innerHTML =
+    '<div style="font-size:28px;letter-spacing:0.18em;color:#d4af37;font-weight:700;margin-bottom:12px;">🔮 FORTUNA</div>' +
+    '<div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,#d4af37,transparent);margin-bottom:48px;"></div>' +
+    '<div style="font-size:22px;color:#fff;line-height:1.75;text-align:center;word-break:keep-all;font-weight:400;letter-spacing:0.02em;flex:1;display:flex;align-items:center;">' +
+      '"' + firstSentence + '"' +
+    '</div>' +
+    '<div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,#d4af37,transparent);margin:40px 0 20px;"></div>' +
+    '<div style="font-size:14px;color:rgba(255,255,255,0.7);letter-spacing:0.08em;">' + dateStr + (name ? ' · ' + name + '님' : '') + '</div>' +
+    '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:16px;letter-spacing:0.05em;">fortuna-silk.vercel.app</div>';
+
+  document.body.appendChild(card);
+
+  html2canvas(card, { scale: 2, useCORS: true, backgroundColor: null, width: 540, height: 960 }).then(function(canvas) {
+    document.body.removeChild(card);
+    var link = document.createElement('a');
+    link.download = 'fortuna_' + today.getFullYear() + (today.getMonth()+1) + today.getDate() + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('📸 카드가 저장됐어요! 인스타 스토리에 공유해보세요 ✨');
+  }).catch(function() {
+    if (document.getElementById('fortunaCardEl')) document.body.removeChild(card);
+    toast('카드 생성에 실패했어요. 다시 시도해주세요.');
+  });
+}
+
 function shareKakao(btnId) {
   var btn = document.getElementById(btnId);
   var rawContent = btn ? decodeURIComponent(btn.getAttribute('data-content')) : '';
   var name = (userProfile && userProfile.name) ? userProfile.name : '나';
 
-  // 공유 문구 - 소름돋는 느낌으로
-  var titleText = '✨ AI가 분석한 내 사주 결과';
-  var descText = name + '님의 운명 분석이 나왔어요. 진짜 소름돋네요 🔮\n' + rawContent.slice(0, 80) + (rawContent.length > 80 ? '...' : '');
+  var firstLine = rawContent.split(/\n/)[0].replace(/[*#`_~]/g,'').trim();
+  var titleText = '포르투나가 오늘 나한테 한 말 🔮';
+  var descText = firstLine.slice(0, 90) + (firstLine.length > 90 ? '...' : '');
 
-  var pageUrl = window.location.href.split('?')[0];
+  var pageUrl = 'https://kkdmb7-blip.github.io/memox';
 
   // 카카오 SDK 방식 시도, 실패시 URL 스킴 fallback
   try {
@@ -1831,11 +1902,39 @@ function makeBgStars() {
 function updateQuotaDisplay(freeLeft, paidLeft) {
   var el = document.getElementById('quotaDisplay');
   if (!el) return;
+  var left = paidLeft > 0 ? paidLeft : freeLeft;
   if (paidLeft > 0) {
-    el.textContent = '남은 질문 ' + paidLeft + '개';
+    el.style.color = left <= 1 ? '#ff4d4d' : left <= 2 ? '#f5c842' : 'var(--accent)';
+    el.innerHTML = left === 0
+      ? '오늘 질문을 다 쓰셨어요 🌙'
+      : '남은 질문 ' + left + '개' + (left === 1 ? ' <span style="color:#ff4d4d">마지막 질문입니다 🔮</span>' : '');
   } else {
-    el.textContent = '오늘 무료 ' + freeLeft + '/3개';
+    el.style.color = left <= 1 ? '#ff4d4d' : left <= 2 ? '#f5c842' : 'var(--accent)';
+    if (left === 0) {
+      el.innerHTML = '오늘 질문을 다 쓰셨어요. 자정에 다시 만나요 🌙' +
+        '<button onclick="requestNotification()" style="margin-left:8px;padding:3px 10px;background:var(--accent2);color:#fff;border:none;border-radius:12px;font-size:11px;cursor:pointer;">내일 알림 받기</button>';
+    } else {
+      el.innerHTML = '오늘 무료 ' + left + '/3개' + (left === 1 ? ' <span style="color:#ff4d4d">마지막 질문입니다 🔮</span>' : '');
+    }
   }
+}
+
+function requestNotification() {
+  if (!('Notification' in window)) { toast('이 브라우저는 알림을 지원하지 않아요.'); return; }
+  Notification.requestPermission().then(function(permission) {
+    if (permission === 'granted') {
+      toast('✅ 내일 자정에 알림을 보내드릴게요 🔮');
+      // 자정까지 남은 ms 계산
+      var now = new Date();
+      var midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
+      var delay = midnight - now;
+      setTimeout(function() {
+        new Notification('포르투나 🔮', { body: '오늘의 무료 질문 3개가 충전됐어요. 오늘 운세 확인해보세요!', icon: 'icon.svg' });
+      }, delay);
+    } else {
+      toast('알림 권한이 거부됐어요. 브라우저 설정에서 허용해주세요.');
+    }
+  });
 }
 
 function showLimitModal(freeLeft, paidLeft) {
