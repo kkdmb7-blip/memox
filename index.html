@@ -370,6 +370,82 @@
   @media (max-width:400px) {
     .form-row { grid-template-columns:1fr; }
   }
+
+  /* ── 타로 모달 ── */
+  .tarot-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000;
+    display:flex; align-items:center; justify-content:center;
+    padding:20px; overflow-y:auto;
+  }
+  .tarot-modal {
+    background:var(--surface); border:1px solid #3a2a5a; border-radius:16px;
+    width:100%; max-width:480px; padding:24px; position:relative;
+    max-height:90vh; overflow-y:auto;
+  }
+  .tarot-modal h2 { font-size:18px; color:#c9a84c; margin:0 0 16px; text-align:center; }
+  .tarot-question-input {
+    width:100%; background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; padding:10px 14px; color:var(--text); font-size:14px;
+    resize:none; margin-bottom:14px; box-sizing:border-box;
+  }
+  .tarot-spread-btns { display:flex; gap:8px; margin-bottom:16px; }
+  .tarot-spread-btn {
+    flex:1; padding:10px 8px; background:var(--surface2); border:1px solid var(--border);
+    border-radius:8px; color:var(--text2); font-size:13px; cursor:pointer; transition:all 0.2s;
+  }
+  .tarot-spread-btn.active { background:#3a1a5a; border-color:#c9a84c; color:#c9a84c; }
+  .tarot-draw-btn {
+    width:100%; padding:12px; background:linear-gradient(135deg,#6a0dad,#c9a84c);
+    border:none; border-radius:10px; color:#fff; font-size:15px; font-weight:600;
+    cursor:pointer; margin-bottom:16px;
+  }
+  .tarot-cards-area {
+    display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:16px;
+  }
+  .tarot-card-wrap { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .tarot-card-label { font-size:11px; color:var(--text3); text-align:center; }
+  .tarot-card {
+    width:80px; height:140px; perspective:600px; cursor:pointer;
+  }
+  .tarot-card-inner {
+    width:100%; height:100%; position:relative;
+    transform-style:preserve-3d; transition:transform 0.8s;
+  }
+  .tarot-card.flipped .tarot-card-inner { transform:rotateY(180deg); }
+  .tarot-card-front, .tarot-card-back {
+    position:absolute; inset:0; backface-visibility:hidden; border-radius:8px;
+    overflow:hidden; border:1px solid #3a2a5a;
+  }
+  .tarot-card-back {
+    background:linear-gradient(135deg,#1a0a2e,#3a1a5a);
+    display:flex; align-items:center; justify-content:center;
+    font-size:28px;
+  }
+  .tarot-card-front { transform:rotateY(180deg); background:#1a0a2e; }
+  .tarot-card-front img {
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  .tarot-card-front .tarot-fallback {
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:4px;
+  }
+  .tarot-card-front .tarot-fallback span:first-child { font-size:28px; }
+  .tarot-card-front .tarot-fallback span:last-child { font-size:9px; color:var(--text3); text-align:center; padding:0 4px; }
+  .tarot-reversed-badge {
+    font-size:9px; color:#e07070; background:rgba(200,50,50,0.15);
+    border:1px solid rgba(200,50,50,0.3); border-radius:4px; padding:1px 5px;
+  }
+  .tarot-result-area { background:var(--surface2); border-radius:10px; padding:14px; font-size:13px; color:var(--text); line-height:1.6; white-space:pre-wrap; }
+  .tarot-close-btn {
+    position:absolute; top:14px; right:14px; background:none; border:none;
+    color:var(--text3); font-size:20px; cursor:pointer; line-height:1;
+  }
+  .tarot-btn {
+    background:none; border:1px solid #3a2a5a; border-radius:8px;
+    color:#9b8fb0; font-size:12px; cursor:pointer; padding:5px 10px;
+    margin-right:6px;
+  }
+
 </style>
 </head>
 <body>
@@ -585,8 +661,25 @@
       <textarea class="chat-textarea" id="chatInput" placeholder="🔮 무엇이든 물어보세요..." rows="1"
         oninput="autoResize(this)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendMessage()"></textarea>
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()">💫 운명 열기</button>
+      <button <button class="tarot-btn" id="tarotOpenBtn" onclick="openTarotModal()">🃏 타로</button>
+      class="send-btn" id="sendBtn" onclick="sendMessage()">💫 운명 열기</button>
     </div>
+  </div>
+</div>
+
+<!-- TAROT MODAL -->
+<div id="tarotModal" class="tarot-overlay" style="display:none;">
+  <div class="tarot-modal">
+    <button class="tarot-close-btn" onclick="closeTarotModal()">✕</button>
+    <h2>🃏 타로 카드</h2>
+    <textarea class="tarot-question-input" id="tarotQuestion" rows="2" placeholder="질문을 입력하세요 (예: 이 관계는 어떻게 될까요?)"></textarea>
+    <div class="tarot-spread-btns">
+      <button class="tarot-spread-btn active" id="spreadBtn1" onclick="selectSpread(1)">🃏 원카드</button>
+      <button class="tarot-spread-btn" id="spreadBtn3" onclick="selectSpread(3)">🃏🃏🃏 쓰리카드</button>
+    </div>
+    <button class="tarot-draw-btn" onclick="drawTarotCards()">✨ 카드 뽑기</button>
+    <div class="tarot-cards-area" id="tarotCardsArea"></div>
+    <div class="tarot-result-area" id="tarotResultArea" style="display:none;"></div>
   </div>
 </div>
 
@@ -1603,6 +1696,204 @@ function renderRetroCard(card, dateStr) {
     '</div>';
   document.body.appendChild(overlay);
   setTimeout(function(){ const el = document.getElementById('retroCard'); if (el) el.remove(); }, 15000);
+}
+
+
+// ════════════════════════════════════════════════════════
+//  타로 카드 데이터 (78장 라이더-웨이트)
+// ════════════════════════════════════════════════════════
+var TAROT_CARDS = (function() {
+  var majorImgs = [
+    'https://upload.wikimedia.org/wikipedia/commons/9/90/RWS_Tarot_00_Fool.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/1/10/RWS_Tarot_01_Magician.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/8/88/RWS_Tarot_02_High_Priestess.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/d/d2/RWS_Tarot_03_Empress.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/c/c3/RWS_Tarot_04_Emperor.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/8/8d/RWS_Tarot_05_Hierophant.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/3/3a/TheLovers.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/9/9b/RWS_Tarot_07_Chariot.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/f/f5/RWS_Tarot_08_Strength.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/4/4d/RWS_Tarot_09_Hermit.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/3/3c/RWS_Tarot_10_Wheel_of_Fortune.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/e/e0/RWS_Tarot_11_Justice.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/2/2b/RWS_Tarot_12_Hanged_Man.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/d/d7/RWS_Tarot_13_Death.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/f/f8/RWS_Tarot_14_Temperance.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/5/55/RWS_Tarot_15_Devil.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/5/53/RWS_Tarot_16_Tower.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/d/db/RWS_Tarot_17_Star.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/7/7f/RWS_Tarot_18_Moon.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/1/17/RWS_Tarot_19_Sun.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/d/dd/RWS_Tarot_20_Judgement.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/f/ff/RWS_Tarot_21_World.jpg'
+  ];
+  var majorNames = [
+    '바보','마법사','여교황','여황제','황제','교황','연인','전차','힘','은둔자',
+    '운명의 바퀴','정의','매달린 사람','죽음','절제','악마','탑','별','달','태양','심판','세계'
+  ];
+  var majorEmoji = ['🃏','🪄','🌙','👑','👸','⛪','💑','🏆','💪','🕯️','☸️','⚖️','🙃','💀','🏺','😈','🗼','⭐','🌛','☀️','📯','🌍'];
+  var suits = [
+    { name:'완드', emoji:'🪄', color:'#e07020',
+      imgs:['https://upload.wikimedia.org/wikipedia/commons/1/11/Wands01.jpg','https://upload.wikimedia.org/wikipedia/commons/0/0f/Wands02.jpg','https://upload.wikimedia.org/wikipedia/commons/f/ff/Wands03.jpg','https://upload.wikimedia.org/wikipedia/commons/a/a4/Wands04.jpg','https://upload.wikimedia.org/wikipedia/commons/9/9d/Wands05.jpg','https://upload.wikimedia.org/wikipedia/commons/3/3b/Wands06.jpg','https://upload.wikimedia.org/wikipedia/commons/e/e4/Wands07.jpg','https://upload.wikimedia.org/wikipedia/commons/6/6b/Wands08.jpg','https://upload.wikimedia.org/wikipedia/commons/4/4d/Tarot_Nine_of_Wands.jpg','https://upload.wikimedia.org/wikipedia/commons/0/0b/Wands10.jpg','https://upload.wikimedia.org/wikipedia/commons/6/6a/Wands11.jpg','https://upload.wikimedia.org/wikipedia/commons/0/0d/Wands12.jpg','https://upload.wikimedia.org/wikipedia/commons/1/16/Wands13.jpg','https://upload.wikimedia.org/wikipedia/commons/c/ce/Wands14.jpg'] },
+    { name:'컵', emoji:'🏆', color:'#2060c0',
+      imgs:['https://upload.wikimedia.org/wikipedia/commons/3/36/Cups01.jpg','https://upload.wikimedia.org/wikipedia/commons/f/f8/Cups02.jpg','https://upload.wikimedia.org/wikipedia/commons/7/7a/Cups03.jpg','https://upload.wikimedia.org/wikipedia/commons/3/35/Cups04.jpg','https://upload.wikimedia.org/wikipedia/commons/d/d7/Cups05.jpg','https://upload.wikimedia.org/wikipedia/commons/1/17/Cups06.jpg','https://upload.wikimedia.org/wikipedia/commons/a/ae/Cups07.jpg','https://upload.wikimedia.org/wikipedia/commons/6/60/Cups08.jpg','https://upload.wikimedia.org/wikipedia/commons/2/2f/Cups09.jpg','https://upload.wikimedia.org/wikipedia/commons/8/84/Cups10.jpg','https://upload.wikimedia.org/wikipedia/commons/a/ad/Cups11.jpg','https://upload.wikimedia.org/wikipedia/commons/6/62/Cups12.jpg','https://upload.wikimedia.org/wikipedia/commons/6/62/Cups13.jpg','https://upload.wikimedia.org/wikipedia/commons/f/fa/Cups14.jpg'] },
+    { name:'검', emoji:'⚔️', color:'#a0a0c0',
+      imgs:['https://upload.wikimedia.org/wikipedia/commons/1/1a/Swords01.jpg','https://upload.wikimedia.org/wikipedia/commons/9/9e/Swords02.jpg','https://upload.wikimedia.org/wikipedia/commons/0/02/Swords03.jpg','https://upload.wikimedia.org/wikipedia/commons/b/bf/Swords04.jpg','https://upload.wikimedia.org/wikipedia/commons/2/23/Swords05.jpg','https://upload.wikimedia.org/wikipedia/commons/2/29/Swords06.jpg','https://upload.wikimedia.org/wikipedia/commons/3/34/Swords07.jpg','https://upload.wikimedia.org/wikipedia/commons/a/a7/Swords08.jpg','https://upload.wikimedia.org/wikipedia/commons/2/2f/Swords09.jpg','https://upload.wikimedia.org/wikipedia/commons/d/d4/Swords10.jpg','https://upload.wikimedia.org/wikipedia/commons/4/4c/Swords11.jpg','https://upload.wikimedia.org/wikipedia/commons/b/b0/Swords12.jpg','https://upload.wikimedia.org/wikipedia/commons/d/d4/Swords13.jpg','https://upload.wikimedia.org/wikipedia/commons/f/f5/Swords14.jpg'] },
+    { name:'펜타클', emoji:'⭐', color:'#40a040',
+      imgs:['https://upload.wikimedia.org/wikipedia/commons/f/fd/Pents01.jpg','https://upload.wikimedia.org/wikipedia/commons/9/9f/Pents02.jpg','https://upload.wikimedia.org/wikipedia/commons/4/42/Pents03.jpg','https://upload.wikimedia.org/wikipedia/commons/3/35/Pents04.jpg','https://upload.wikimedia.org/wikipedia/commons/9/96/Pents05.jpg','https://upload.wikimedia.org/wikipedia/commons/a/a6/Pents06.jpg','https://upload.wikimedia.org/wikipedia/commons/6/6a/Pents07.jpg','https://upload.wikimedia.org/wikipedia/commons/4/49/Pents08.jpg','https://upload.wikimedia.org/wikipedia/commons/f/f0/Pents09.jpg','https://upload.wikimedia.org/wikipedia/commons/4/42/Pents10.jpg','https://upload.wikimedia.org/wikipedia/commons/e/ec/Pents11.jpg','https://upload.wikimedia.org/wikipedia/commons/d/d5/Pents12.jpg','https://upload.wikimedia.org/wikipedia/commons/8/88/Pents13.jpg','https://upload.wikimedia.org/wikipedia/commons/1/1c/Pents14.jpg'] }
+  ];
+  var numNames = ['에이스','2','3','4','5','6','7','8','9','10','페이지','나이트','퀸','킹'];
+  var cards = [];
+  // Major Arcana
+  for (var i = 0; i < 22; i++) {
+    cards.push({ id: i, name: majorNames[i], suit: '메이저', number: i, emoji: majorEmoji[i], color: '#6a0dad', imgUrl: majorImgs[i] });
+  }
+  // Minor Arcana
+  for (var s = 0; s < suits.length; s++) {
+    var suit = suits[s];
+    for (var n = 0; n < 14; n++) {
+      cards.push({ id: 22 + s*14 + n, name: suit.name + ' ' + numNames[n], suit: suit.name, number: n+1, emoji: suit.emoji, color: suit.color, imgUrl: suit.imgs[n] });
+    }
+  }
+  return cards;
+})();
+
+var _tarotSpread = 1;
+var _drawnCards = [];
+
+function openTarotModal() {
+  document.getElementById('tarotModal').style.display = 'flex';
+  document.getElementById('tarotCardsArea').innerHTML = '';
+  document.getElementById('tarotResultArea').style.display = 'none';
+  document.getElementById('tarotResultArea').textContent = '';
+  _drawnCards = [];
+}
+
+function closeTarotModal() {
+  document.getElementById('tarotModal').style.display = 'none';
+}
+
+function selectSpread(n) {
+  _tarotSpread = n;
+  document.getElementById('spreadBtn1').classList.toggle('active', n === 1);
+  document.getElementById('spreadBtn3').classList.toggle('active', n === 3);
+}
+
+function drawTarotCards() {
+  var area = document.getElementById('tarotCardsArea');
+  area.innerHTML = '';
+  document.getElementById('tarotResultArea').style.display = 'none';
+  document.getElementById('tarotResultArea').textContent = '';
+  _drawnCards = [];
+
+  // Shuffle & pick
+  var shuffled = TAROT_CARDS.slice().sort(function(){ return Math.random()-0.5; });
+  var count = _tarotSpread;
+  var labels3 = ['과거','현재','미래'];
+
+  for (var i = 0; i < count; i++) {
+    var card = Object.assign({}, shuffled[i]);
+    card.reversed = Math.random() < 0.3;
+    _drawnCards.push(card);
+
+    var wrap = document.createElement('div');
+    wrap.className = 'tarot-card-wrap';
+
+    if (count === 3) {
+      var lbl = document.createElement('div');
+      lbl.className = 'tarot-card-label';
+      lbl.textContent = labels3[i];
+      wrap.appendChild(lbl);
+    }
+
+    var cardEl = document.createElement('div');
+    cardEl.className = 'tarot-card';
+    cardEl.dataset.idx = i;
+
+    var inner = document.createElement('div');
+    inner.className = 'tarot-card-inner';
+
+    var back = document.createElement('div');
+    back.className = 'tarot-card-back';
+    back.textContent = '🔮';
+
+    var front = document.createElement('div');
+    front.className = 'tarot-card-front';
+
+    // Image with fallback
+    var img = new Image();
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    if (card.reversed) img.style.transform = 'rotate(180deg)';
+    img.src = card.imgUrl || '';
+    img.onerror = (function(c, f) {
+      return function() {
+        f.innerHTML = '';
+        var fb = document.createElement('div');
+        fb.className = 'tarot-fallback';
+        fb.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:' + c.color + '22;';
+        fb.innerHTML = '<span style="font-size:28px' + (c.reversed ? ';transform:rotate(180deg)' : '') + '">' + c.emoji + '</span><span style="font-size:9px;color:#aaa;text-align:center;padding:0 4px">' + c.name + (c.reversed ? ' (역)' : '') + '</span>';
+        f.appendChild(fb);
+      };
+    })(card, front);
+    front.appendChild(img);
+
+    inner.appendChild(back);
+    inner.appendChild(front);
+    cardEl.appendChild(inner);
+
+    (function(el, idx) {
+      setTimeout(function() {
+        el.classList.add('flipped');
+        if (idx === count - 1) {
+          setTimeout(interpretTarotWithAI, 400);
+        }
+      }, 600 + idx * 400);
+    })(cardEl, i);
+
+    // Reversed badge
+    if (card.reversed) {
+      var badge = document.createElement('div');
+      badge.className = 'tarot-reversed-badge';
+      badge.textContent = '역방향';
+      wrap.appendChild(badge);
+    } else {
+      var nameLbl = document.createElement('div');
+      nameLbl.className = 'tarot-card-label';
+      nameLbl.style.color = 'var(--text2)';
+      nameLbl.textContent = card.name;
+      wrap.appendChild(nameLbl);
+    }
+
+    wrap.insertBefore(cardEl, wrap.children[count === 3 ? 1 : 0]);
+    area.appendChild(wrap);
+  }
+}
+
+async function interpretTarotWithAI() {
+  var resultArea = document.getElementById('tarotResultArea');
+  resultArea.style.display = 'block';
+  resultArea.textContent = '🔮 카드를 읽는 중...';
+
+  var question = (document.getElementById('tarotQuestion').value || '').trim();
+  var cardDesc = _drawnCards.map(function(c, i) {
+    var pos = _tarotSpread === 3 ? ['과거','현재','미래'][i] + ': ' : '';
+    return pos + c.name + (c.reversed ? ' (역방향)' : ' (정방향)');
+  }).join(', ');
+
+  var prompt = '타로 카드 해석을 해줘.
+';
+  if (question) prompt += '질문: ' + question + '
+';
+  prompt += '뽑힌 카드: ' + cardDesc + '
+';
+  prompt += '운명적이고 신비로운 어조로, 사주/자미두수와 연결지어 해석해줘. 답변은 반드시 "🃏 타로로 보면 ~"으로 시작해줘. 200자 이내로 간결하게.';
+
+  try {
+    var reply = await callGemini(prompt, true);
+    resultArea.textContent = reply || '해석을 불러오지 못했어요.';
+  } catch(e) {
+    resultArea.textContent = '해석 중 오류가 발생했어요.';
+  }
 }
 
 async function callDailyFortune() {
