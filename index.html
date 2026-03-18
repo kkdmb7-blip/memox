@@ -541,7 +541,9 @@
       <div class="chat-header-name" id="chatHeaderName" style="font-size:16px;font-weight:800;letter-spacing:-0.3px;">포르투나</div>
       <div class="chat-header-sub" id="quotaDisplay" style="font-size:11px;color:var(--accent);"></div>
       <div class="chat-header-sub" id="chatHeaderSub">사주 · 점성술 기반 AI</div>
-      <div id="streakBadge"></div>
+   <button id="hitsBtn" onclick="loadHitsScreen()" style="background:none;border:none;color:#9b8fb0;font-size:11px;cursor:pointer;padding:2px 6px;border:1px solid #2a1f3d;border-radius:4px;margin-right:6px;">🎯 적중 일지</button>
+           <div id="streakBadge"></div>
+        <div id="interestDisplay" style="font-size:11px;color:#9b8fb0;margin-top:4px;letter-spacing:0.03em;"></div>
     </div>
     <div class="chat-header-actions">
       <button onclick="newChat()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">새 채팅</button>
@@ -707,6 +709,7 @@ async function setUser(user) {
     updateChatHeader();
     updateStreak();
     loadUserContext();
+  loadWeekAgoFortune();
     if (chatHistory.length === 0) showWelcome();
     // 알림 스케줄링: 이미 허용 → 재예약 / 첫 방문 → 커스텀 다이얼로그
     if ('Notification' in window) {
@@ -1406,6 +1409,191 @@ function scheduleStreakReminder(streak) {
   }, delay);
 }
 
+
+// ── 감정 트래킹 & 관심사 프로파일 & 적중 기록 ─────────────────────────
+var _currentEmotion = null;
+var _currentTopic = null;
+
+const EMOTION_KEYWORDS = {
+  '불안': ['불안','개워써','개워져','두려워','고민','바람기첨'],
+  '외로움': ['외로워','외로움','허전','쉽쉽해'],
+  '결정장애': ['모르겠','어떻게 해야','선택','결정을 못'],
+  '설레임': ['설레','설레임','허해','쉂겨','두근'],
+  '분노': ['화나','한테','짜증','역하다','뭐야','시발'],
+  '슬픔': ['슈','울어','공허해','히망이 없어','슬프']
+};
+
+const EMOTION_TONE = {
+  '불안': '사용자가 불안해하고 있습니다. 따뜻하고 안정감을 주는 어조로 답하세요.',
+  '외로움': '사용자가 외로움을 느끄고 있습니다. 다정하고 공감하는 어조로 답하세요.',
+  '결정장애': '사용자가 결정을 못 하고 있습니다. 명확하고 �뿜있는 가이드를 제공하세요.',
+  '설레임': '사용자가 설레임과 기대를 가지고 있습니다. 함께 기별 에너지를 나눗고 기지 맞춰 답하세요.',
+  '분노': '사용자가 화가 나 있습니다. 차분하고 진정시키는 어조로 답하세요.',
+  '슬픔': '사용자가 슬픔을 느끄고 있습니다. 무겨운 마음을 어루만져주는 리딩 어조로 답하세요.'
+};
+
+function detectEmotion(text) {
+  for (const [emotion, keywords] of Object.entries(EMOTION_KEYWORDS)) {
+    if (keywords.some(function(k){ return text.includes(k); })) return emotion;
+  }
+  return null;
+}
+
+const TOPIC_KEYWORDS = {
+  '연애': ['연애','소개팅','남자친구','얬자친구','햤어지','이별','구애','조화','상대방','문자발송'],
+  '직장': ['회사','직장','상사','동료','이직','승진','업무','부서','해고'],
+  '재물': ['돈','재물','투자','주식','바람기첨','염시람','수입','사업','로또','코인','액'],
+  '건강': ['병','건강','몫','아프','의사','치료','다이어트','운동'],
+  '가족': ['부모','언니','오빠','고보','형제','시부모','자녀','가족']
+};
+
+const TOPIC_EMOJI = {
+  '연애': '💕',
+  '직장': '💼',
+  '재물': '💰',
+  '건강': '🌿',
+  '가족': '🏠',
+  '기타': '✨'
+};
+
+function classifyTopic(text) {
+  for (const [topic, keywords] of Object.entries(TOPIC_KEYWORDS)) {
+    if (keywords.some(function(k){ return text.includes(k); })) return topic;
+  }
+  return '기타';
+}
+
+async function trackEmotionAndTopic(text) {
+  const user = window._fortunaUser;
+  if (!user) return;
+  const emotion = detectEmotion(text);
+  const topic = classifyTopic(text);
+  _currentEmotion = emotion;
+  _currentTopic = topic;
+
+  const kst = new Date(new Date().getTime() + 9*60*60*1000);
+
+  if (emotion) {
+    try {
+      await fetch(SUPABASE_URL + '/rest/v1/user_emotions', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json', 'Prefer': 'resolution=ignore-duplicates' },
+        body: JSON.stringify({ kakao_id: user.id, emotion: emotion, recorded_at: kst.toISOString() })
+      });
+    } catch(e) {}
+  }
+
+  if (window._fortunaUserCtx) {
+    const concerns = window._fortunaUserCtx.concerns || {};
+    concerns[topic] = (concerns[topic] || 0) + 1;
+    window._fortunaUserCtx.concerns = concerns;
+    updateInterestDisplay(concerns);
+    try {
+      await fetch(SUPABASE_URL + '/rest/v1/user_context?kakao_id=eq.' + encodeURIComponent(user.id), {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json' },
+        body: JSON.stringify({ concerns: concerns })
+      });
+    } catch(e) {}
+  }
+}
+
+function updateInterestDisplay(concerns) {
+  const el = document.getElementById('interestDisplay');
+  if (!el || !concerns) return;
+  const sorted = Object.entries(concerns).sort(function(a,b){ return b[1]-a[1]; }).slice(0,3);
+  el.textContent = sorted.map(function(e){ return (TOPIC_EMOJI[e[0]]||'✨') + ' ' + e[0]; }).join(' · ');
+}
+
+async function saveFortuneHit(content, btn) {
+  const user = window._fortunaUser;
+  if (!user) return;
+  if (btn) btn.disabled = true;
+  try {
+    const kst = new Date(new Date().getTime() + 9*60*60*1000);
+    await fetch(SUPABASE_URL + '/rest/v1/fortune_hits', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json' },
+      body: JSON.stringify({ kakao_id: user.id, content: content.slice(0,200), hit_at: kst.toISOString() })
+    });
+    if (btn) { btn.textContent = '✨ 기록됐어요!'; btn.style.color = '#c9a84c'; }
+  } catch(e) {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function loadHitsScreen() {
+  const user = window._fortunaUser;
+  if (!user) return;
+  const existing = document.getElementById('hitsScreen');
+  if (existing) { existing.remove(); return; }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'hitsScreen';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#05020e;z-index:9999;overflow-y:auto;padding:24px 16px;';
+  overlay.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
+    '<h2 style="color:#c9a84c;font-size:18px;margin:0;">🎯 나의 적중 일지</h2>' +
+    '<button onclick="document.getElementById('hitsScreen').remove()" style="background:none;border:none;color:#9b8fb0;font-size:22px;cursor:pointer;">&times;</button>' +
+    '</div><div id="hitsList" style="color:#ede6f8;font-size:14px;">불러오는 중...</div>';
+  document.body.appendChild(overlay);
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/fortune_hits?kakao_id=eq.' + encodeURIComponent(user.id) + '&order=hit_at.desc&limit=30', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    const hits = await res.json();
+    const el = document.getElementById('hitsList');
+    if (!hits || hits.length === 0) { el.textContent = '아직 기록된 적중이 없어요.'; return; }
+    el.innerHTML = '<p style="color:#9b8fb0;margin-bottom:12px;">총 ' + hits.length + '개의 적중 기록</p>' +
+      hits.map(function(h) {
+        const d = new Date(h.hit_at);
+        const kst = new Date(d.getTime() + 9*60*60*1000);
+        const ds = kst.toISOString().slice(0,10);
+        return '<div style="background:#110820;border:1px solid #2a1f3d;border-radius:10px;padding:12px;margin-bottom:10px;">' +
+          '<div style="color:#c9a84c;font-size:12px;margin-bottom:6px;">' + ds + '</div>' +
+          '<div>' + h.content + '</div></div>';
+      }).join('');
+  } catch(e) {
+    const el = document.getElementById('hitsList');
+    if (el) el.textContent = '불러오기 실패';
+  }
+}
+
+async function loadWeekAgoFortune() {
+  const user = window._fortunaUser;
+  if (!user) return;
+  const kst = new Date(new Date().getTime() + 9*60*60*1000);
+  kst.setDate(kst.getDate() - 7);
+  const dateStr = kst.toISOString().slice(0,10);
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/daily_fortune?kakao_id=eq.' + encodeURIComponent(user.id) + '&date=eq.' + dateStr + '&limit=1', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    const data = await res.json();
+    if (data && data.length > 0) renderRetroCard(data[0], dateStr);
+  } catch(e) {}
+}
+
+function renderRetroCard(card, dateStr) {
+  const existing = document.getElementById('retroCard');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'retroCard';
+  overlay.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 48px);max-width:360px;background:linear-gradient(135deg,#1a0e2e,#0f0620);border:1px solid #c9a84c55;border-radius:16px;padding:16px;z-index:200;box-shadow:0 4px 20px rgba(201,168,76,0.2);';
+  const summaryText = (card.summary || card.content || '운세 정보').slice(0, 150);
+  overlay.innerHTML = '<div style="color:#9b8fb0;font-size:11px;margin-bottom:8px;">7일 전 (' + dateStr + ') 운세 �아보기</div>' +
+    '<div id="retroCardContent" style="color:#ede6f8;font-size:14px;line-height:1.6;margin-bottom:12px;">' + summaryText + '</div>' +
+    '<div style="display:flex;gap:8px;">' +
+    '<button id="retroHitBtn" onclick="saveFortuneHit(document.getElementById('retroCardContent').textContent, document.getElementById('retroHitBtn')); document.getElementById('retroCard').style.opacity='0.6';" style="flex:1;padding:8px;background:#c9a84c22;border:1px solid #c9a84c66;border-radius:8px;color:#c9a84c;font-size:13px;cursor:pointer;">🎯 맞았어요</button>' +
+    '<button onclick="document.getElementById('retroCard').remove()" style="flex:1;padding:8px;background:#ffffff11;border:1px solid #ffffff22;border-radius:8px;color:#9b8fb0;font-size:13px;cursor:pointer;">아니에요</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){ const el = document.getElementById('retroCard'); if (el) el.remove(); }, 15000);
+}
+
 async function callDailyFortune() {
   var profile = userProfile || {};
   var saju = profile.saju_data || {};
@@ -1717,6 +1905,7 @@ async function sendMessage() {
   autoResize(input);
   appendMessage('user', text, true);
   chatHistory.push({ role: 'user', content: text });
+  trackEmotionAndTopic(text);
   await saveMessage('user', text);
 
   isTyping = true;
@@ -1780,6 +1969,9 @@ async function callGemini(userMsg, apiKey) {
 
   // ── 3층: 출력 제어 ──
   var outputControl = '';
+    if (_currentEmotion && EMOTION_TONE[_currentEmotion]) {
+      outputControl = '【현재 감정 상태】 ' + _currentEmotion + ' - ' + EMOTION_TONE[_currentEmotion];
+    }
 
   var _now = new Date(); var dateStr = _now.getFullYear() + '년 ' + (_now.getMonth()+1) + '월 ' + _now.getDate() + '일';
   var todayGanji = getTodayGanji();
@@ -2024,7 +2216,13 @@ concerns: 걱정·고민 키워드 1~3개
 
   btnWrap.appendChild(cardBtn);
   btnWrap.appendChild(kakaoBtn);
-  btnWrap.appendChild(copyBtn);
+    var hitBtn2 = document.createElement('button');
+  hitBtn2.className = 'hit-btn';
+  hitBtn2.textContent = '🎯 맞았어요';
+  hitBtn2.style.cssText = 'padding:4px 10px;background:#c9a84c22;border:1px solid #c9a84c55;border-radius:6px;color:#c9a84c;font-size:12px;cursor:pointer;';
+  (function(reply){ hitBtn2.addEventListener('click', function(){ saveFortuneHit(reply, hitBtn2); }); })(cleanReply);
+  btnWrap.appendChild(hitBtn2);
+btnWrap.appendChild(copyBtn);
   bubble.parentNode.insertBefore(btnWrap, bubble.nextSibling);
   scrollToBottom();
   return cleanReply;
@@ -2127,6 +2325,13 @@ function appendMessage(role, content, animate) {
     btnRow.appendChild(cardBtn2);
     btnRow.appendChild(kakaoBtn2);
     btnRow.appendChild(copyBtn2);
+
+    var hitBtn3 = document.createElement('button');
+    hitBtn3.className = 'hit-btn';
+    hitBtn3.textContent = '🎯 맞았어요';
+    hitBtn3.style.cssText = 'padding:4px 10px;background:#c9a84c22;border:1px solid #c9a84c55;border-radius:6px;color:#c9a84c;font-size:12px;cursor:pointer;';
+    (function(c){ hitBtn3.addEventListener('click', function(){ saveFortuneHit(c, hitBtn3); }); })(content);
+    btnRow.appendChild(hitBtn3);
   }
 
   container.appendChild(div);
