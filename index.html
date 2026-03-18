@@ -2232,6 +2232,7 @@ async function callGemini(userMsg, apiKey) {
   var profile = userProfile || {};
   var saju = profile.saju_data || {};
   var astro = profile.astro_data || {};
+  var _userCtx = window._fortunaUserCtx || null;
 
   var bigLuck = saju.big_luck || saju.saju_big_luck || [];
   var fivePct = saju.saju_five_pct || saju.five_pct || {};
@@ -3306,7 +3307,8 @@ if ('serviceWorker' in navigator) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      const swPath = location.pathname.replace(/\/[^/]*$/, '/') + 'sw.js';
+      const reg = await navigator.serviceWorker.register(swPath, { scope: location.pathname.replace(/\/[^/]*$/, '/') });
 
       // Periodic Background Sync (백그라운드 연결 유지)
       if ('periodicSync' in reg) {
@@ -3320,7 +3322,7 @@ if ('serviceWorker' in navigator) {
         window._swReg = reg;
       }
     } catch (e) {
-      console.warn('SW 등록 실패:', e);
+      // sw.js 없을 경우 조용히 무시
     }
   });
 }
