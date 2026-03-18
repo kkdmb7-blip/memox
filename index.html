@@ -510,7 +510,14 @@
       <div class="radio-group">
         <button class="radio-btn selected" id="calSolar" onclick="selectCal('solar')">양력</button>
         <button class="radio-btn" id="calLunar" onclick="selectCal('lunar')">음력</button>
-      </div>
+
+
+    <div class="form-group" id="leapMonthGroup" style="display:none;margin-top:-8px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer;">
+        <input type="checkbox" id="leapMonthCheck" style="width:15px;height:15px;accent-color:#c9a84c;">
+        윤달(閏月)에 태어나셔요?
+      </label>
+    </div>      </div>
     </div>
 
     <div class="form-group" id="midnightGroup" style="display:none">
@@ -879,6 +886,8 @@ function selectCal(c) {
   selectedCal = c;
   document.getElementById('calSolar').className = 'radio-btn' + (c==='solar'?' selected':'');
   document.getElementById('calLunar').className = 'radio-btn' + (c==='lunar'?' selected':'');
+  document.getElementById('leapMonthGroup').style.display = c === 'lunar' ? 'block' : 'none';
+  if (c === 'solar') document.getElementById('leapMonthCheck').checked = false;
 }
 function selectMidnight(m) {
   selectedMidnight = m;
@@ -1026,6 +1035,8 @@ async function submitOnboard() {
       saju_data: sajuSave,
       astro_data: astroData,
       gemini_key: apiKey,
+      calendar: selectedCal,
+      is_leap_month: selectedCal === 'lunar' && document.getElementById('leapMonthCheck').checked,
       created_at: Date.now(),
       updated_at: Date.now()
     };
@@ -1973,6 +1984,53 @@ async function callGemini(userMsg, apiKey) {
       outputControl = '【현재 감정 상태】 ' + _currentEmotion + ' - ' + EMOTION_TONE[_currentEmotion];
     }
 
+  // ── 자미두수 데이터 패치 (캐시 사용) ────────────────────
+  var _ziweiBlock = '';
+  try {
+    if (profile && profile.birth_date && !window._ziweiFetched) {
+      window._ziweiFetched = true;
+      var _bd = profile.birth_date.split('-');
+      var _bt = (profile.birth_time || '12:00').split(':');
+      var _isLunar = profile.calendar === 'lunar';
+      var _isLeap  = !!profile.is_leap_month;
+      var _zGender = (profile.gender === 'M') ? 'male' : 'female';
+      var _zUrl = WORKER_URL + '/ziwei?year=' + _bd[0] + '&month=' + parseInt(_bd[1]) +
+        '&day=' + parseInt(_bd[2]) + '&hour=' + parseInt(_bt[0]) +
+        '&gender=' + _zGender + '&isLunar=' + _isLunar + '&isLeap=' + _isLeap;
+      try {
+        var _zRes = await fetch(_zUrl);
+        if (_zRes.ok) {
+          var _zd = await _zRes.json();
+          if (!_zd.error) window._ziweiCache = _zd;
+        }
+      } catch(_zfe) { console.warn('자미두수 패치 실패', _zfe.message); }
+    }
+    var _zc = window._ziweiCache;
+    if (_zc) {
+      var _soul = _zc.soulPalace;
+      var _dec  = _zc.currentDecade;
+      var _yr   = _zc.currentYear;
+      var _findPal = function(n) { return (_zc.palaces||[]).find(function(p){ return p.name===n; }); };
+      var _starsStr = function(p) { return p ? ((p.majorStars||[]).join(', ')||'별 없음') : '미상'; };
+      var _jaebaek = _findPal('재백궁') || _findPal('재백');
+      var _gwanrok = _findPal('관록궁') || _findPal('관록');
+      var _bucheo  = _findPal('부처궁') || _findPal('부처');
+      _ziweiBlock =
+        '- 명주성/신주성: ' + (_zc.destinyMaster||'미상') + '/' + (_zc.bodyMaster||'미상') + '
+' +
+        '- 오행국: ' + (_zc.element||'미상') + '
+' +
+        '- 명궁: ' + (_soul ? _soul.name + ' (' + (_soul.majorStars||[]).join(', ') + ')' : '미상') + '
+' +
+        '- 현재 대한: ' + (_dec ? _dec.name + ' (' + _dec.ageRange + ')' : '미상') + '
+' +
+        '- ' + new Date().getFullYear() + '년 유년궁: ' + (_yr ? _yr.palace : '미상') + '
+' +
+        '- 주요 궁 배치: 재백궁(' + _starsStr(_jaebaek) + '), 관록궁(' + _starsStr(_gwanrok) + '), 부처궁(' + _starsStr(_bucheo) + ')';
+    }
+  } catch(_ze) { console.warn('자미두수 빌더 오류:', _ze.message); }
+
+
   var _now = new Date(); var dateStr = _now.getFullYear() + '년 ' + (_now.getMonth()+1) + '월 ' + _now.getDate() + '일';
   var todayGanji = getTodayGanji();
   var monthGanji = getMonthGanji(_now.getFullYear(), _now.getMonth() + 1);
@@ -2046,6 +2104,7 @@ for (var i = 1; i <= 6; i++) {
 예: "저번에 민준씨 에기 하셨는데 요즘은요?"
 
 ' : '') +
+    (_ziweiBlock ? '\n\n【자미두수 데이터】\n' + _ziweiBlock + '\n' : '') +
     '【대화 맥락 지침】\n' +
     '- 이전 대화에서 언급된 상황(직장, 연애, 투자 등)과 사람 이름은 반드시 기억하고 연결하라\n' +
     '- 단, 이미 한 말을 반복하거나 요약하지 마라\n' +
