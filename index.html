@@ -1886,9 +1886,11 @@ async function interpretTarotWithAI() {
   prompt += '운명적이고 신비로운 어조로, 사주/자미두수와 연결지어 해석해줘. 답변은 반드시 "🃏 타로로 보면 ~"으로 시작해줘. 200자 이내로 간결하게.';
 
   try {
-    var reply = await callGemini(prompt, true);
+    var tarotApiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || '';
+    var reply = await callGemini(prompt, tarotApiKey);
     resultArea.textContent = reply || '해석을 불러오지 못했어요.';
   } catch(e) {
+    console.error('타로 해석 오류:', e);
     resultArea.textContent = '해석 중 오류가 발생했어요.';
   }
 }
