@@ -128,10 +128,16 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  const tag = e.notification.tag;
   e.waitUntil(
-    clients.matchAll({ type: 'window' }).then(cs => {
-      const c = cs.find(w => w.url.includes(self.location.hostname) && 'focus' in w);
-      return c ? c.focus() : clients.openWindow('/');
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+      const existing = cs.find(w => w.url.includes(self.location.hostname) && 'focus' in w);
+      if (existing) {
+        existing.focus();
+        if (tag === 'fortuna-daily') existing.postMessage({ type: 'OPEN_DAILY_CARD' });
+        return;
+      }
+      return clients.openWindow('/');
     })
   );
 });

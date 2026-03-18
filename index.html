@@ -673,6 +673,15 @@ async function setUser(user) {
     showScreen('chat');
     updateChatHeader();
     if (chatHistory.length === 0) showWelcome();
+    // 알림 스케줄링: 이미 허용된 경우 재예약, 첫 방문이면 요청
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        scheduleFortunaNotification();
+      } else if (Notification.permission === 'default' && !localStorage.getItem('fortuna_notif_asked')) {
+        localStorage.setItem('fortuna_notif_asked', '1');
+        setTimeout(function() { requestNotification(); }, 3000);
+      }
+    }
   }
 }
 
@@ -1173,6 +1182,9 @@ async function loadDailyCard() {
   if (!currentUser || !userProfile) return;
   var today = new Date().toISOString().slice(0, 10); // "2026-03-14"
 
+  // 오늘 이미 닫았으면 표시 안 함
+  if (localStorage.getItem('fortuna_daily_dismissed') === today) return;
+
   // 오늘 카드 Supabase에서 확인
   try {
     var res = await sb.from('daily_cards')
@@ -1268,7 +1280,7 @@ function renderDailyCard(card) {
   wrap.innerHTML =
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">' +
       '<div style="font-size:11px;color:#6b7280;">✨ ' + dateStr + ' 오늘의 운세</div>' +
-      '<button onclick="document.getElementById(\'dailyCardWrap\').remove()" style="background:none;border:none;color:#6b7280;font-size:16px;cursor:pointer;line-height:1;padding:0 0 0 8px;">✕</button>' +
+      '<button onclick="dismissDailyCard()" style="background:none;border:none;color:#6b7280;font-size:16px;cursor:pointer;line-height:1;padding:0 0 0 8px;">✕</button>' +
     '</div>' +
     '<div style="font-size:16px;font-weight:700;color:#e5e7eb;margin-bottom:10px;">' + escHtml(card.title||'') + '</div>' +
     '<div style="font-size:13px;color:#9ca3af;line-height:1.6;margin-bottom:12px;">' + escHtml(card.summary||'') + '</div>' +
@@ -2089,22 +2101,48 @@ function updateQuotaDisplay(freeLeft, paidLeft) {
   }
 }
 
+function dismissDailyCard() {
+  var today = new Date().toISOString().slice(0, 10);
+  localStorage.setItem('fortuna_daily_dismissed', today);
+  var wrap = document.getElementById('dailyCardWrap');
+  if (wrap) wrap.remove();
+}
+
 function requestNotification() {
   if (!('Notification' in window)) { toast('이 브라우저는 알림을 지원하지 않아요.'); return; }
   Notification.requestPermission().then(function(permission) {
     if (permission === 'granted') {
-      toast('✅ 내일 자정에 알림을 보내드릴게요 🔮');
-      // 자정까지 남은 ms 계산
-      var now = new Date();
-      var midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
-      var delay = midnight - now;
-      setTimeout(function() {
-        new Notification('포르투나 🔮', { body: '오늘의 무료 질문 3개가 충전됐어요. 오늘 운세 확인해보세요!', icon: 'icon.svg' });
-      }, delay);
+      localStorage.setItem('fortuna_notif_granted', '1');
+      toast('✅ 매일 07:30에 오늘의 운세 알림을 보내드릴게요 🔮');
+      scheduleFortunaNotification();
     } else {
       toast('알림 권한이 거부됐어요. 브라우저 설정에서 허용해주세요.');
     }
   });
+}
+
+function scheduleFortunaNotification() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  var name = (userProfile && userProfile.name) ? userProfile.name : '오늘';
+  var now = new Date();
+  var target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 30, 0);
+  // 오늘 07:30이 이미 지났으면 내일로
+  if (now >= target) target.setDate(target.getDate() + 1);
+  var delay = target - now;
+  clearTimeout(window._fortunaNotifTimer);
+  window._fortunaNotifTimer = setTimeout(function() {
+    if (Notification.permission === 'granted') {
+      var notif = new Notification('포르투나 🔮', {
+        body: '오늘 ' + name + '님의 운세가 도착했어요 🔮',
+        icon: '/icon.svg',
+        badge: '/icon.svg',
+        tag: 'fortuna-daily'
+      });
+      notif.onclick = function() { window.focus(); notif.close(); };
+    }
+    // 내일을 위해 재귀 예약
+    scheduleFortunaNotification();
+  }, delay);
 }
 
 function showLimitModal(freeLeft, paidLeft) {
@@ -2321,6 +2359,18 @@ document.addEventListener('visibilitychange', async function() {
 });
 
 initAuth();
+
+// ── Service Worker 메시지 수신 ───────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'OPEN_DAILY_CARD') {
+      // 데일리 카드 닫기 기록 지우고 다시 로드
+      var today = new Date().toISOString().slice(0, 10);
+      localStorage.removeItem('fortuna_daily_dismissed');
+      loadDailyCard();
+    }
+  });
+}
 
 // ── Service Worker 등록 ──────────────────────────────────────
 if ('serviceWorker' in navigator) {
