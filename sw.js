@@ -129,15 +129,18 @@ self.addEventListener('push', e => {
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   const tag = e.notification.tag;
+  const targetUrl = (tag === 'fortuna-daily') ? '/?daily=1' : '/';
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+      // 이미 열린 창이 있으면 포커스 + 메시지
       const existing = cs.find(w => w.url.includes(self.location.hostname) && 'focus' in w);
       if (existing) {
         existing.focus();
         if (tag === 'fortuna-daily') existing.postMessage({ type: 'OPEN_DAILY_CARD' });
         return;
       }
-      return clients.openWindow('/');
+      // 닫혀있으면 ?daily=1 파라미터로 새로 열기
+      return clients.openWindow(targetUrl);
     })
   );
 });

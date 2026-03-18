@@ -195,6 +195,33 @@
   .save-card-btn:hover { background:linear-gradient(135deg,#16213e,#0f3460); opacity:0.9; }
   #fortunaCardCanvas { position:fixed; left:-9999px; top:-9999px; pointer-events:none; }
 
+  /* 알림 권한 다이얼로그 */
+  #notifPrompt {
+    display:none; position:fixed; inset:0; z-index:10000;
+    background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+    align-items:flex-end; justify-content:center; padding-bottom:32px;
+  }
+  #notifPrompt.open { display:flex; }
+  #notifPrompt .np-box {
+    background:#1a1a2e; border:1px solid rgba(139,92,246,0.4);
+    border-radius:20px; padding:24px 20px 20px;
+    width:min(360px, calc(100vw - 32px)); text-align:center;
+    box-shadow:0 -4px 40px rgba(139,92,246,0.2);
+  }
+  #notifPrompt .np-icon { font-size:36px; margin-bottom:12px; }
+  #notifPrompt .np-title { font-size:16px; font-weight:700; color:#e5e7eb; margin-bottom:8px; }
+  #notifPrompt .np-desc { font-size:13px; color:#9ca3af; line-height:1.6; margin-bottom:20px; }
+  #notifPrompt .np-btns { display:flex; gap:10px; }
+  #notifPrompt .np-allow {
+    flex:1; padding:13px; background:linear-gradient(135deg,#7c3aed,#a855f7);
+    color:#fff; border:none; border-radius:14px; font-size:14px; font-weight:600; cursor:pointer;
+  }
+  #notifPrompt .np-deny {
+    padding:13px 18px; background:rgba(255,255,255,0.06);
+    color:#6b7280; border:1px solid rgba(255,255,255,0.1);
+    border-radius:14px; font-size:14px; cursor:pointer;
+  }
+
   /* 카드 모달 */
   #cardModal {
     display:none; position:fixed; inset:0; z-index:9999;
@@ -673,14 +700,19 @@ async function setUser(user) {
     showScreen('chat');
     updateChatHeader();
     if (chatHistory.length === 0) showWelcome();
-    // 알림 스케줄링: 이미 허용된 경우 재예약, 첫 방문이면 요청
+    // 알림 스케줄링: 이미 허용 → 재예약 / 첫 방문 → 커스텀 다이얼로그
     if ('Notification' in window) {
       if (Notification.permission === 'granted') {
         scheduleFortunaNotification();
       } else if (Notification.permission === 'default' && !localStorage.getItem('fortuna_notif_asked')) {
-        localStorage.setItem('fortuna_notif_asked', '1');
-        setTimeout(function() { requestNotification(); }, 3000);
+        setTimeout(showNotifPrompt, 3000);
       }
+    }
+    // ?daily=1 파라미터 → 알림 클릭으로 앱 열린 경우
+    if (new URLSearchParams(location.search).get('daily') === '1') {
+      history.replaceState(null, '', '/');
+      localStorage.removeItem('fortuna_daily_dismissed');
+      loadDailyCard();
     }
   }
 }
@@ -2108,40 +2140,72 @@ function dismissDailyCard() {
   if (wrap) wrap.remove();
 }
 
-function requestNotification() {
+function showNotifPrompt() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'default') return;
+  localStorage.setItem('fortuna_notif_asked', '1');
+  document.getElementById('notifPrompt').classList.add('open');
+}
+
+function closeNotifPrompt() {
+  document.getElementById('notifPrompt').classList.remove('open');
+}
+
+function allowNotification() {
+  closeNotifPrompt();
   if (!('Notification' in window)) { toast('이 브라우저는 알림을 지원하지 않아요.'); return; }
   Notification.requestPermission().then(function(permission) {
     if (permission === 'granted') {
-      localStorage.setItem('fortuna_notif_granted', '1');
       toast('✅ 매일 07:30에 오늘의 운세 알림을 보내드릴게요 🔮');
       scheduleFortunaNotification();
     } else {
-      toast('알림 권한이 거부됐어요. 브라우저 설정에서 허용해주세요.');
+      toast('알림이 차단됐어요. 브라우저 설정 > 알림에서 허용해주세요.');
+    }
+  });
+}
+
+// 설정/할당량 영역에서 다시 켤 수 있게
+function requestNotification() {
+  if (!('Notification' in window)) { toast('이 브라우저는 알림을 지원하지 않아요.'); return; }
+  if (Notification.permission === 'granted') {
+    toast('✅ 알림이 이미 켜져 있어요 🔮');
+    scheduleFortunaNotification();
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    toast('알림이 차단됐어요. 브라우저 설정 > 알림에서 허용해주세요.');
+    return;
+  }
+  Notification.requestPermission().then(function(permission) {
+    if (permission === 'granted') {
+      toast('✅ 매일 07:30에 오늘의 운세 알림을 보내드릴게요 🔮');
+      scheduleFortunaNotification();
     }
   });
 }
 
 function scheduleFortunaNotification() {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  var name = (userProfile && userProfile.name) ? userProfile.name : '오늘';
+  var name = (userProfile && userProfile.name) ? userProfile.name : '';
   var now = new Date();
+  // 오늘 07:30, 지났으면 내일
   var target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 30, 0);
-  // 오늘 07:30이 이미 지났으면 내일로
   if (now >= target) target.setDate(target.getDate() + 1);
   var delay = target - now;
   clearTimeout(window._fortunaNotifTimer);
   window._fortunaNotifTimer = setTimeout(function() {
     if (Notification.permission === 'granted') {
-      var notif = new Notification('포르투나 🔮', {
-        body: '오늘 ' + name + '님의 운세가 도착했어요 🔮',
+      var body = name ? name + '님의 오늘 운세가 도착했어요' : '오늘 운세가 도착했어요';
+      var notif = new Notification('🔮 포르투나', {
+        body: body,
         icon: '/icon.svg',
         badge: '/icon.svg',
-        tag: 'fortuna-daily'
+        tag: 'fortuna-daily',
+        renotify: true
       });
       notif.onclick = function() { window.focus(); notif.close(); };
     }
-    // 내일을 위해 재귀 예약
-    scheduleFortunaNotification();
+    scheduleFortunaNotification(); // 내일을 위해 재귀 예약
   }, delay);
 }
 
@@ -2395,6 +2459,19 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- 알림 권한 다이얼로그 -->
+<div id="notifPrompt">
+  <div class="np-box">
+    <div class="np-icon">🔮</div>
+    <div class="np-title">포르투나가 매일 아침 운세를 알려드려요</div>
+    <div class="np-desc">매일 07:30, 오늘의 운세를 알림으로 받아보세요.<br>언제든지 설정에서 끌 수 있어요.</div>
+    <div class="np-btns">
+      <button class="np-allow" onclick="allowNotification()">알림 허용하기</button>
+      <button class="np-deny" onclick="closeNotifPrompt()">괜찮아요</button>
+    </div>
+  </div>
+</div>
 
 <!-- 공유 카드 모달 -->
 <div id="cardModal" role="dialog" aria-modal="true">
