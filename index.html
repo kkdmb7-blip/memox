@@ -1266,7 +1266,10 @@ function renderDailyCard(card) {
   wrap.id = 'dailyCardWrap';
   wrap.style.cssText = 'margin:12px 16px 4px;border-radius:16px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(139,92,246,0.3);padding:16px;';
   wrap.innerHTML =
-    '<div style="font-size:11px;color:#6b7280;margin-bottom:8px;">✨ ' + dateStr + ' 오늘의 운세</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">' +
+      '<div style="font-size:11px;color:#6b7280;">✨ ' + dateStr + ' 오늘의 운세</div>' +
+      '<button onclick="document.getElementById(\'dailyCardWrap\').remove()" style="background:none;border:none;color:#6b7280;font-size:16px;cursor:pointer;line-height:1;padding:0 0 0 8px;">✕</button>' +
+    '</div>' +
     '<div style="font-size:16px;font-weight:700;color:#e5e7eb;margin-bottom:10px;">' + escHtml(card.title||'') + '</div>' +
     '<div style="font-size:13px;color:#9ca3af;line-height:1.6;margin-bottom:12px;">' + escHtml(card.summary||'') + '</div>' +
     '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">' + kwHtml + '</div>' +
@@ -1535,7 +1538,10 @@ for (var i = 1; i <= 6; i++) {
     '금성이 7하우스 — 관계와 인연의 영역 — 에 있는 지금, 먼저 다가가는 쪽에 에너지가 실립니다.\n\n' +
     '오늘 저녁이 타이밍이에요.\n' +
     '짧고 가볍게, 부담 없이 시작해보세요.\n' +
-    '결과보다 움직인 자신을 믿어보는 거예요.';
+    '결과보다 움직인 자신을 믿어보는 거예요.\n\n' +
+    '【공유 카드 지침】\n' +
+    '모든 답변 맨 마지막에 반드시 아래 형식으로 한 줄 추가:\n' +
+    '[CARD] 오늘 ' + (profile.name || '당신') + '님에게 전하는 한 마디 (20자 이내, 임팩트 있고 저장하고 싶은 문장으로)';
 
   // 최근 20개 대화 포함 (맥락 유지)
   var recentHistory = chatHistory.slice(-20);
@@ -1604,24 +1610,32 @@ for (var i = 1; i <= 6; i++) {
   // Worker에서 받은 응답 바로 표시
   hideTyping();
   var replyText = resData.reply || '';
+  // [CARD] 태그 파싱
+  var cardLine = '';
+  var cardMatch = replyText.match(/\[CARD\]\s*(.+)/);
+  if (cardMatch) cardLine = cardMatch[1].trim();
   var cleanReply = replyText
+    .replace(/\[CARD\][^\n]*/g, '')  // [CARD] 줄 제거
     .replace(/<[^>]*>/g, '')
     .replace(/&lt;[^&]*&gt;/g, '')
     .replace(/#{1,6}\s/g, '')
-    .replace(/【([^】]+)】/g, '$1');
+    .replace(/【([^】]+)】/g, '$1')
+    .trimEnd();
   bubble.innerHTML = renderMarkdown(cleanReply);
   // 버튼 추가
   var streamShareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  var cardContent = cardLine || cleanReply;  // CARD 문장 없으면 전체 본문 fallback
   var btnWrap = document.createElement('div');
+  btnWrap.className = 'msg-btn-row';
   var cardBtn = document.createElement('button');
   cardBtn.className = 'save-card-btn';
   cardBtn.textContent = '카드로 저장';
-  cardBtn.addEventListener('click', function(){ saveCard(encodeURIComponent(cleanReply)); });
+  cardBtn.addEventListener('click', function(){ saveCard(encodeURIComponent(cardContent)); });
 
   var kakaoBtn = document.createElement('button');
   kakaoBtn.className = 'share-kakao-btn';
   kakaoBtn.id = streamShareId;
-  kakaoBtn.setAttribute('data-content', encodeURIComponent(cleanReply.slice(0,200)));
+  kakaoBtn.setAttribute('data-content', encodeURIComponent(cardContent.slice(0,200)));
   kakaoBtn.textContent = '카카오 공유';
   kakaoBtn.addEventListener('click', function(){ shareKakao(streamShareId); });
 
@@ -1693,13 +1707,15 @@ function appendMessage(role, content, animate) {
   div.className = 'msg' + (isUser ? ' user' : '') + (animate ? '' : '');
   if (!animate) div.style.animation = 'none';
 
-var shareBtn = '';
-
+  // [CARD] 파싱 (appendMessage 경로)
+  var cardLine2 = '';
   if (!isUser) {
+    var cardMatch2 = content.match(/\[CARD\]\s*(.+)/);
+    if (cardMatch2) cardLine2 = cardMatch2[1].trim();
+    content = content.replace(/\[CARD\][^\n]*/g, '').trimEnd();
+  }
 
- var shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
-
-}
+  var shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
 
   div.innerHTML =
     '<div class="msg-avatar">' + (isUser ? '👤' : getAvatar()) + '</div>' +
@@ -1711,16 +1727,17 @@ var shareBtn = '';
 
   if (!isUser) {
     var btnRow = div.querySelector('.msg-btn-row');
+    var cardContent2 = cardLine2 || content;
 
     var cardBtn2 = document.createElement('button');
     cardBtn2.className = 'save-card-btn';
     cardBtn2.textContent = '카드로 저장';
-    (function(c){ cardBtn2.addEventListener('click', function(){ saveCard(encodeURIComponent(c)); }); })(content);
+    (function(c){ cardBtn2.addEventListener('click', function(){ saveCard(encodeURIComponent(c)); }); })(cardContent2);
 
     var kakaoBtn2 = document.createElement('button');
     kakaoBtn2.className = 'share-kakao-btn';
     kakaoBtn2.id = shareId;
-    kakaoBtn2.setAttribute('data-content', encodeURIComponent(content.slice(0,200)));
+    kakaoBtn2.setAttribute('data-content', encodeURIComponent((cardLine2 || content).slice(0,200)));
     kakaoBtn2.textContent = '카카오 공유';
     kakaoBtn2.addEventListener('click', function(){ shareKakao(shareId); });
 
