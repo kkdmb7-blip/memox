@@ -1882,12 +1882,9 @@ async function interpretTarotWithAI() {
     return pos + c.name + (c.reversed ? ' (역방향)' : ' (정방향)');
   }).join(', ');
 
-  var prompt = '타로 카드 해석을 해줘.
-';
-  if (question) prompt += '질문: ' + question + '
-';
-  prompt += '뽑힌 카드: ' + cardDesc + '
-';
+  var prompt = '타로 카드 해석을 해줘.\n';
+  if (question) prompt += '질문: ' + question + '\n';
+  prompt += '뽑힌 카드: ' + cardDesc + '\n';
   prompt += '운명적이고 신비로운 어조로, 사주/자미두수와 연결지어 해석해줘. 답변은 반드시 "🃏 타로로 보면 ~"으로 시작해줘. 200자 이내로 간결하게.';
 
   try {
