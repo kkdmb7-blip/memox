@@ -314,6 +314,11 @@
     font-family:'Noto Sans KR',sans-serif; white-space:nowrap;
   }
   .send-btn:hover { transform:scale(1.05); }
+  /* ── 버튼 누른 느낌 (전역 active) ── */
+  button:active:not(:disabled) { transform:scale(0.93) !important; opacity:0.85 !important; transition:transform 0.08s, opacity 0.08s !important; }
+  .send-btn:active:not(:disabled) { transform:scale(0.95) !important; opacity:0.85 !important; }
+  .tarot-btn:active { background:#c9a84c33 !important; transform:scale(0.95) !important; }
+  .bubble-icon-btn:active { background:var(--surface2) !important; transform:scale(0.88) !important; }
   .send-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
 
 
@@ -829,7 +834,7 @@ function updateChatHeader() {
   if (headerAvatar) headerAvatar.innerHTML = getAvatar();
   // 캐릭터별 전송 버튼 텍스트
   var persona = (userProfile && userProfile.persona) || 'warm';
-  var btnTextMap = { warm: '💫 운명 열기', analyst: '💫 운명 열기', coach: '💫 운명 열기', fortuna: '💫 운명 열기' };
+  var btnTextMap = { warm: '💫 전송', analyst: '💫 전송', coach: '💫 전송', fortuna: '💫 전송' };
   var sendBtn = document.getElementById('sendBtn');
   if (sendBtn) sendBtn.textContent = btnTextMap[persona] || '🔮 묻기';
   if (!userProfile) return;
@@ -1318,7 +1323,7 @@ async function loadUserContext() {
 
 function extractAndSaveContext(replyText) {
   if (!currentUser) return;
-  var ctxMatch = replyText.match(/[CTX]([sS]*?)[/CTX]/);
+  var ctxMatch = replyText.match(/\[CTX\]([\s\S]*?)\[\/CTX\]/);
   if (!ctxMatch) return;
   var raw = ctxMatch[1];
 
@@ -1586,7 +1591,7 @@ function updateInterestDisplay(concerns) {
 }
 
 async function saveFortuneHit(content, btn) {
-  const user = window._fortunaUser;
+  const user = currentUser;
   if (!user) return;
   if (btn) btn.disabled = true;
   try {
@@ -1604,7 +1609,7 @@ async function saveFortuneHit(content, btn) {
 }
 
 async function loadHitsScreen() {
-  const user = window._fortunaUser;
+  const user = currentUser;
   if (!user) return;
   const existing = document.getElementById('hitsScreen');
   if (existing) { existing.remove(); return; }
@@ -2530,7 +2535,7 @@ for (var i = 1; i <= 6; i++) {
   if (cardMatch) cardLine = cardMatch[1].trim();
   var cleanReply = replyText
     .replace(/\[CARD\][^\n]*/g, '')  // [CARD] 줄 제거
-    .replace(/[CTX][sS]*?[/CTX]/g, '')
+    .replace(/\[CTX\][\s\S]*?\[\/CTX\]/g, '')
     .replace(/<[^>]*>/g, '')
     .replace(/&lt;[^&]*&gt;/g, '')
     .replace(/#{1,6}\s/g, '')
