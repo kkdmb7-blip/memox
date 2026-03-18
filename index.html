@@ -133,6 +133,11 @@
   .chat-header-info { flex:1; min-width:0; }
   .chat-header-name { font-size:14px; font-weight:700; }
   .chat-header-sub { font-size:11px; color:var(--text3); }
+  #streakBadge {
+    display:none; align-items:center; gap:3px;
+    font-size:11px; color:#d4af37; font-weight:600;
+    margin-top:2px; letter-spacing:0.02em;
+  }
   .chat-header-actions { display:flex; gap:6px; }
   .icon-btn {
     width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
@@ -536,6 +541,7 @@
       <div class="chat-header-name" id="chatHeaderName" style="font-size:16px;font-weight:800;letter-spacing:-0.3px;">포르투나</div>
       <div class="chat-header-sub" id="quotaDisplay" style="font-size:11px;color:var(--accent);"></div>
       <div class="chat-header-sub" id="chatHeaderSub">사주 · 점성술 기반 AI</div>
+      <div id="streakBadge"></div>
     </div>
     <div class="chat-header-actions">
       <button onclick="newChat()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">새 채팅</button>
@@ -699,6 +705,7 @@ async function setUser(user) {
     loadDailyCard();
     showScreen('chat');
     updateChatHeader();
+    updateStreak();
     if (chatHistory.length === 0) showWelcome();
     // 알림 스케줄링: 이미 허용 → 재예약 / 첫 방문 → 커스텀 다이얼로그
     if ('Notification' in window) {
@@ -1214,6 +1221,110 @@ function getCityCoords(city) {
 function getKSTDate() {
   var d = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
   return d.toISOString().slice(0, 10);
+}
+
+function getKSTDateOffset(days) {
+  var d = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+async function updateStreak() {
+  if (!currentUser) return;
+  var today = getKSTDate();
+  try {
+    var res = await sb.from('user_streaks').select('*').eq('user_id', currentUser.id).maybeSingle();
+    var data = res.data;
+    var newStreak = 1;
+    var maxStreak = 1;
+
+    if (data) {
+      maxStreak = data.max_streak || 1;
+      if (data.last_visit === today) {
+        // 오늘 이미 체크됨 → 표시만
+        renderStreakBadge(data.current_streak);
+        scheduleStreakReminder(data.current_streak);
+        return;
+      }
+      var yesterday = getKSTDateOffset(-1);
+      newStreak = (data.last_visit === yesterday) ? (data.current_streak || 1) + 1 : 1;
+      maxStreak = Math.max(newStreak, maxStreak);
+    }
+
+    await sb.from('user_streaks').upsert({
+      user_id: currentUser.id,
+      current_streak: newStreak,
+      last_visit: today,
+      max_streak: maxStreak,
+      updated_at: Date.now()
+    });
+
+    renderStreakBadge(newStreak);
+
+    // 마일스톤 팝업 (하루 1회)
+    if ([7, 30, 100].includes(newStreak)) {
+      var mKey = 'fortuna_milestone_' + newStreak;
+      if (localStorage.getItem(mKey) !== today) {
+        localStorage.setItem(mKey, today);
+        showStreakMilestone(newStreak);
+      }
+    }
+
+    // 21:00 스트릭 유지 알림
+    if (newStreak > 1) scheduleStreakReminder(newStreak);
+
+  } catch(e) {
+    console.warn('스트릭 오류:', e);
+  }
+}
+
+function renderStreakBadge(streak) {
+  var el = document.getElementById('streakBadge');
+  if (!el) return;
+  if (streak < 2) { el.style.display = 'none'; return; }
+  el.style.display = 'inline-flex';
+  el.textContent = '🔥 ' + streak + '일 연속 접속 중';
+}
+
+function showStreakMilestone(streak) {
+  var msgs = {
+    7:   { icon: '🔥', text: '7일 연속! 운명의 흐름을 타고 있어요' },
+    30:  { icon: '✨', text: '30일 연속! 포르투나와 깊은 인연이네요' },
+    100: { icon: '👑', text: '100일 연속! 당신은 진짜 운명을 읽는 사람' }
+  };
+  var m = msgs[streak];
+  if (!m) return;
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);z-index:10001;display:flex;align-items:center;justify-content:center;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:linear-gradient(160deg,#1a1a2e,#16213e);border:1px solid rgba(212,175,55,0.5);border-radius:24px;padding:36px 28px;text-align:center;width:min(300px,calc(100vw-40px));box-shadow:0 8px 48px rgba(212,175,55,0.2);';
+  box.innerHTML =
+    '<div style="font-size:52px;margin-bottom:14px;">' + m.icon + '</div>' +
+    '<div style="font-size:20px;font-weight:800;color:#d4af37;margin-bottom:10px;">' + streak + '일 연속!</div>' +
+    '<div style="font-size:14px;color:#e5e7eb;line-height:1.7;">' + m.text + '</div>';
+  var btn = document.createElement('button');
+  btn.textContent = '확인';
+  btn.style.cssText = 'margin-top:24px;padding:12px 36px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;';
+  btn.addEventListener('click', function() { overlay.remove(); });
+  box.appendChild(btn);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function scheduleStreakReminder(streak) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  var now = new Date();
+  var target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 21, 0, 0);
+  if (now >= target) return; // 오늘 21시 이미 지났으면 스킵
+  var delay = target - now;
+  clearTimeout(window._fortunaStreakTimer);
+  window._fortunaStreakTimer = setTimeout(function() {
+    if (Notification.permission !== 'granted') return;
+    var name = (userProfile && userProfile.name) ? userProfile.name : '';
+    var body = streak + '일 스트릭 지키고 있어요. 내일도 올 거죠?';
+    new Notification('🔥 포르투나', { body: body, icon: '/icon.svg', tag: 'fortuna-streak', renotify: true });
+  }, delay);
 }
 
 async function callDailyFortune() {
