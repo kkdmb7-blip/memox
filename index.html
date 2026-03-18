@@ -173,33 +173,21 @@
   }
   .msg-time { font-size:10px; color:var(--text3); margin-top:4px; text-align:right; }
   .msg.user .msg-time { text-align:left; }
-  .share-kakao-btn {
-    display:inline-flex; align-items:center; gap:5px;
-    padding:6px 14px;
-    background:#FEE500; color:#191600; border:none; border-radius:20px;
-    font-size:12px; font-weight:600; cursor:pointer;
-    transition:opacity 0.2s; opacity:0.9;
+  /* ── 버블 액션 버튼 (복사/맞았어요 — 우하단 아이콘) ── */
+  .bubble-actions {
+    display:flex; gap:4px; justify-content:flex-end; margin-top:6px;
+    opacity:0; transition:opacity 0.15s;
   }
-  .share-kakao-btn:hover { opacity:1; }
-  .share-kakao-btn img { width:16px; height:16px; }
-  .copy-msg-btn {
-    display:inline-flex; align-items:center; gap:5px;
-    padding:6px 14px;
-    background:var(--surface3); color:var(--text2); border:1px solid var(--border); border-radius:20px;
-    font-size:12px; font-weight:600; cursor:pointer;
-    transition:all 0.2s;
+  .msg:hover .bubble-actions,
+  .msg.touch .bubble-actions { opacity:1; }
+  @media (hover:none) { .bubble-actions { opacity:1; } }
+  .bubble-icon-btn {
+    background:none; border:none; cursor:pointer;
+    font-size:13px; padding:3px 6px; border-radius:5px;
+    color:var(--text3); line-height:1; transition:background 0.15s, color 0.15s;
   }
-  .copy-msg-btn:hover { background:var(--surface2); color:var(--text); }
-  .msg-btn-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-  .save-card-btn {
-    display:inline-flex; align-items:center; gap:5px;
-    padding:6px 14px;
-    background:linear-gradient(135deg,#1a1a2e,#0f3460); color:#d4af37;
-    border:1px solid #d4af37; border-radius:20px;
-    font-size:12px; font-weight:600; cursor:pointer;
-    transition:all 0.2s;
-  }
-  .save-card-btn:hover { background:linear-gradient(135deg,#16213e,#0f3460); opacity:0.9; }
+  .bubble-icon-btn:hover { background:var(--surface2); color:var(--text); }
+  .bubble-icon-btn.hit-active { color:#c9a84c; }
   #fortunaCardCanvas { position:fixed; left:-9999px; top:-9999px; pointer-events:none; }
 
   /* 알림 권한 다이얼로그 */
@@ -443,10 +431,11 @@
     color:var(--text3); font-size:20px; cursor:pointer; line-height:1;
   }
   .tarot-btn {
-    background:none; border:1px solid #3a2a5a; border-radius:8px;
-    color:#9b8fb0; font-size:12px; cursor:pointer; padding:5px 10px;
-    margin-right:6px;
+    background:none; border:1px solid #c9a84c88; border-radius:8px;
+    color:#c9a84c; font-size:13px; cursor:pointer; padding:0 14px;
+    height:44px; font-weight:600; white-space:nowrap; flex-shrink:0;
   }
+  .tarot-btn:hover { background:#c9a84c22; }
 
 </style>
 </head>
@@ -631,6 +620,8 @@
         <div id="interestDisplay" style="font-size:11px;color:#9b8fb0;margin-top:4px;letter-spacing:0.03em;"></div>
     </div>
     <div class="chat-header-actions">
+      <button onclick="openFortuna()" style="background:var(--surface2);border:1px solid var(--border);color:var(--accent);border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;">✨ 리포트</button>
+      <button onclick="openKakao()" style="background:var(--surface2);border:1px solid rgba(255,230,0,0.3);color:#fee500;border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;">💬 카카오</button>
       <button onclick="newChat()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">새 채팅</button>
       <button onclick="showScreen('profile')" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">내 정보</button>
       <button onclick="confirmLogout()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">로그아웃</button>
@@ -641,30 +632,13 @@
 
   <div class="suggest-chips" id="suggestChips"></div>
 
-  <div style="display:flex;gap:8px;padding:0 16px 10px;">
-    <button onclick="openFortuna()" style="
-      flex:1;padding:11px 10px;border-radius:12px;border:1px solid rgba(200,162,245,0.3);
-      background:linear-gradient(135deg,rgba(124,92,252,0.15),rgba(200,162,245,0.08));
-      color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;
-      font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;
-      display:flex;align-items:center;justify-content:center;gap:6px;
-    ">✨ 리포트 보기</button>
-    <button onclick="openKakao()" style="
-      flex:1;padding:11px 10px;border-radius:12px;border:1px solid rgba(255,230,0,0.3);
-      background:rgba(255,230,0,0.08);
-      color:#fee500;font-size:12px;font-weight:700;cursor:pointer;
-      font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;
-      display:flex;align-items:center;justify-content:center;gap:6px;
-    ">💬 카카오 채널</button>
-  </div>
-
   <div class="chat-input-wrap">
     <div class="chat-input-row">
       <textarea class="chat-textarea" id="chatInput" placeholder="🔮 무엇이든 물어보세요..." rows="1"
         oninput="autoResize(this)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendMessage()"></textarea>
       <button <button class="tarot-btn" id="tarotOpenBtn" onclick="openTarotModal()">🃏 타로</button>
-      class="send-btn" id="sendBtn" onclick="sendMessage()">💫 운명 열기</button>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">💫 전송</button>
     </div>
   </div>
 </div>
@@ -2570,34 +2544,20 @@ for (var i = 1; i <= 6; i++) {
   var streamShareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
   var cardContent = cardLine || cleanReply;  // CARD 문장 없으면 전체 본문 fallback
   var btnWrap = document.createElement('div');
-  btnWrap.className = 'msg-btn-row';
-  var cardBtn = document.createElement('button');
-  cardBtn.className = 'save-card-btn';
-  cardBtn.textContent = '카드로 저장';
-  cardBtn.addEventListener('click', function(){ saveCard(encodeURIComponent(cardContent)); });
-
-  var kakaoBtn = document.createElement('button');
-  kakaoBtn.className = 'share-kakao-btn';
-  kakaoBtn.id = streamShareId;
-  kakaoBtn.setAttribute('data-content', encodeURIComponent(cardContent.slice(0,200)));
-  kakaoBtn.textContent = '카카오 공유';
-  kakaoBtn.addEventListener('click', function(){ shareKakao(streamShareId); });
-
+  btnWrap.className = 'bubble-actions';
   var copyBtn = document.createElement('button');
-  copyBtn.className = 'copy-msg-btn';
+  copyBtn.className = 'bubble-icon-btn';
+  copyBtn.title = '복사';
+  copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="2" y="2" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/></svg>';
   copyBtn.setAttribute('data-content', encodeURIComponent(cleanReply));
-  copyBtn.textContent = '📋 복사';
   copyBtn.addEventListener('click', function(){ copyMessage(copyBtn); });
-
-  btnWrap.appendChild(cardBtn);
-  btnWrap.appendChild(kakaoBtn);
-    var hitBtn2 = document.createElement('button');
-  hitBtn2.className = 'hit-btn';
-  hitBtn2.textContent = '🎯 맞았어요';
-  hitBtn2.style.cssText = 'padding:4px 10px;background:#c9a84c22;border:1px solid #c9a84c55;border-radius:6px;color:#c9a84c;font-size:12px;cursor:pointer;';
-  (function(reply){ hitBtn2.addEventListener('click', function(){ saveFortuneHit(reply, hitBtn2); }); })(cleanReply);
+  var hitBtn2 = document.createElement('button');
+  hitBtn2.className = 'bubble-icon-btn';
+  hitBtn2.title = '맞았어요';
+  hitBtn2.textContent = '🎯';
+  (function(reply){ hitBtn2.addEventListener('click', function(){ saveFortuneHit(reply, hitBtn2); hitBtn2.classList.add('hit-active'); }); })(cleanReply);
+  btnWrap.appendChild(copyBtn);
   btnWrap.appendChild(hitBtn2);
-btnWrap.appendChild(copyBtn);
   bubble.parentNode.insertBefore(btnWrap, bubble.nextSibling);
   scrollToBottom();
   return cleanReply;
@@ -2671,41 +2631,24 @@ function appendMessage(role, content, animate) {
     '<div class="msg-avatar">' + (isUser ? '👤' : getAvatar()) + '</div>' +
     '<div>' +
       '<div class="msg-bubble">' + renderMarkdown(content) + '</div>' +
-      '<div class="msg-btn-row"></div>' +
+      '<div class="bubble-actions"></div>' +
       '<div class="msg-time">' + time + '</div>' +
     '</div>';
 
   if (!isUser) {
-    var btnRow = div.querySelector('.msg-btn-row');
-    var cardContent2 = cardLine2 || content;
-
-    var cardBtn2 = document.createElement('button');
-    cardBtn2.className = 'save-card-btn';
-    cardBtn2.textContent = '카드로 저장';
-    (function(c){ cardBtn2.addEventListener('click', function(){ saveCard(encodeURIComponent(c)); }); })(cardContent2);
-
-    var kakaoBtn2 = document.createElement('button');
-    kakaoBtn2.className = 'share-kakao-btn';
-    kakaoBtn2.id = shareId;
-    kakaoBtn2.setAttribute('data-content', encodeURIComponent((cardLine2 || content).slice(0,200)));
-    kakaoBtn2.textContent = '카카오 공유';
-    kakaoBtn2.addEventListener('click', function(){ shareKakao(shareId); });
-
+    var btnRow = div.querySelector('.bubble-actions');
     var copyBtn2 = document.createElement('button');
-    copyBtn2.className = 'copy-msg-btn';
+    copyBtn2.className = 'bubble-icon-btn';
+    copyBtn2.title = '복사';
+    copyBtn2.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="2" y="2" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/></svg>';
     copyBtn2.setAttribute('data-content', encodeURIComponent(content));
-    copyBtn2.textContent = '📋 복사';
     copyBtn2.addEventListener('click', function(){ copyMessage(copyBtn2); });
-
-    btnRow.appendChild(cardBtn2);
-    btnRow.appendChild(kakaoBtn2);
-    btnRow.appendChild(copyBtn2);
-
     var hitBtn3 = document.createElement('button');
-    hitBtn3.className = 'hit-btn';
-    hitBtn3.textContent = '🎯 맞았어요';
-    hitBtn3.style.cssText = 'padding:4px 10px;background:#c9a84c22;border:1px solid #c9a84c55;border-radius:6px;color:#c9a84c;font-size:12px;cursor:pointer;';
-    (function(c){ hitBtn3.addEventListener('click', function(){ saveFortuneHit(c, hitBtn3); }); })(content);
+    hitBtn3.className = 'bubble-icon-btn';
+    hitBtn3.title = '맞았어요';
+    hitBtn3.textContent = '🎯';
+    (function(ct){ hitBtn3.addEventListener('click', function(){ saveFortuneHit(ct, hitBtn3); hitBtn3.classList.add('hit-active'); }); })(content);
+    btnRow.appendChild(copyBtn2);
     btnRow.appendChild(hitBtn3);
   }
 
