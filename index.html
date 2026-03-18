@@ -706,6 +706,7 @@ async function setUser(user) {
     showScreen('chat');
     updateChatHeader();
     updateStreak();
+    loadUserContext();
     if (chatHistory.length === 0) showWelcome();
     // 알림 스케줄링: 이미 허용 → 재예약 / 첫 방문 → 커스텀 다이얼로그
     if ('Notification' in window) {
@@ -1221,6 +1222,84 @@ function getCityCoords(city) {
 function getKSTDate() {
   var d = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
   return d.toISOString().slice(0, 10);
+}
+
+// ── 대화 맥락 기억 엔진 ─────────────────────────────────────
+async function loadUserContext() {
+  if (!currentUser) return;
+  try {
+    var res = await sb.from('user_context').select('*').eq('user_id', currentUser.id).maybeSingle();
+    if (res.data) window._fortunaUserCtx = res.data;
+  } catch(e) {}
+}
+
+function extractAndSaveContext(replyText) {
+  if (!currentUser) return;
+  var ctxMatch = replyText.match(/[CTX]([sS]*?)[/CTX]/);
+  if (!ctxMatch) return;
+  var raw = ctxMatch[1];
+
+  function parseList(label) {
+    var m = raw.match(new RegExp(label + ':s*([^
+]+)'));
+    if (!m) return [];
+    return m[1].split(/[,，、]/).map(function(s){return s.trim();}).filter(Boolean);
+  }
+
+  // people: "민준/남자친구" 형식 파싱
+  var peopleRaw = raw.match(/people:s*([^
+]+)/);
+  var people = [];
+  if (peopleRaw) {
+    people = peopleRaw[1].split(/[,，]/).map(function(s){
+      var parts = s.trim().split('/');
+      return { name: parts[0].trim(), relation: parts[1] ? parts[1].trim() : '' };
+    }).filter(function(p){ return p.name; });
+  }
+  var situations = parseList('situations');
+  var concerns = parseList('concerns');
+
+  // 현재 캐시와 병합
+  var ctx = window._fortunaUserCtx || { people:[], situations:[], concerns:[], last_topics:[] };
+
+  // people 병합 (이름 중복 제거)
+  people.forEach(function(p) {
+    if (!ctx.people.find(function(e){ return e.name === p.name; })) ctx.people.push(p);
+  });
+  // situations 병합 (최근 10개 유지)
+  situations.forEach(function(s) {
+    if (!ctx.situations.includes(s)) ctx.situations.push(s);
+  });
+  if (ctx.situations.length > 10) ctx.situations = ctx.situations.slice(-10);
+  // concerns 누적 (최근 20개)
+  concerns.forEach(function(c) { ctx.concerns.push(c); });
+  if (ctx.concerns.length > 20) ctx.concerns = ctx.concerns.slice(-20);
+
+  // last_topics: 최근 대화 주제로 concerns top3 추출
+  var topicCount = {};
+  ctx.concerns.forEach(function(c){ topicCount[c] = (topicCount[c]||0)+1; });
+  ctx.last_topics = Object.keys(topicCount).sort(function(a,b){ return topicCount[b]-topicCount[a]; }).slice(0,5);
+
+  // 감정 패턴
+  if (ctx.last_topics.length > 0) {
+    var top = ctx.last_topics[0];
+    if (top.match(/연애|사랑|남자친구|여자친구|관계/)) ctx.emotion_pattern = '연애불안형';
+    else if (top.match(/돈|주식|투자|재물|월급/)) ctx.emotion_pattern = '재물걱정형';
+    else if (top.match(/직장|이직|취업|일|업무/)) ctx.emotion_pattern = '직장고민형';
+    else if (top.match(/결정|선택|고민/)) ctx.emotion_pattern = '결정장애형';
+  }
+
+  window._fortunaUserCtx = ctx;
+  // 비동기 저장 (fire and forget)
+  sb.from('user_context').upsert({
+    user_id: currentUser.id,
+    people: ctx.people,
+    situations: ctx.situations,
+    concerns: ctx.concerns,
+    last_topics: ctx.last_topics,
+    emotion_pattern: ctx.emotion_pattern || '',
+    updated_at: Date.now()
+  }).then(function(){}).catch(function(){});
 }
 
 function getKSTDateOffset(days) {
@@ -1761,6 +1840,20 @@ for (var i = 1; i <= 6; i++) {
       }).join("\n") + "\n";
     })() +
     '【어스펙트】\n' + (astro.aspects_summary||'미상') + '\n\n' +
+   (_userCtx ? '【이전 대화 맥락】
+' +
+    (_userCtx.people&&_userCtx.people.length ? '- 언급된 사람: ' + _userCtx.people.map(function(p){return p.name+(p.relation?'('+p.relation+')':'');}).join(', ') + '
+' : '') +
+    (_userCtx.situations&&_userCtx.situations.length ? '- 진행 중인 상황: ' + _userCtx.situations.join(', ') + '
+' : '') +
+    (_userCtx.concerns&&_userCtx.concerns.length ? '- 자주 걱정하는 것: ' + _userCtx.concerns.join(', ') + '
+' : '') +
+    (_userCtx.last_topics&&_userCtx.last_topics.length ? '- 최근 주제: ' + _userCtx.last_topics.slice(-5).join(', ') + '
+' : '') +
+    '이 맥락을 자연스럽게 연결하되 억지로 끌어오지 말고 관련될 때만 사용.
+예: "저번에 민준씨 에기 하셨는데 요즘은요?"
+
+' : '') +
     '【대화 맥락 지침】\n' +
     '- 이전 대화에서 언급된 상황(직장, 연애, 투자 등)과 사람 이름은 반드시 기억하고 연결하라\n' +
     '- 단, 이미 한 말을 반복하거나 요약하지 마라\n' +
@@ -1812,7 +1905,16 @@ for (var i = 1; i <= 6; i++) {
     '결과보다 움직인 자신을 믿어보는 거예요.\n\n' +
     '【공유 카드 지침】\n' +
     '모든 답변 맨 마지막에 반드시 아래 형식으로 한 줄 추가:\n' +
-    '[CARD] 오늘 ' + (profile.name || '당신') + '님에게 전하는 한 마디 (20자 이내, 임팩트 있고 저장하고 싶은 문장으로)';
+    '[CARD] 오늘 ' + (profile.name || '당신') + '님에게 전하는 한 마디 (20자 이내, 임팩트 있고 저장하고 싶은 문장으로)
+
+' +
+    '【맥락 추출 지침】
+답변 맨 끝에 아래 형식으로 추가 (사용자에게 보이지 않음):
+[CTX]
+people: 이 대화에서 언급된 사람 이름/관계 (없으면 생략)
+situations: 진행 중인 상황 (없으면 생략)
+concerns: 걱정·고민 키워드 1~3개
+[/CTX]';
 
   // 최근 20개 대화 포함 (맥락 유지)
   var recentHistory = chatHistory.slice(-20);
@@ -1887,12 +1989,16 @@ for (var i = 1; i <= 6; i++) {
   if (cardMatch) cardLine = cardMatch[1].trim();
   var cleanReply = replyText
     .replace(/\[CARD\][^\n]*/g, '')  // [CARD] 줄 제거
+    .replace(/[CTX][sS]*?[/CTX]/g, '')
     .replace(/<[^>]*>/g, '')
     .replace(/&lt;[^&]*&gt;/g, '')
     .replace(/#{1,6}\s/g, '')
     .replace(/【([^】]+)】/g, '$1')
     .trimEnd();
   bubble.innerHTML = renderMarkdown(cleanReply);
+  // [CTX] 맥락 파싱 → 백그라운드 저장
+  extractAndSaveContext(replyText);
+
   // 버튼 추가
   var streamShareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
   var cardContent = cardLine || cleanReply;  // CARD 문장 없으면 전체 본문 fallback
