@@ -1349,15 +1349,13 @@ function extractAndSaveContext(replyText) {
   var raw = ctxMatch[1];
 
   function parseList(label) {
-    var m = raw.match(new RegExp(label + ':s*([^
-]+)'));
+    var m = raw.match(new RegExp(label + ':\\s*([^\\n]+)'));
     if (!m) return [];
     return m[1].split(/[,，、]/).map(function(s){return s.trim();}).filter(Boolean);
   }
 
   // people: "민준/남자친구" 형식 파싱
-  var peopleRaw = raw.match(/people:s*([^
-]+)/);
+  var peopleRaw = raw.match(/people:\s*([^\n]+)/);
   var people = [];
   if (peopleRaw) {
     people = peopleRaw[1].split(/[,，]/).map(function(s){
@@ -1642,7 +1640,7 @@ async function loadHitsScreen() {
   overlay.style.cssText = 'position:fixed;inset:0;background:#05020e;z-index:9999;overflow-y:auto;padding:24px 16px;';
   overlay.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
     '<h2 style="color:#c9a84c;font-size:18px;margin:0;">🎯 나의 적중 일지</h2>' +
-    '<button onclick="document.getElementById('hitsScreen').remove()" style="background:none;border:none;color:#9b8fb0;font-size:22px;cursor:pointer;">&times;</button>' +
+    '<button onclick="document.getElementById(\'hitsScreen\').remove()" style="background:none;border:none;color:#9b8fb0;font-size:22px;cursor:pointer;">&times;</button>' +
     '</div><div id="hitsList" style="color:#ede6f8;font-size:14px;">불러오는 중...</div>';
   document.body.appendChild(overlay);
 
@@ -1693,8 +1691,8 @@ function renderRetroCard(card, dateStr) {
   overlay.innerHTML = '<div style="color:#9b8fb0;font-size:11px;margin-bottom:8px;">7일 전 (' + dateStr + ') 운세 �아보기</div>' +
     '<div id="retroCardContent" style="color:#ede6f8;font-size:14px;line-height:1.6;margin-bottom:12px;">' + summaryText + '</div>' +
     '<div style="display:flex;gap:8px;">' +
-    '<button id="retroHitBtn" onclick="saveFortuneHit(document.getElementById('retroCardContent').textContent, document.getElementById('retroHitBtn')); document.getElementById('retroCard').style.opacity='0.6';" style="flex:1;padding:8px;background:#c9a84c22;border:1px solid #c9a84c66;border-radius:8px;color:#c9a84c;font-size:13px;cursor:pointer;">🎯 맞았어요</button>' +
-    '<button onclick="document.getElementById('retroCard').remove()" style="flex:1;padding:8px;background:#ffffff11;border:1px solid #ffffff22;border-radius:8px;color:#9b8fb0;font-size:13px;cursor:pointer;">아니에요</button>' +
+    '<button id="retroHitBtn" onclick="saveFortuneHit(document.getElementById(\'retroCardContent\').textContent, document.getElementById(\'retroHitBtn\')); document.getElementById(\'retroCard\').style.opacity=\'0.6\';" style="flex:1;padding:8px;background:#c9a84c22;border:1px solid #c9a84c66;border-radius:8px;color:#c9a84c;font-size:13px;cursor:pointer;">🎯 맞았어요</button>' +
+    '<button onclick="document.getElementById(\'retroCard\').remove()" style="flex:1;padding:8px;background:#ffffff11;border:1px solid #ffffff22;border-radius:8px;color:#9b8fb0;font-size:13px;cursor:pointer;">아니에요</button>' +
     '</div>';
   document.body.appendChild(overlay);
   setTimeout(function(){ const el = document.getElementById('retroCard'); if (el) el.remove(); }, 15000);
@@ -2306,16 +2304,11 @@ async function callGemini(userMsg, apiKey) {
       var _gwanrok = _findPal('관록궁') || _findPal('관록');
       var _bucheo  = _findPal('부처궁') || _findPal('부처');
       _ziweiBlock =
-        '- 명주성/신주성: ' + (_zc.destinyMaster||'미상') + '/' + (_zc.bodyMaster||'미상') + '
-' +
-        '- 오행국: ' + (_zc.element||'미상') + '
-' +
-        '- 명궁: ' + (_soul ? _soul.name + ' (' + (_soul.majorStars||[]).join(', ') + ')' : '미상') + '
-' +
-        '- 현재 대한: ' + (_dec ? _dec.name + ' (' + _dec.ageRange + ')' : '미상') + '
-' +
-        '- ' + new Date().getFullYear() + '년 유년궁: ' + (_yr ? _yr.palace : '미상') + '
-' +
+        '- 명주성/신주성: ' + (_zc.destinyMaster||'미상') + '/' + (_zc.bodyMaster||'미상') + '\n' +
+        '- 오행국: ' + (_zc.element||'미상') + '\n' +
+        '- 명궁: ' + (_soul ? _soul.name + ' (' + (_soul.majorStars||[]).join(', ') + ')' : '미상') + '\n' +
+        '- 현재 대한: ' + (_dec ? _dec.name + ' (' + _dec.ageRange + ')' : '미상') + '\n' +
+        '- ' + new Date().getFullYear() + '년 유년궁: ' + (_yr ? _yr.palace : '미상') + '\n' +
         '- 주요 궁 배치: 재백궁(' + _starsStr(_jaebaek) + '), 관록궁(' + _starsStr(_gwanrok) + '), 부처궁(' + _starsStr(_bucheo) + ')';
     }
   } catch(_ze) { console.warn('자미두수 빌더 오류:', _ze.message); }
@@ -2380,20 +2373,12 @@ for (var i = 1; i <= 6; i++) {
       }).join("\n") + "\n";
     })() +
     '【어스펙트】\n' + (astro.aspects_summary||'미상') + '\n\n' +
-   (_userCtx ? '【이전 대화 맥락】
-' +
-    (_userCtx.people&&_userCtx.people.length ? '- 언급된 사람: ' + _userCtx.people.map(function(p){return p.name+(p.relation?'('+p.relation+')':'');}).join(', ') + '
-' : '') +
-    (_userCtx.situations&&_userCtx.situations.length ? '- 진행 중인 상황: ' + _userCtx.situations.join(', ') + '
-' : '') +
-    (_userCtx.concerns&&_userCtx.concerns.length ? '- 자주 걱정하는 것: ' + _userCtx.concerns.join(', ') + '
-' : '') +
-    (_userCtx.last_topics&&_userCtx.last_topics.length ? '- 최근 주제: ' + _userCtx.last_topics.slice(-5).join(', ') + '
-' : '') +
-    '이 맥락을 자연스럽게 연결하되 억지로 끌어오지 말고 관련될 때만 사용.
-예: "저번에 민준씨 에기 하셨는데 요즘은요?"
-
-' : '') +
+   (_userCtx ? '【이전 대화 맥락】\n' +
+    (_userCtx.people&&_userCtx.people.length ? '- 언급된 사람: ' + _userCtx.people.map(function(p){return p.name+(p.relation?'('+p.relation+')':'');}).join(', ') + '\n' : '') +
+    (_userCtx.situations&&_userCtx.situations.length ? '- 진행 중인 상황: ' + _userCtx.situations.join(', ') + '\n' : '') +
+    (_userCtx.concerns&&_userCtx.concerns.length ? '- 자주 걱정하는 것: ' + _userCtx.concerns.join(', ') + '\n' : '') +
+    (_userCtx.last_topics&&_userCtx.last_topics.length ? '- 최근 주제: ' + _userCtx.last_topics.slice(-5).join(', ') + '\n' : '') +
+    '이 맥락을 자연스럽게 연결하되 억지로 끌어오지 말고 관련될 때만 사용.\n예: "저번에 민준씨 에기 하셨는데 요즘은요?"\n' : '') +
     (_ziweiBlock ? '\n\n【자미두수 데이터】\n' + _ziweiBlock + '\n' : '') +
     '【대화 맥락 지침】\n' +
     '- 이전 대화에서 언급된 상황(직장, 연애, 투자 등)과 사람 이름은 반드시 기억하고 연결하라\n' +
@@ -2446,16 +2431,8 @@ for (var i = 1; i <= 6; i++) {
     '결과보다 움직인 자신을 믿어보는 거예요.\n\n' +
     '【공유 카드 지침】\n' +
     '모든 답변 맨 마지막에 반드시 아래 형식으로 한 줄 추가:\n' +
-    '[CARD] 오늘 ' + (profile.name || '당신') + '님에게 전하는 한 마디 (20자 이내, 임팩트 있고 저장하고 싶은 문장으로)
-
-' +
-    '【맥락 추출 지침】
-답변 맨 끝에 아래 형식으로 추가 (사용자에게 보이지 않음):
-[CTX]
-people: 이 대화에서 언급된 사람 이름/관계 (없으면 생략)
-situations: 진행 중인 상황 (없으면 생략)
-concerns: 걱정·고민 키워드 1~3개
-[/CTX]';
+    '[CARD] 오늘 ' + (profile.name || '당신') + '님에게 전하는 한 마디 (20자 이내, 임팩트 있고 저장하고 싶은 문장으로)\n' +
+    '【맥락 추출 지침】\n답변 맨 끝에 아래 형식으로 추가 (사용자에게 보이지 않음):\n[CTX]\npeople: 이 대화에서 언급된 사람 이름/관계 (없으면 생략)\nsituations: 진행 중인 상황 (없으면 생략)\nconcerns: 걱정·고민 키워드 1~3개\n[/CTX]';
 
   // 최근 20개 대화 포함 (맥락 유지)
   var recentHistory = chatHistory.slice(-20);
