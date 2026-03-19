@@ -2457,9 +2457,40 @@ async function handlePayCharge() {
   });
 }
 
-function handleSubCharge() {
-  window.open('https://fortuna-silk.vercel.app', '_blank');
-  closeChargeModal();
+async function handleSubCharge() {
+  if (!currentUser) return;
+  if (typeof IMP === 'undefined') { alert('결제 모듈을 불러오는 중이에요. 잠시 후 다시 시도해주세요.'); return; }
+  IMP.init('imp19424728');
+  IMP.request_pay({
+    pg: 'html5_inicis.MOI3302087',
+    pay_method: 'card',
+    merchant_uid: 'SUB-' + Date.now(),
+    name: '포르투나 무제한 구독 (월 9,900원)',
+    amount: 9900,
+    buyer_name: (userProfile && userProfile.name) || '',
+    buyer_email: (currentUser && currentUser.email) || '',
+  }, async function(rsp) {
+    if (rsp.success) {
+      try {
+        await sb.from('question_charges').insert({
+          user_id: currentUser.id,
+          amount: 9999,
+          payment_id: rsp.imp_uid,
+          type: 'subscription',
+          created_at: Date.now()
+        });
+        _questionCountCache = null;
+        await loadQuestionCount();
+        updateQuestionBadge();
+        closeChargeModal();
+        alert('무제한 구독이 시작됐어요! ✨');
+      } catch(e) {
+        alert('결제는 완료되었으나 저장 중 오류가 발생했어요. 고객센터에 문의해주세요.');
+      }
+    } else {
+      console.warn('구독 결제 실패', rsp.error_msg);
+    }
+  });
 }
 
 async function handleReferralOnLoad() {
