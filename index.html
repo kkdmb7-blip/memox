@@ -752,7 +752,10 @@ async function initAuth() {
     window.history.replaceState(null, '', window.location.pathname);
   }
 
-  var res = await sb.auth.getSession();
+  var timeout = new Promise(function(resolve) {
+    setTimeout(function() { resolve({ data: { session: null } }); }, 5000);
+  });
+  var res = await Promise.race([sb.auth.getSession(), timeout]);
   if (res.data && res.data.session && res.data.session.user) {
     await setUser(res.data.session.user);
   } else {
@@ -3407,7 +3410,10 @@ document.addEventListener('visibilitychange', async function() {
   }
 });
 
-initAuth();
+initAuth().catch(function(e) {
+  console.error('initAuth 오류:', e);
+  showScreen('login');
+});
 
 // ── Service Worker 메시지 수신 ───────────────────────────────
 if ('serviceWorker' in navigator) {
