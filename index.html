@@ -1962,17 +1962,36 @@ async function callDailyFortune() {
   var now = new Date();
   var dateLabel = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일';
 
+  // 현재 대운 찾기
+  var bigLuck = saju.saju_big_luck || [];
+  if (typeof bigLuck === 'string') try { bigLuck = JSON.parse(bigLuck); } catch(e) { bigLuck = []; }
+  var curYear = now.getFullYear();
+  var curLuck = bigLuck.find(function(b){ var s=parseInt(b.start_year||0), e=parseInt(b.end_year||9999); return curYear>=s && curYear<=e; });
+  var curLuckStr = curLuck ? (curLuck.pillar_kor || curLuck.pillar || '미상') + '운' : '미상';
+
+  // 오행 비율
+  var fivePct = saju.saju_five_pct || {};
+  if (typeof fivePct === 'string') try { fivePct = JSON.parse(fivePct); } catch(e) { fivePct = {}; }
+  var fiveStr = Object.entries(fivePct).map(function(kv){ return kv[0]+':'+kv[1]+'%'; }).join(', ') || '미상';
+
   var saluteInfo =
     '이름: ' + name + '\n' +
     '성별: ' + (profile.gender === 'M' ? '남성' : '여성') + '\n' +
     '생년월일: ' + (profile.birth_date || '미상') + '\n' +
-    '사주 기둥: ' + (saju.saju_pillars || JSON.stringify(saju).slice(0, 80)) + '\n' +
+    '사주기둥: ' + (saju.saju_pillars || '미상') + '\n' +
+    '신강/신약: ' + (saju.saju_strength || '미상') + '\n' +
+    '격국: ' + (saju.saju_geokguk || '미상') + '\n' +
+    '용신: ' + (saju.saju_yongshin_primary || '미상') + '\n' +
+    '현재대운: ' + curLuckStr + '\n' +
+    '오행비율: ' + fiveStr + '\n' +
     '띠: ' + (saju.saju_zodiac || '미상') + '\n' +
-    '오늘 일진: ' + (saju.iljin || '미상') + '\n' +
-    '지배행성: ' + (astro.dominant_planet || '미상') + '\n' +
-    '태양: ' + (astro.sun || '미상') + ' / 달: ' + (astro.moon || '미상');
+    '태양궁: ' + (astro.sun || '미상') + '\n' +
+    '달궁: ' + (astro.moon || '미상') + '\n' +
+    '상승궁: ' + (astro.ascendant || '미상') + '\n' +
+    '수성: ' + (astro.mercury || '미상') + ' / 금성: ' + (astro.venus || '미상') + ' / 화성: ' + (astro.mars || '미상') + '\n' +
+    '지배행성: ' + (astro.dominant_planet || '미상');
 
-  var prompt = '오늘(' + dateLabel + ') ' + name + '님의 운세를 아래 JSON 형식으로만 답해줘.\n다른 말 없이 JSON만 출력해.\n\n내담자 정보:\n' + saluteInfo + '\n\n{\n  "keyword": "오늘의 키워드 단어 1개",\n  "summary": "20자 이내 임팩트 한 줄",\n  "content": "200자 이내 오늘 운세",\n  "caution": "오늘 주의할 것 1가지 15자 이내",\n  "recommendation": "오늘 하면 좋은 것 1가지 15자 이내"\n}';
+  var prompt = '오늘 ' + dateLabel + ' ' + name + '님의 운세를 이 사람의 사주와 점성 데이터 기반으로 아래 JSON 형식으로만 답해줘.\n다른 말 없이 JSON만 출력해. keyword는 절대 비워두지 말 것.\n\n내담자 정보:\n' + saluteInfo + '\n\n{\n  "keyword": "오늘을 관통하는 단어 1개",\n  "summary": "이 사람만을 위한 20자 이내 한 줄",\n  "content": "사주+점성 데이터 반드시 언급하며 200자",\n  "caution": "오늘 주의할 것 15자 이내",\n  "recommendation": "오늘 하면 좋은 것 15자 이내"\n}';
 
   async function tryFetch() {
     var res = await fetch('https://fortuna-silk.vercel.app/api/chat', {
@@ -1981,16 +2000,17 @@ async function callDailyFortune() {
       body: JSON.stringify({
         user_id: currentUser.id + '_daily_' + today,
         messages: [{ role: 'user', content: prompt }],
-        system_prompt: '당신은 사주와 점성술 전문 운세 AI입니다. 요청한 JSON 형식으로만 답하세요. 마크다운 없이 순수 JSON만 출력하세요.'
+        system_prompt: '당신은 사주명리학과 서양 점성술 전문가입니다. 반드시 요청된 JSON 형식으로만 답하세요. keyword 필드는 절대 비워두지 마세요. 마크다운 없이 순수 JSON만 출력하세요.'
       })
     });
     if (!res.ok) throw new Error('API 오류');
     var data = await res.json();
     var text = (data.reply || '').trim();
-    // JSON 블록 추출
     var match = text.match(/\{[\s\S]*\}/);
     if (!match) throw new Error('JSON 없음');
-    return JSON.parse(match[0]);
+    var parsed = JSON.parse(match[0]);
+    if (!parsed.keyword || !parsed.keyword.trim()) throw new Error('keyword 빈값');
+    return parsed;
   }
 
   try {
