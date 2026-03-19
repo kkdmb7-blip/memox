@@ -1,17 +1,14 @@
 // ── 포르투나 Service Worker ──────────────────────────────────
 const CACHE_NAME = 'fortuna-cache-1.0.6';
-// self.registration.scope 기반 상대경로 (GitHub Pages 서브경로 대응)
+// GitHub Pages 서브패스 대응 (/memox/ 등)
 const BASE = self.registration.scope;
-const STATIC_ASSETS = [BASE, BASE + 'index.html', BASE + 'manifest.json', BASE + 'icon.svg'];
 
-// ── INSTALL: 정적 자원 캐시 (개별 add로 하나 실패해도 나머지 캐시) ─
+// ── INSTALL: index.html만 캐시 ───────────────────────────────
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(cache =>
-      Promise.allSettled(
-        STATIC_ASSETS.map(url => cache.add(url).catch(() => {}))
-      )
-    ).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME)
+      .then(cache => cache.add(BASE + 'index.html'))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -31,8 +28,8 @@ self.addEventListener('fetch', e => {
   const { request } = e;
   const url = new URL(request.url);
 
-  // 외부 API (Supabase, Anthropic, OpenAI 등) → Network Only
-  if (!url.origin.includes(self.location.hostname)) {
+  // 외부 API (Supabase, Anthropic 등) → Network Only
+  if (url.hostname !== self.location.hostname) {
     e.respondWith(fetch(request).catch(() => new Response(
       JSON.stringify({ error: 'offline' }),
       { status: 503, headers: { 'Content-Type': 'application/json' } }
@@ -40,7 +37,8 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 정적 자원 → Cache First, 없으면 네트워크 후 캐시 갱신
+  // 같은 origin 자원 → Cache First, 없으면 네트워크 후 캐시
+  // 오프라인 fallback: BASE + 'index.html' (서브패스 정확히 일치)
   e.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;
@@ -50,7 +48,7 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE_NAME).then(c => c.put(request, clone));
         return res;
       });
-    }).catch(() => caches.match('/index.html'))
+    }).catch(() => caches.match(BASE + 'index.html'))
   );
 });
 
