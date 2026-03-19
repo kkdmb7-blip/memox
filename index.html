@@ -2373,14 +2373,16 @@ async function callClaude(userMsg, apiKey) {
         '&day=' + parseInt(_bd[2]) + '&hour=' + parseInt(_bt[0]) +
         '&gender=' + _zGender + '&isLunar=' + _isLunar + '&isLeap=' + _isLeap;
       try {
+        console.log('자미두수 URL:', _zUrl);
         var _zRes = await fetch(_zUrl);
         if (_zRes.ok) {
           var _zd = await _zRes.json();
-          if (!_zd.error) { window._ziweiCache = _zd; window._ziweiFetched = true; }
+          if (!_zd.error) { window._ziweiCache = _zd; console.log('자미두수 캐시 저장됨:', _zd); window._ziweiFetched = true; }
         }
-      } catch(_zfe) { console.warn('자미두수 패치 실패', _zfe.message); }
+      } catch(_zfe) { console.warn('자미두수 패치 실패', _zfe); }
     }
     var _zc = window._ziweiCache;
+    console.log('자미두수 캐시 상태:', _zc);
     if (_zc) {
       var _soul = _zc.soulPalace || (_zc.palaces||[]).find(function(p){ return p.name==='명궁'; });
       var _dec  = _zc.currentDecade;
