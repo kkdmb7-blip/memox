@@ -3354,8 +3354,7 @@ if ('serviceWorker' in navigator) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const swPath = location.pathname.replace(/\/[^/]*$/, '/') + 'sw.js?v=' + APP_VERSION;
-      const reg = await navigator.serviceWorker.register(swPath, { scope: location.pathname.replace(/\/[^/]*$/, '/') });
+      const reg = await navigator.serviceWorker.register('/memox/sw.js?v=' + APP_VERSION, { scope: '/memox/' });
 
       // Periodic Background Sync (백그라운드 연결 유지)
       if ('periodicSync' in reg) {
