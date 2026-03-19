@@ -2123,8 +2123,7 @@ async function interpretTarotWithAI(cards, reversals) {
   var cardLines = cardList.map(function(card, i) {
     var rev = reversals ? reversals[i] : card.reversed;
     var dir = rev ? '역방향' : '정방향';
-    var kw = (card.keywords || []).slice(0, 3).join(', ');
-    return '[' + labels[i] + '] ' + card.name + ' (' + dir + ')' + (kw ? ' / 키워드: ' + kw : '');
+    return '카드 ' + (i+1) + ' (' + labels[i] + '): ' + card.name + ' ' + dir;
   }).join('\n');
   var profile = userProfile || {};
   var astro = profile.astro_data || {};
@@ -2146,25 +2145,20 @@ async function interpretTarotWithAI(cards, reversals) {
                (_yr  ? ' / ' + new Date().getFullYear() + '년 유년구: ' + _yr.palace : '');
   }
   var userMsg =
-    '타로 카드 해석입니다.\n\n' +
-    '듳힌 카드:\n' + cardLines + '\n' +
+    '타로 카드 3장 해석입니다.\n\n' +
+    cardLines + '\n\n' +
     (question ? '질문: ' + question + '\n' : '') +
-    '현재 점성술 데이터: ' + (planetsStr || '미상') + '\n' +
-    '자미두수 데이터: ' + ziweiStr + '\n\n' +
-    '아래 구조로 답해줘:\n\n' +
-    '1. 카드 이름 + 부제 (예: 달 — 잠재의식의 거울)\n' +
-    '2. 감정 공감 한 줄\n' +
-    '3. "🃏 타로로 보면"\n' +
-    '   → 카드 핵심 메시지 2줄\n' +
-    '   → 지금 상황 적용 1줄\n' +
-    '4. "⭐ 별자리로 보면"\n' +
-    '   → 지금 행성 기운 연결 2줄\n' +
-    '5. "🌟 자미두수로 보면"\n' +
-    '   → 현재 대한/유년구 연결 2줄\n' +
-    '6. 세 가지 종합 한 줄 (일치하면 강하게, 엇갈리면 복합적으로)\n' +
-    '7. 오늘의 행동 제안 1줄\n\n' +
-    '전체 400~600자. 마지막 문장은 반드시 희망적으로. 전문용어는 괄호로 바로 설명. 절대 일반적인 운세처럼 쓰지 말고 이 사람의 별자리+자미두수 데이터를 반드시 구체적으로 연결할 것.';
-  var systemMsg = '당신은 사주·점성술·자미두수·타로를 교차 분석하는 전문 운명 상담사입니다. 신비롭고 따뜻하되 구체적이고 개인화된 해석을 제공합니다. 데이터가 없는 항목은 "미상"이라 쓰지 말고 카드 해석에 집중하세요.';
+    '현재 점성술 데이터: ' + (planetsStr || '미상') + '\n\n' +
+    '아래 구조로 답해줘:\n' +
+    '1. 3장 카드 흐름 요약 1줄\n' +
+    '2. 각 카드 1~2줄씩\n' +
+    '   - 현재 상황:\n' +
+    '   - 핵심 원인:\n' +
+    '   - 앞으로의 흐름:\n' +
+    '3. ⭐ 별자리로 보면 (지금 행성 기운 연결 1~2줄)\n' +
+    '4. 마무리 희망적 한 줄\n\n' +
+    '전체 300~450자. ## ### ** 마크다운 절대 금지. 표/구분선 금지. 사주/자미두수/베딕 언급 금지.';
+  var systemMsg = '당신은 타로와 점성술을 결합해 해석하는 운명 상담사입니다. 따뜻하고 구체적으로 답하되, 마크다운 기호(##, **, ---)와 표를 절대 사용하지 않습니다. 사주·자미두수·베딕은 언급하지 않습니다.';
   console.log('[타로 해석 요청]', userMsg);
   try {
     var user = currentUser || window._fortunaUser;
