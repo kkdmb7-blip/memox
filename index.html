@@ -377,19 +377,22 @@
   .chat-textarea:focus { border-color:var(--accent2); }
   .chat-textarea::placeholder { color:var(--text3); }
   .send-btn {
-    height:44px; padding:0 20px; border-radius:22px; border:none;
+    height:44px; padding:0 16px; border-radius:22px; border:none;
     background:linear-gradient(135deg,#6a0dad,#c9a84c);
-    color:#fff; font-size:13px; font-weight:700; cursor:pointer; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center; transition:all 0.2s;
-    font-family:'Noto Sans KR',sans-serif; white-space:nowrap;
+    color:#fff; font-size:13px; font-weight:700;
+    cursor:pointer; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    transition:all 0.2s; white-space:nowrap;
+    box-shadow:0 2px 12px rgba(201,168,76,0.3);
+    font-family:'Noto Sans KR',sans-serif;
   }
-  .send-btn:hover { transform:scale(1.05); }
+  .send-btn:hover { transform:scale(1.04); box-shadow:0 4px 16px rgba(201,168,76,0.45); }
   /* ── 버튼 누른 느낌 (전역 active) ── */
   button:active:not(:disabled) { transform:scale(0.93) !important; opacity:0.85 !important; transition:transform 0.08s, opacity 0.08s !important; }
-  .send-btn:active:not(:disabled) { transform:scale(0.95) !important; opacity:0.85 !important; }
+  .send-btn:active:not(:disabled) { transform:scale(0.95) !important; }
   .tarot-btn:active { transform:scale(0.95) !important; opacity:0.85 !important; }
   .bubble-icon-btn:active { background:var(--surface2) !important; transform:scale(0.88) !important; }
-  .send-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+  .send-btn:disabled { opacity:0.35; cursor:not-allowed; transform:none; box-shadow:none; }
 
 
   /* 타이핑 인디케이터 */
@@ -542,19 +545,20 @@
     color:var(--text3); font-size:20px; cursor:pointer; line-height:1;
   }
   .tarot-btn {
-    height:44px; padding:0 14px; border-radius:22px;
+    height:44px; padding:0 16px; border-radius:22px;
     background:transparent;
     border:1.5px solid #c9a84c;
-    color:#c9a84c; font-size:13px; font-weight:600;
+    color:#c9a84c; font-size:13px; font-weight:700;
     cursor:pointer; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
-    gap:4px; transition:all 0.2s; white-space:nowrap;
+    transition:all 0.2s; white-space:nowrap;
     font-family:'Noto Sans KR',sans-serif;
   }
   .tarot-btn:hover {
     background:rgba(201,168,76,0.12);
     box-shadow:0 0 12px rgba(201,168,76,0.25);
   }
+  .tarot-btn:active { transform:scale(0.95); }
   .tarot-select-grid {
     display:grid;
     grid-template-columns: repeat(5, 1fr);
@@ -822,7 +826,7 @@
       <textarea class="chat-textarea" id="chatInput" placeholder="🔮 무엇이든 물어보세요..." rows="1"
         oninput="autoResize(this)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendMessage()"></textarea>
-      <button class="tarot-btn" id="tarotOpenBtn" onclick="openTarotModal()">타로</button>
+      <button class="tarot-btn" id="tarotOpenBtn" onclick="openTarotModal()">타로보기</button>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">전송</button>
     </div>
   </div>
@@ -918,7 +922,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.0.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.0.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
