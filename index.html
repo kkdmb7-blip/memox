@@ -436,10 +436,46 @@
   }
   .tarot-card-front .tarot-fallback {
     width:100%; height:100%; display:flex; align-items:center; justify-content:center;
-    flex-direction:column; gap:4px;
+    flex-direction:column; gap:6px; padding:8px; box-sizing:border-box;
+    position:relative; overflow:hidden; border-radius:8px;
   }
-  .tarot-card-front .tarot-fallback span:first-child { font-size:28px; }
-  .tarot-card-front .tarot-fallback span:last-child { font-size:9px; color:var(--text3); text-align:center; padding:0 4px; }
+  .tarot-card-front .tarot-fallback .fb-deco {
+    position:absolute; width:60px; height:60px; border-radius:50%;
+    border:1px solid rgba(255,255,255,0.1); z-index:0;
+  }
+  .tarot-card-front .tarot-fallback .fb-deco:first-child { top:-15px; right:-15px; }
+  .tarot-card-front .tarot-fallback .fb-deco:nth-child(2) { bottom:-15px; left:-15px; }
+  .tarot-card-front .tarot-fallback .fb-symbol {
+    font-size:30px; z-index:1; filter:drop-shadow(0 0 6px rgba(255,255,255,0.5));
+  }
+  .tarot-card-front .tarot-fallback .fb-number {
+    font-size:9px; color:rgba(255,255,255,0.45); z-index:1;
+    font-family:serif; letter-spacing:2px;
+  }
+  .tarot-card-front .tarot-fallback .fb-name {
+    font-size:8px; color:rgba(255,255,255,0.9); z-index:1;
+    text-align:center; padding:0 4px; line-height:1.3; font-weight:600;
+  }
+  .tarot-fallback.suit-major {
+    background:linear-gradient(160deg,#1a0a3e,#2d1460,#1a0a3e);
+    box-shadow:inset 0 0 20px rgba(212,175,55,0.15);
+  }
+  .tarot-fallback.suit-wands {
+    background:linear-gradient(160deg,#2a0a00,#6b1a00,#2a0a00);
+    box-shadow:inset 0 0 20px rgba(255,107,53,0.15);
+  }
+  .tarot-fallback.suit-cups {
+    background:linear-gradient(160deg,#001a3e,#003399,#001a3e);
+    box-shadow:inset 0 0 20px rgba(79,195,247,0.15);
+  }
+  .tarot-fallback.suit-swords {
+    background:linear-gradient(160deg,#0a0a1a,#1a1a3e,#0a0a1a);
+    box-shadow:inset 0 0 20px rgba(144,164,174,0.15);
+  }
+  .tarot-fallback.suit-pentacles {
+    background:linear-gradient(160deg,#001a00,#0a3d0a,#001a00);
+    box-shadow:inset 0 0 20px rgba(129,199,132,0.15);
+  }
   .tarot-reversed-badge {
     font-size:9px; color:#e07070; background:rgba(200,50,50,0.15);
     border:1px solid rgba(200,50,50,0.3); border-radius:4px; padding:1px 5px;
@@ -725,7 +761,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '1.3.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '1.4.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
@@ -1796,6 +1832,33 @@ function selectSpread(n) {
   document.getElementById('spreadBtn3').classList.toggle('active', n === 3);
 }
 
+function toRoman(n){
+  var r={0:'○',1:'I',2:'II',3:'III',4:'IV',5:'V',6:'VI',7:'VII',
+    8:'VIII',9:'IX',10:'X',11:'XI',12:'XII',13:'XIII',14:'XIV',
+    15:'XV',16:'XVI',17:'XVII',18:'XVIII',19:'XIX',20:'XX',21:'XXI'};
+  return r[n]||'';
+}
+
+function makeFallback(card){
+  var cfg = {};
+  cfg['메이저'] = {sym:'✨', cls:'suit-major'};
+  cfg['완드']       = {sym:'🔥', cls:'suit-wands'};
+  cfg['컵']             = {sym:'🌊', cls:'suit-cups'};
+  cfg['검']             = {sym:'⚡', cls:'suit-swords'};
+  cfg['펜타클'] = {sym:'⭐', cls:'suit-pentacles'};
+  var cc = cfg[card.suit] || cfg['메이저'];
+  var num = card.suit === '메이저'
+    ? toRoman(card.number)
+    : String(card.number);
+  return '<div class="tarot-fallback ' + cc.cls + '">' +
+    '<div class="fb-deco"></div>' +
+    '<div class="fb-deco"></div>' +
+    '<span class="fb-symbol">' + cc.sym + '</span>' +
+    '<span class="fb-number">' + num + '</span>' +
+    '<span class="fb-name">' + card.name + '</span>' +
+    '</div>';
+}
+
 function drawTarotCards() {
   var area = document.getElementById('tarotCardsArea');
   area.innerHTML = '';
@@ -1844,12 +1907,7 @@ function drawTarotCards() {
     img.src = card.imgUrl || '';
     img.onerror = (function(c, f) {
       return function() {
-        f.innerHTML = '';
-        var fb = document.createElement('div');
-        fb.className = 'tarot-fallback';
-        fb.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:' + c.color + '22;';
-        fb.innerHTML = '<span style="font-size:28px' + (c.reversed ? ';transform:rotate(180deg)' : '') + '">' + c.emoji + '</span><span style="font-size:9px;color:#aaa;text-align:center;padding:0 4px">' + c.name + (c.reversed ? ' (역)' : '') + '</span>';
-        f.appendChild(fb);
+        f.innerHTML = makeFallback(c);
       };
     })(card, front);
     front.appendChild(img);
