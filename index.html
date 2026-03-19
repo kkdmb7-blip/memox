@@ -2364,7 +2364,6 @@ async function callClaude(userMsg, apiKey) {
   var _ziweiBlock = '';
   try {
     if (profile && profile.birth_date && !window._ziweiFetched) {
-      window._ziweiFetched = true;
       var _bd = profile.birth_date.split('-');
       var _bt = (profile.birth_time || '12:00').split(':');
       var _isLunar = profile.calendar === 'lunar';
@@ -2377,13 +2376,13 @@ async function callClaude(userMsg, apiKey) {
         var _zRes = await fetch(_zUrl);
         if (_zRes.ok) {
           var _zd = await _zRes.json();
-          if (!_zd.error) window._ziweiCache = _zd;
+          if (!_zd.error) { window._ziweiCache = _zd; window._ziweiFetched = true; }
         }
       } catch(_zfe) { console.warn('자미두수 패치 실패', _zfe.message); }
     }
     var _zc = window._ziweiCache;
     if (_zc) {
-      var _soul = _zc.soulPalace;
+      var _soul = _zc.soulPalace || (_zc.palaces||[]).find(function(p){ return p.name==='명궁'; });
       var _dec  = _zc.currentDecade;
       var _yr   = _zc.currentYear;
       var _findPal = function(n) { return (_zc.palaces||[]).find(function(p){ return p.name===n; }); };
