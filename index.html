@@ -690,7 +690,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '1.0.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '1.0.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
@@ -2083,12 +2083,12 @@ function renderDailyCard(card) {
 
   // 로딩 상태
   if (!card) {
-    wrap.style.cssText = 'margin:0 0 8px;border-radius:20px;overflow:hidden;background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);border:1px solid rgba(212,175,55,0.25);max-height:30vh;overflow-y:auto;';
+    wrap.style.cssText = 'margin:0 0 8px;border-radius:20px;overflow:hidden;background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);border:1px solid rgba(212,175,55,0.25);';
     wrap.innerHTML =
       '<div style="padding:40px 20px;text-align:center;color:rgba(212,175,55,0.6);font-size:13px;letter-spacing:0.05em;">' +
         '<div style="font-size:28px;margin-bottom:12px;animation:spin 2s linear infinite;display:inline-block;">🔮</div><br>오늘의 운세를 읽는 중...</div>';
     var chatMessages = document.getElementById('chatMessages');
-    chatMessages.parentNode.insertBefore(wrap, chatMessages);
+    chatMessages.insertBefore(wrap, chatMessages.firstChild);
     return;
   }
 
@@ -2129,7 +2129,7 @@ function renderDailyCard(card) {
     '<circle cx="114" cy="20" r="2.5" fill="#d4af37" opacity="0.8"/>' +
     '</svg>';
 
-  wrap.style.cssText = 'margin:0 0 8px;border-radius:20px;overflow:hidden;background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);border:1px solid rgba(212,175,55,0.25);max-height:30vh;overflow-y:auto;';
+  wrap.style.cssText = 'margin:0 0 8px;border-radius:20px;overflow:hidden;background:linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);border:1px solid rgba(212,175,55,0.25);';
   wrap.innerHTML =
     // 상단 헤더 (날짜 + 닫기)
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px 0;">' +
@@ -2163,7 +2163,7 @@ function renderDailyCard(card) {
     '<div style="display:flex;gap:8px;padding:0 16px 16px;" id="dailyCardBtns"></div>';
 
   var chatMessages = document.getElementById('chatMessages');
-  chatMessages.parentNode.insertBefore(wrap, chatMessages);
+  chatMessages.insertBefore(wrap, chatMessages.firstChild);
 
   // 버튼 이벤트 (DOM 삽입 후 addEventListener)
   var btnsRow = wrap.querySelector('#dailyCardBtns');
