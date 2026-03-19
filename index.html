@@ -725,7 +725,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '1.2.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '1.3.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
@@ -2699,11 +2699,16 @@ for (var i = 1; i <= 6; i++) {
     '- 새 질문에 집중하되 흐름은 유지하라\n' +
     '- 같은 고민이 반복되면 패턴으로 짚어줘라. 예: "이 부분을 자주 걱정하시는데, {일간} 특성상 원래 이런 면이 있어요"\n\n' +
     '【답변 규칙】\n' +
-    '- 답변 길이: 400~700자\n' +
+    '- 답변은 반드시 400~700자 이내\n' +
     '- 구조: ①공감 → ②결론 → ③근거 → ④행동 제안\n' +
     '- 마지막 문장: 반드시 희망적으로\n' +
     '- 표(table), 마크다운 표, | 기호 절대 금지\n' +
-    '- HTML 태그 금지\n\n' +
+    '- HTML 태그 금지\n' +
+    '- --- 구분선 절대 금지\n' +
+    '- ** 볼드 과다 사용 금지 (핵심 단어 1~2개만)\n' +
+    '- 시간대별 분석 금지 (아침/오전/점심 등)\n' +
+    '- 할일/하지말일 목록 금지\n' +
+    '- 짧고 깊게. 길게 나열하지 말 것\n\n' +
     '【질문 유형별 시스템 조합】\n' +
     '질문에서 아래 키워드 감지 후 해당 시스템 중심으로 답변:\n\n' +
     '단기/즉시 ("오늘", "지금", "이번 주", "요즘", "당장", "곧", "며칠"):\n' +
