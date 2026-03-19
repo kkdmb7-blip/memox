@@ -122,6 +122,15 @@
   .onboard-footer { padding:16px 20px; border-top:1px solid var(--border); flex-shrink:0; }
 
   /* ── CHAT ── */
+  .settings-menu-btn {
+    height:32px; padding:0 10px; border-radius:8px;
+    background:transparent; border:1px solid var(--border);
+    color:var(--text2); font-size:18px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:border-color 0.15s, color 0.15s;
+    font-family:'Noto Sans KR',sans-serif; line-height:1;
+  }
+  .settings-menu-btn:hover { border-color:#c9a84c; color:#c9a84c; }
   .settings-dropdown {
     position:absolute; top:54px; right:8px; background:var(--surface);
     border:1px solid var(--border); border-radius:12px; z-index:500;
@@ -782,8 +791,7 @@
     </div>
     <div id="questionBadge" onclick="showChargeModal()" title="남은 질문 수"></div>
     <div class="chat-header-actions" style="position:relative;">
-      <button id="settingsBtn" onclick="toggleSettingsMenu(event)" title="설정"
-        style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:5px 9px;font-size:16px;cursor:pointer;">⚙️</button>
+      <button id="settingsBtn" class="settings-menu-btn" onclick="toggleSettingsMenu(event)" title="설정">☰</button>
       <div id="settingsDropdown" class="settings-dropdown">
         <div class="settings-dropdown-item" onclick="openFortuna();closeSettingsMenu()">
           <span class="sd-icon">📋</span><span>리포트 보기</span>
@@ -910,7 +918,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '1.9.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.0.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
