@@ -1856,24 +1856,56 @@ async function interpretTarotWithAI() {
   var question = (document.getElementById('tarotQuestion').value || '').trim();
   var labels3 = ['과거', '현재', '미래'];
   var cardLines = _drawnCards.map(function(card, i) {
-    var pos = _tarotSpread === 3 ? labels3[i] + ': ' : '';
-    return pos + card.name + (card.reversed ? ' (역방향)' : ' (정방향)');
+    var pos = _tarotSpread === 3 ? '[' + labels3[i] + '] ' : '';
+    var dir = card.reversed ? '역방향' : '정방향';
+    var kw = (card.keywords || []).slice(0, 3).join(', ');
+    return pos + card.name + ' (' + dir + ')' + (kw ? ' / 키워드: ' + kw : '');
   }).join('\n');
 
-  // 사주/점성 핵심 요약 (간략하게)
+  // 점성술 행성 데이터
   var profile = userProfile || {};
-  var saju = profile.saju_data || {};
-  var sajuHint = saju.saju_pillars ? '사주 일주: ' + (saju.saju_pillars.day || '') : '';
-  var astroHint = profile.astro_data && profile.astro_data.sun ? '태양자리: ' + profile.astro_data.sun : '';
-  var ziweiHint = window._ziweiCache ? '명궁: ' + (window._ziweiCache.soulPalace ? window._ziweiCache.soulPalace.name : '') : '';
-  var ctxHints = [sajuHint, astroHint, ziweiHint].filter(Boolean).join(' / ');
+  var astro = profile.astro_data || {};
+  var planetsRaw = astro.planets_json || astro.planets || [];
+  if (typeof planetsRaw === 'string') try { planetsRaw = JSON.parse(planetsRaw); } catch(e) { planetsRaw = []; }
+  var nameMap = {Sun:'태양',Moon:'달',Mercury:'수성',Venus:'금성',Mars:'화성',Jupiter:'목성',Saturn:'토성',Uranus:'천왕성',Neptune:'해왕성',Pluto:'명왕성'};
+  var signMap = {Aries:'양자리',Taurus:'황소자리',Gemini:'쌍둥이자리',Cancer:'게자리',Leo:'사자자리',Virgo:'처녀자리',Libra:'천칭자리',Scorpio:'전갈자리',Sagittarius:'사수자리',Capricorn:'염소자리',Aquarius:'물병자리',Pisces:'물고기자리'};
+  var planetsStr = Array.isArray(planetsRaw) && planetsRaw.length > 0
+    ? planetsRaw.filter(function(p){ return p.name !== 'Ascendant'; }).map(function(p){
+        return (nameMap[p.name]||p.name) + ' ' + (signMap[p.sign]||p.sign) + ' ' + p.house + '하우스' + (p.isRetro==='true'?' (역행)':'');
+      }).join(', ')
+    : '태양 ' + (astro.sun||'미상') + ' / 달 ' + (astro.moon||'미상') + ' / 금성 ' + (astro.venus||'미상');
 
-  var userMsg = '타로 카드: \n' + cardLines + '\n';
-  if (question) userMsg += '질문: ' + question + '\n';
-  if (ctxHints) userMsg += '참고: ' + ctxHints + '\n';
-  userMsg += '위 카드를 사주+점성+자미두수와 연결해서 해석해줘. "🃏 타로로 보면 ~"으로 시작, 200자 이내.';
+  // 자미두수 대한/유년
+  var ziweiStr = '미상';
+  if (window._ziweiCache) {
+    var _zc = window._ziweiCache;
+    var _dec = _zc.currentDecade;
+    var _yr  = _zc.currentYear;
+    ziweiStr = (_dec ? '현재 대한: ' + _dec.name + ' (' + (_dec.ageRange||'') + ')' : '') +
+               (_yr  ? ' / ' + new Date().getFullYear() + '년 유년궁: ' + _yr.palace : '');
+  }
 
-  var systemMsg = '당신은 사주·점성술·타로 전문 운명 상담사입니다. 신비롭고 따뜻한 어조로 간결하게 해석합니다.';
+  var userMsg =
+    '타로 카드 해석입니다.\n\n' +
+    '뽑힌 카드:\n' + cardLines + '\n' +
+    (question ? '질문: ' + question + '\n' : '') +
+    '현재 점성술 데이터: ' + (planetsStr || '미상') + '\n' +
+    '자미두수 데이터: ' + ziweiStr + '\n\n' +
+    '아래 구조로 답해줘:\n\n' +
+    '1. 카드 이름 + 부제 (예: 달 — 잠재의식의 거울)\n' +
+    '2. 감정 공감 한 줄\n' +
+    '3. "🃏 타로로 보면"\n' +
+    '   → 카드 핵심 메시지 2줄\n' +
+    '   → 지금 상황 적용 1줄\n' +
+    '4. "⭐ 별자리로 보면"\n' +
+    '   → 지금 행성 기운 연결 2줄\n' +
+    '5. "🌟 자미두수로 보면"\n' +
+    '   → 현재 대한/유년궁 연결 2줄\n' +
+    '6. 세 가지 종합 한 줄 (일치하면 강하게, 엇갈리면 복합적으로)\n' +
+    '7. 오늘의 행동 제안 1줄\n\n' +
+    '전체 400~600자. 마지막 문장은 반드시 희망적으로. 전문용어는 괄호로 바로 설명. 절대 일반적인 운세처럼 쓰지 말고 이 사람의 별자리+자미두수 데이터를 반드시 구체적으로 연결할 것.';
+
+  var systemMsg = '당신은 사주·점성술·자미두수·타로를 교차 분석하는 전문 운명 상담사입니다. 신비롭고 따뜻하되 구체적이고 개인화된 해석을 제공합니다. 데이터가 없는 항목은 "미상"이라 쓰지 말고 카드 해석에 집중하세요.';
 
   console.log('[타로 해석 요청]', userMsg);
 
