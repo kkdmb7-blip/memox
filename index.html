@@ -30,7 +30,7 @@
   }
 
   /* SCREENS */
-  .screen { display:none; flex:1; flex-direction:column; overflow:hidden; height:100%; }
+  .screen { display:none; flex:1; min-height:0; flex-direction:column; overflow:hidden; height:100%; }
   .screen.active { display:flex; }
 
   /* ── LOGIN ── */
@@ -149,7 +149,7 @@
   .icon-btn:hover { color:var(--text); background:var(--surface3); }
 
   .chat-messages {
-    flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px;
+    flex:1; min-height:0; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px;
   }
   .chat-messages::-webkit-scrollbar { width:3px; }
   .chat-messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
@@ -690,7 +690,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '1.0.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '1.0.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
