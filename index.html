@@ -491,6 +491,56 @@
     height:44px; font-weight:600; white-space:nowrap; flex-shrink:0;
   }
   .tarot-btn:hover { background:#c9a84c22; }
+  .tarot-select-grid {
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap:8px;
+    padding:4px;
+  }
+  .tarot-select-card {
+    aspect-ratio: 2/3;
+    border-radius:6px;
+    background:linear-gradient(135deg,#1a0a2e,#3a1a5a);
+    border:1px solid #3a2a5a;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    transition:all 0.2s;
+    position:relative;
+  }
+  .tarot-select-card:hover {
+    border-color:#c9a84c;
+    transform:translateY(-2px);
+    box-shadow:0 4px 12px rgba(201,168,76,0.3);
+  }
+  .tarot-select-card.selected {
+    border-color:#c9a84c;
+    background:linear-gradient(135deg,#2d1460,#4a2a6a);
+    box-shadow:0 0 16px rgba(201,168,76,0.4);
+  }
+  .tarot-select-card.selected::after {
+    content:attr(data-order);
+    position:absolute;
+    top:-6px;
+    right:-6px;
+    width:18px;
+    height:18px;
+    background:#c9a84c;
+    color:#000;
+    border-radius:50%;
+    font-size:11px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .tarot-select-card.disabled {
+    opacity:0.3;
+    cursor:not-allowed;
+    pointer-events:none;
+  }
 
 </style>
 <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
@@ -705,14 +755,35 @@
   <div class="tarot-modal">
     <button class="tarot-close-btn" onclick="closeTarotModal()">✕</button>
     <h2>🃏 타로 카드</h2>
-    <textarea class="tarot-question-input" id="tarotQuestion" rows="2" placeholder="질문을 입력하세요 (예: 이 관계는 어떻게 될까요?)"></textarea>
-    <div class="tarot-spread-btns">
-      <button class="tarot-spread-btn active" id="spreadBtn1" onclick="selectSpread(1)">🃏 원카드</button>
-      <button class="tarot-spread-btn" id="spreadBtn3" onclick="selectSpread(3)">🃏🃏🃏 쓰리카드</button>
+
+    <!-- 1단계: 질문 입력 -->
+    <div id="tarotStep1">
+      <p style="font-size:13px;color:var(--text3);text-align:center;margin:0 0 12px;">
+        카드를 고르기 전, 마음속 질문을 적어주세요
+      </p>
+      <textarea class="tarot-question-input" id="tarotQuestion" rows="3"
+        placeholder="예: 이 관계는 어떻게 될까요?"></textarea>
+      <button class="tarot-draw-btn" id="tarotNextBtn" onclick="tarotGoSelect()" disabled>
+        ✨ 카드 고르기
+      </button>
     </div>
-    <button class="tarot-draw-btn" onclick="drawTarotCards()">✨ 카드 뽑기</button>
-    <div class="tarot-cards-area" id="tarotCardsArea"></div>
-    <div class="tarot-result-area" id="tarotResultArea" style="display:none;"></div>
+
+    <!-- 2단계: 25장 선택 -->
+    <div id="tarotStep2" style="display:none;">
+      <p style="font-size:12px;color:#c9a84c;text-align:center;margin:0 0 14px;">
+        마음이 끌리는 카드 3장을 골라주세요
+      </p>
+      <div class="tarot-select-grid" id="tarotSelectGrid"></div>
+      <p id="tarotSelectCount" style="font-size:12px;color:var(--text3);text-align:center;margin:10px 0 0;">
+        0 / 3 선택됨
+      </p>
+    </div>
+
+    <!-- 3단계: 결과 -->
+    <div id="tarotStep3" style="display:none;">
+      <div class="tarot-cards-area" id="tarotCardsArea"></div>
+      <div class="tarot-result-area" id="tarotResultArea" style="display:none;"></div>
+    </div>
   </div>
 </div>
 
@@ -761,7 +832,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '1.4.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '1.5.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
@@ -1811,25 +1882,27 @@ var TAROT_CARDS = (function() {
   return cards;
 })();
 
-var _tarotSpread = 1;
 var _drawnCards = [];
 
 function openTarotModal() {
   document.getElementById('tarotModal').style.display = 'flex';
+  document.getElementById('tarotStep1').style.display = 'block';
+  document.getElementById('tarotStep2').style.display = 'none';
+  document.getElementById('tarotStep3').style.display = 'none';
   document.getElementById('tarotCardsArea').innerHTML = '';
   document.getElementById('tarotResultArea').style.display = 'none';
   document.getElementById('tarotResultArea').textContent = '';
+  document.getElementById('tarotQuestion').value = '';
+  document.getElementById('tarotNextBtn').disabled = true;
+  window._tarotSelected = [];
   _drawnCards = [];
+  document.getElementById('tarotQuestion').oninput = function() {
+    document.getElementById('tarotNextBtn').disabled = this.value.trim().length === 0;
+  };
 }
 
 function closeTarotModal() {
   document.getElementById('tarotModal').style.display = 'none';
-}
-
-function selectSpread(n) {
-  _tarotSpread = n;
-  document.getElementById('spreadBtn1').classList.toggle('active', n === 1);
-  document.getElementById('spreadBtn3').classList.toggle('active', n === 3);
 }
 
 function toRoman(n){
@@ -1859,73 +1932,99 @@ function makeFallback(card){
     '</div>';
 }
 
-function drawTarotCards() {
+function tarotGoSelect() {
+  var q = document.getElementById('tarotQuestion').value.trim();
+  if (!q) return;
+  var shuffled = TAROT_CARDS.slice().sort(function(){ return Math.random()-0.5; }).slice(0, 25);
+  var grid = document.getElementById('tarotSelectGrid');
+  grid.innerHTML = '';
+  document.getElementById('tarotSelectCount').textContent = '0 / 3 선택됨';
+  shuffled.forEach(function(card, i) {
+    var div = document.createElement('div');
+    div.className = 'tarot-select-card';
+    div.innerHTML = '🔮';
+    div.dataset.idx = i;
+    div.dataset.cardId = card.id;
+    div.onclick = (function(d, c2) { return function() { selectTarotCard(d, c2); }; })(div, card);
+    grid.appendChild(div);
+  });
+  window._tarotSelectCards = shuffled;
+  window._tarotSelected = [];
+  document.getElementById('tarotStep1').style.display = 'none';
+  document.getElementById('tarotStep2').style.display = 'block';
+}
+
+function selectTarotCard(el, card) {
+  if (el.classList.contains('disabled')) return;
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected');
+    delete el.dataset.order;
+    window._tarotSelected = window._tarotSelected.filter(function(s) { return s.cardId !== card.id; });
+    window._tarotSelected.forEach(function(s, idx) { s.el.dataset.order = idx + 1; });
+  } else {
+    if (window._tarotSelected.length >= 3) return;
+    var order = window._tarotSelected.length + 1;
+    el.classList.add('selected');
+    el.dataset.order = order;
+    window._tarotSelected.push({ cardId: card.id, card: card, el: el });
+  }
+  var count = window._tarotSelected.length;
+  document.getElementById('tarotSelectCount').textContent = count + ' / 3 선택됨';
+  if (count === 3) {
+    document.querySelectorAll('.tarot-select-card:not(.selected)').forEach(function(s) {
+      s.classList.add('disabled');
+    });
+    setTimeout(function() { revealTarotCards(); }, 800);
+  }
+}
+
+function revealTarotCards() {
+  var labels = ['현재 상황', '핵심 원인', '앞으로의 흐름'];
+  var selected = window._tarotSelected;
+  var cards = selected.map(function(s) { return s.card; });
+  var reversals = cards.map(function() { return Math.random() < 0.3; });
+  document.getElementById('tarotStep2').style.display = 'none';
+  document.getElementById('tarotStep3').style.display = 'block';
   var area = document.getElementById('tarotCardsArea');
   area.innerHTML = '';
-  document.getElementById('tarotResultArea').style.display = 'none';
-  document.getElementById('tarotResultArea').textContent = '';
   _drawnCards = [];
-
-  // Shuffle & pick
-  var shuffled = TAROT_CARDS.slice().sort(function(){ return Math.random()-0.5; });
-  var count = _tarotSpread;
-  var labels3 = ['과거','현재','미래'];
-
-  for (var i = 0; i < count; i++) {
-    var card = Object.assign({}, shuffled[i]);
-    card.reversed = Math.random() < 0.3;
+  for (var i = 0; i < 3; i++) {
+    var card = Object.assign({}, cards[i]);
+    card.reversed = reversals[i];
     _drawnCards.push(card);
-
     var wrap = document.createElement('div');
     wrap.className = 'tarot-card-wrap';
-
-    if (count === 3) {
-      var lbl = document.createElement('div');
-      lbl.className = 'tarot-card-label';
-      lbl.textContent = labels3[i];
-      wrap.appendChild(lbl);
-    }
-
+    var lbl = document.createElement('div');
+    lbl.className = 'tarot-card-label';
+    lbl.textContent = labels[i];
+    wrap.appendChild(lbl);
     var cardEl = document.createElement('div');
     cardEl.className = 'tarot-card';
     cardEl.dataset.idx = i;
-
     var inner = document.createElement('div');
     inner.className = 'tarot-card-inner';
-
     var back = document.createElement('div');
     back.className = 'tarot-card-back';
     back.textContent = '🔮';
-
     var front = document.createElement('div');
     front.className = 'tarot-card-front';
-
-    // Image with fallback
     var img = new Image();
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
     if (card.reversed) img.style.transform = 'rotate(180deg)';
     img.src = card.imgUrl || '';
-    img.onerror = (function(c, f) {
-      return function() {
-        f.innerHTML = makeFallback(c);
-      };
-    })(card, front);
+    img.onerror = (function(cc, f) { return function() { f.innerHTML = makeFallback(cc); }; })(card, front);
     front.appendChild(img);
-
     inner.appendChild(back);
     inner.appendChild(front);
     cardEl.appendChild(inner);
-
     (function(el, idx) {
       setTimeout(function() {
         el.classList.add('flipped');
-        if (idx === count - 1) {
-          setTimeout(interpretTarotWithAI, 400);
+        if (idx === 2) {
+          setTimeout(function() { interpretTarotWithAI(cards, reversals); }, 400);
         }
       }, 600 + idx * 400);
     })(cardEl, i);
-
-    // Reversed badge
     if (card.reversed) {
       var badge = document.createElement('div');
       badge.className = 'tarot-reversed-badge';
@@ -1938,27 +2037,24 @@ function drawTarotCards() {
       nameLbl.textContent = card.name;
       wrap.appendChild(nameLbl);
     }
-
-    wrap.insertBefore(cardEl, wrap.children[count === 3 ? 1 : 0]);
+    wrap.insertBefore(cardEl, wrap.children[1]);
     area.appendChild(wrap);
   }
 }
 
-async function interpretTarotWithAI() {
+async function interpretTarotWithAI(cards, reversals) {
   var resultArea = document.getElementById('tarotResultArea');
   resultArea.style.display = 'block';
   resultArea.textContent = '🔮 카드를 읽는 중...';
-
+  var labels = ['현재 상황', '핵심 원인', '앞으로의 흐름'];
   var question = (document.getElementById('tarotQuestion').value || '').trim();
-  var labels3 = ['과거', '현재', '미래'];
-  var cardLines = _drawnCards.map(function(card, i) {
-    var pos = _tarotSpread === 3 ? '[' + labels3[i] + '] ' : '';
-    var dir = card.reversed ? '역방향' : '정방향';
+  var cardList = cards || _drawnCards;
+  var cardLines = cardList.map(function(card, i) {
+    var rev = reversals ? reversals[i] : card.reversed;
+    var dir = rev ? '역방향' : '정방향';
     var kw = (card.keywords || []).slice(0, 3).join(', ');
-    return pos + card.name + ' (' + dir + ')' + (kw ? ' / 키워드: ' + kw : '');
+    return '[' + labels[i] + '] ' + card.name + ' (' + dir + ')' + (kw ? ' / 키워드: ' + kw : '');
   }).join('\n');
-
-  // 점성술 행성 데이터
   var profile = userProfile || {};
   var astro = profile.astro_data || {};
   var planetsRaw = astro.planets_json || astro.planets || [];
@@ -1970,20 +2066,17 @@ async function interpretTarotWithAI() {
         return (nameMap[p.name]||p.name) + ' ' + (signMap[p.sign]||p.sign) + ' ' + p.house + '하우스' + (p.isRetro==='true'?' (역행)':'');
       }).join(', ')
     : '태양 ' + (astro.sun||'미상') + ' / 달 ' + (astro.moon||'미상') + ' / 금성 ' + (astro.venus||'미상');
-
-  // 자미두수 대한/유년
   var ziweiStr = '미상';
   if (window._ziweiCache) {
     var _zc = window._ziweiCache;
     var _dec = _zc.currentDecade;
     var _yr  = _zc.currentYear;
     ziweiStr = (_dec ? '현재 대한: ' + _dec.name + ' (' + (_dec.ageRange||'') + ')' : '') +
-               (_yr  ? ' / ' + new Date().getFullYear() + '년 유년궁: ' + _yr.palace : '');
+               (_yr  ? ' / ' + new Date().getFullYear() + '년 유년구: ' + _yr.palace : '');
   }
-
   var userMsg =
     '타로 카드 해석입니다.\n\n' +
-    '뽑힌 카드:\n' + cardLines + '\n' +
+    '듳힌 카드:\n' + cardLines + '\n' +
     (question ? '질문: ' + question + '\n' : '') +
     '현재 점성술 데이터: ' + (planetsStr || '미상') + '\n' +
     '자미두수 데이터: ' + ziweiStr + '\n\n' +
@@ -1996,22 +2089,17 @@ async function interpretTarotWithAI() {
     '4. "⭐ 별자리로 보면"\n' +
     '   → 지금 행성 기운 연결 2줄\n' +
     '5. "🌟 자미두수로 보면"\n' +
-    '   → 현재 대한/유년궁 연결 2줄\n' +
+    '   → 현재 대한/유년구 연결 2줄\n' +
     '6. 세 가지 종합 한 줄 (일치하면 강하게, 엇갈리면 복합적으로)\n' +
     '7. 오늘의 행동 제안 1줄\n\n' +
     '전체 400~600자. 마지막 문장은 반드시 희망적으로. 전문용어는 괄호로 바로 설명. 절대 일반적인 운세처럼 쓰지 말고 이 사람의 별자리+자미두수 데이터를 반드시 구체적으로 연결할 것.';
-
   var systemMsg = '당신은 사주·점성술·자미두수·타로를 교차 분석하는 전문 운명 상담사입니다. 신비롭고 따뜻하되 구체적이고 개인화된 해석을 제공합니다. 데이터가 없는 항목은 "미상"이라 쓰지 말고 카드 해석에 집중하세요.';
-
   console.log('[타로 해석 요청]', userMsg);
-
   try {
     var user = currentUser || window._fortunaUser;
     if (!user) throw new Error('로그인 필요');
-
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
-
     var res = await fetch('https://fortuna-silk.vercel.app/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2023,7 +2111,6 @@ async function interpretTarotWithAI() {
       signal: controller.signal
     });
     clearTimeout(timeoutId);
-
     if (!res.ok) {
       var errData = await res.json().catch(function(){ return {}; });
       if (errData.error === 'limit_exceeded') {
@@ -2033,7 +2120,6 @@ async function interpretTarotWithAI() {
       }
       throw new Error('API ' + res.status + ': ' + (errData.error || res.statusText));
     }
-
     var data = await res.json();
     var reply = data.reply || '';
     console.log('[타로 해석 응답]', reply.slice(0, 100));
