@@ -2424,7 +2424,7 @@ async function handleInviteCharge() {
 async function handlePayCharge() {
   if (!currentUser) return;
   if (typeof IMP === 'undefined') { alert('\uACB0\uC81C \uBAA8\uB4C8\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC774\uC5D0\uC694. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.'); return; }
-  IMP.init('imp19424728');
+  IMP.init('imp63718155');
   IMP.request_pay({
     pg: 'html5_inicis.MOI3302087',
     pay_method: 'card',
@@ -2460,7 +2460,7 @@ async function handlePayCharge() {
 async function handleSubCharge() {
   if (!currentUser) return;
   if (typeof IMP === 'undefined') { alert('결제 모듈을 불러오는 중이에요. 잠시 후 다시 시도해주세요.'); return; }
-  IMP.init('imp19424728');
+  IMP.init('imp63718155');
   IMP.request_pay({
     pg: 'html5_inicis.MOI3302087',
     pay_method: 'card',
