@@ -123,18 +123,18 @@
 
   /* ── CHAT ── */
   .chat-header {
-    padding:12px 16px; border-bottom:1px solid var(--border);
-    display:flex; align-items:center; gap:10px; flex-shrink:0;
-    background:var(--surface);
+    padding:8px 12px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:8px; flex-shrink:0;
+    background:var(--surface); max-height:60px; overflow:hidden;
   }
   .chat-avatar {
     width:44px; height:44px; border-radius:50%;
     background:linear-gradient(135deg,var(--accent2),var(--accent));
     display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;
   }
-  .chat-header-info { flex:1; min-width:0; }
+  .chat-header-info { flex:1; min-width:0; overflow:hidden; max-height:44px; }
   .chat-header-name { font-size:14px; font-weight:700; }
-  .chat-header-sub { font-size:11px; color:var(--text3); }
+  .chat-header-sub { font-size:11px; color:var(--text3); display:none; }
   #streakBadge {
     display:none; align-items:center; gap:3px;
     font-size:11px; color:#d4af37; font-weight:600;
@@ -693,7 +693,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '1.0.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '1.0.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
