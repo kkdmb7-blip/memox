@@ -140,7 +140,10 @@
     font-size:11px; color:#d4af37; font-weight:600;
     margin-top:2px; letter-spacing:0.02em;
   }
-  .chat-header-actions { display:flex; gap:6px; }
+  .chat-header-actions { display:flex; gap:4px; flex-shrink:0; }
+  #chatHeaderUserName { display:none; }
+  #hitsBtn { display:none; }
+  #interestDisplay { display:none; }
   .icon-btn {
     width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
     background:var(--surface2); cursor:pointer; display:flex; align-items:center;
@@ -625,11 +628,11 @@
         <div id="interestDisplay" style="font-size:11px;color:#9b8fb0;margin-top:4px;letter-spacing:0.03em;"></div>
     </div>
     <div class="chat-header-actions">
-      <button onclick="openFortuna()" style="background:var(--surface2);border:1px solid var(--border);color:var(--accent);border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;">✨ 리포트</button>
-      <button onclick="openKakao()" style="background:var(--surface2);border:1px solid rgba(255,230,0,0.3);color:#fee500;border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;">💬 카카오</button>
-      <button onclick="newChat()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">새 채팅</button>
-      <button onclick="showScreen('profile')" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">내 정보</button>
-      <button onclick="confirmLogout()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">로그아웃</button>
+      <button onclick="openFortuna()" title="운세 리포트" style="background:var(--surface2);border:1px solid var(--border);color:var(--accent);border-radius:8px;padding:5px 9px;font-size:14px;cursor:pointer;">✨</button>
+      <button onclick="openKakao()" title="카카오 공유" style="background:var(--surface2);border:1px solid rgba(255,230,0,0.3);color:#fee500;border-radius:8px;padding:5px 9px;font-size:14px;cursor:pointer;">💬</button>
+      <button onclick="newChat()" title="새 채팅" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:5px 9px;font-size:14px;cursor:pointer;">↺</button>
+      <button onclick="showScreen('profile')" title="내 정보" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:5px 9px;font-size:14px;cursor:pointer;">👤</button>
+      <button onclick="confirmLogout()" title="로그아웃" style="background:var(--surface2);border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:5px 9px;font-size:14px;cursor:pointer;">↩</button>
     </div>
   </div>
 
@@ -690,7 +693,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '1.0.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '1.0.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
