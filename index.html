@@ -932,7 +932,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.14.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.15.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const VAPID_PUBLIC_KEY = 'BOZ_WFR7WctHK5NiBggYq4cE07WNEMYp8tlv_2L99m6e-IKx6_K5UoVEV2jf06X2FshL43qogZvnSfRWEOmpP5M';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2938,18 +2938,30 @@ async function callClaude(userMsg, apiKey) {
   var _vedicBlock = '';
   try {
     if (profile && profile.birth_date && !window._vedicFetched) {
-      var _vbd = profile.birth_date.split('-');
-      var _vbt = (profile.birth_time || '12:00').split(':');
-      var _vGender = (profile.gender === 'M') ? 'male' : 'female';
-      var _vUrl = WORKER_URL + '/vedic?year=' + _vbd[0] + '&month=' + parseInt(_vbd[1]) +
-        '&day=' + parseInt(_vbd[2]) + '&hour=' + parseInt(_vbt[0]) + '&gender=' + _vGender;
       try {
+        var _bd2 = profile.birth_date.split('-');
+        var _bt2 = (profile.birth_time || '12:00').split(':');
+        var _vGender = (profile.gender === 'M' || profile.gender === 'male') ? 'male' : 'female';
+        var _vUrl = WORKER_URL + '/vedic?year=' + _bd2[0]
+          + '&month=' + parseInt(_bd2[1])
+          + '&day=' + parseInt(_bd2[2])
+          + '&hour=' + parseInt(_bt2[0])
+          + '&gender=' + _vGender;
+
+        console.log('베딕 fetch 시도:', _vUrl);
         var _vRes = await fetch(_vUrl);
         if (_vRes.ok) {
           var _vd = await _vRes.json();
-          if (!_vd.error) { window._vedicCache = _vd; window._vedicFetched = true; }
+          console.log('베딕 응답:', _vd);
+          if (_vd && !_vd.error) {
+            window._vedicCache = _vd;
+            window._vedicFetched = true;
+            console.log('베딕 캐시 저장 완료');
+          }
         }
-      } catch(_vfe) { console.warn('베딕 패치 실패', _vfe); }
+      } catch(_ve) {
+        console.warn('베딕 fetch 실패:', _ve);
+      }
     }
     var _vc = window._vedicCache;
     console.log('[베딕 캐시]', _vc ? JSON.stringify(_vc).slice(0, 200) : 'null');
