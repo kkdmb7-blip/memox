@@ -36,14 +36,19 @@ async function handleLogin() {
       body: JSON.stringify({ code, redirect_uri: "https://kkdmb7-blip.github.io/memox/kakao-callback.html" })
     });
     const tokenData = await tokenRes.json();
+    console.log('카카오 토큰 응답:', tokenData);
     const access_token = tokenData.access_token;
-    if (!access_token) throw new Error("토큰 없음");
+    if (!access_token) {
+      console.log('카카오 오류: access_token 없음', tokenData);
+      throw new Error("토큰 없음");
+    }
 
     // 2. 카카오 사용자 정보 가져오기
     const userRes = await fetch("https://kapi.kakao.com/v2/user/me", {
       headers: { Authorization: `Bearer ${access_token}` }
     });
     const userData = await userRes.json();
+    console.log('카카오 사용자 응답:', userData);
     const user = {
       id: "kakao_" + String(userData.id),
       kakao_id: String(userData.id),
