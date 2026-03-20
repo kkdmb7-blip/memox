@@ -924,7 +924,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.2.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.3.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const VAPID_PUBLIC_KEY = 'BOZ_WFR7WctHK5NiBggYq4cE07WNEMYp8tlv_2L99m6e-IKx6_K5UoVEV2jf06X2FshL43qogZvnSfRWEOmpP5M';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2325,13 +2325,20 @@ async function callDailyFortune() {
 
 async function loadDailyCard() {
   if (!currentUser || !userProfile) return;
-  var today = getKSTDate();
+  var today = getKSTDate(); // KST 기준 'YYYY-MM-DD'
 
   // 오늘 이미 닫았으면 표시 안 함
   if (localStorage.getItem('fortuna_daily_dismissed') === today) return;
 
+  // 날짜 변경 감지: 마지막 운세 날짜가 오늘과 다르면 기존 카드 제거
+  var lastDate = localStorage.getItem('fortuna_last_fortune_date');
+  if (lastDate && lastDate !== today) {
+    var _old = document.getElementById('dailyCardWrap');
+    if (_old) _old.remove();
+  }
+
   try {
-    // Supabase에서 오늘 운세 조회
+    // Supabase에서 오늘 날짜(KST)와 정확히 일치하는 운세만 조회
     var res = await sb.from('daily_fortune')
       .select('*')
       .eq('user_id', currentUser.id)
@@ -2339,10 +2346,11 @@ async function loadDailyCard() {
       .maybeSingle();
 
     var cardData = null;
-    if (res.data) {
+    if (res.data && res.data.card_date === today) {
+      // card_date가 오늘과 정확히 일치할 때만 사용
       cardData = res.data;
     } else {
-      // AI 생성 (로딩 카드 먼저 표시)
+      // 없거나 날짜 불일치 → 새로 생성
       renderDailyCard(null); // 로딩 상태
       var parsed = await callDailyFortune();
       if (!parsed) {
@@ -2354,7 +2362,6 @@ async function loadDailyCard() {
           recommendation: '잠깐의 휴식과 명상'
         };
       }
-      // Supabase 저장
       await sb.from('daily_fortune').upsert({
         user_id: currentUser.id,
         card_date: today,
@@ -2367,6 +2374,8 @@ async function loadDailyCard() {
       cardData = parsed;
     }
 
+    // 마지막 운세 날짜 저장 (자정 후 자동 갱신 기준)
+    localStorage.setItem('fortuna_last_fortune_date', today);
     renderDailyCard(cardData);
   } catch(e) {
     console.warn('데일리 카드 오류:', e);
@@ -2377,8 +2386,8 @@ function renderDailyCard(card) {
   var existing = document.getElementById('dailyCardWrap');
   if (existing) existing.remove();
 
-  var now = new Date();
-  var dateStr = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일';
+  var _kst = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+  var dateStr = _kst.getUTCFullYear() + '년 ' + (_kst.getUTCMonth()+1) + '월 ' + _kst.getUTCDate() + '일';
 
   var wrap = document.createElement('div');
   wrap.id = 'dailyCardWrap';
@@ -3626,7 +3635,7 @@ function updateQuotaDisplay(freeLeft, paidLeft) {
 }
 
 function dismissDailyCard() {
-  var today = new Date().toISOString().slice(0, 10);
+  var today = getKSTDate();
   localStorage.setItem('fortuna_daily_dismissed', today);
   var wrap = document.getElementById('dailyCardWrap');
   if (wrap) wrap.remove();
@@ -3965,12 +3974,24 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'OPEN_DAILY_CARD') {
       // 데일리 카드 닫기 기록 지우고 다시 로드
-      var today = new Date().toISOString().slice(0, 10);
       localStorage.removeItem('fortuna_daily_dismissed');
       loadDailyCard();
     }
   });
 }
+
+// ── 자정 감지: 탭/앱 복귀 시 날짜 변경 확인 → 자동 새 운세 ──
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible' && currentUser && userProfile) {
+    var todayKST = getKSTDate();
+    var lastDate = localStorage.getItem('fortuna_last_fortune_date');
+    if (lastDate && lastDate !== todayKST) {
+      // 날짜가 바뀌었으면 dismissed 초기화 후 새 운세 로드
+      localStorage.removeItem('fortuna_daily_dismissed');
+      loadDailyCard();
+    }
+  }
+});
 
 // ── Service Worker 등록 ──────────────────────────────────────
 if ('serviceWorker' in navigator) {
