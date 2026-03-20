@@ -2158,14 +2158,14 @@ async function interpretTarotWithAI(cards, reversals) {
   resultArea.style.display = 'block';
   var waitMsgs = ['카드의 기운을 읽고 있어요... 🔮','별자리와 연결하고 있어요... ⭐','운명의 실마리를 찾고 있어요... 🌙','해석을 완성하고 있어요... ✨'];
   var msgIdx = 0;
-  resultArea.style.transition = 'opacity 0.4s';
+  resultArea.style.transition = 'opacity 0.5s';
   resultArea.style.opacity = '1';
   resultArea.textContent = waitMsgs[0];
   var waitTimer = setInterval(function() {
     msgIdx = (msgIdx + 1) % waitMsgs.length;
     resultArea.style.opacity = '0';
-    setTimeout(function() { resultArea.textContent = waitMsgs[msgIdx]; resultArea.style.opacity = '1'; }, 400);
-  }, 1000);
+    setTimeout(function() { resultArea.textContent = waitMsgs[msgIdx]; resultArea.style.opacity = '1'; }, 500);
+  }, 2500);
   var labels = ['현재 상황', '핵심 원인', '앞으로의 흐름'];
   var question = (document.getElementById('tarotQuestion').value || '').trim();
   var cardList = cards || _drawnCards;
