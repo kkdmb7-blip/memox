@@ -924,7 +924,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.1.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.2.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const VAPID_PUBLIC_KEY = 'BOZ_WFR7WctHK5NiBggYq4cE07WNEMYp8tlv_2L99m6e-IKx6_K5UoVEV2jf06X2FshL43qogZvnSfRWEOmpP5M';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2233,7 +2233,13 @@ async function interpretTarotWithAI(cards, reversals) {
     }
     var data = await res.json();
     var reply = data.reply || '';
-    await useQuestion(); updateQuestionBadge();
+    await useQuestion();
+    if (data.free_left !== undefined && currentUser) {
+      var _srvTotal = (data.free_left || 0) + (data.paid_left || 0);
+      _questionCountCache = _srvTotal;
+      localStorage.setItem('q_srv_' + currentUser.id + '_' + getKSTDate(), String(_srvTotal));
+    }
+    updateQuestionBadge();
     console.log('[타로 해석 응답]', reply.slice(0, 100));
     resultArea.style.opacity = '0';
     setTimeout(function() { resultArea.innerHTML = renderMarkdown(reply) || '해석을 불러오지 못했어요.'; resultArea.style.opacity = '1'; }, 300);
@@ -2613,21 +2619,39 @@ var _questionCountCache = null;
 
 async function loadQuestionCount() {
   if (!currentUser) return 3;
-  var today = new Date(); today.setHours(0,0,0,0);
-  var todayTs = today.getTime();
+  var todayKST = getKSTDate(); // KST 기준 'YYYY-MM-DD'
+  var todayStart = new Date(todayKST + 'T00:00:00+09:00').getTime();
   var base = 3;
-  var usedKey = 'q_used_' + currentUser.id + '_' + todayTs;
-  var used = parseInt(localStorage.getItem(usedKey) || '0');
+  // 서버 응답에서 저장한 권위 있는 카운트 우선 사용 (크로스 디바이스)
+  var srvKey = 'q_srv_' + currentUser.id + '_' + todayKST;
+  var srvCached = localStorage.getItem(srvKey);
+  if (srvCached !== null) {
+    _questionCountCache = parseInt(srvCached);
+    return _questionCountCache;
+  }
+  // Supabase chat_messages(assistant) 카운트로 사용량 계산 (크로스 디바이스)
+  var used = 0;
+  try {
+    var msgRes = await sb.from('chat_messages')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .eq('role', 'assistant')
+      .gte('created_at', todayStart);
+    used = (msgRes.data && msgRes.data.length) || 0;
+  } catch(e) {
+    var localKey = 'q_used_' + currentUser.id + '_' + todayKST;
+    used = parseInt(localStorage.getItem(localKey) || '0');
+    console.warn('chat_messages 카운트 실패, 로컬 fallback:', used);
+  }
   var charged = 0;
   try {
-    var res = await sb.from('question_charges')
+    var chargeRes = await sb.from('question_charges')
       .select('amount')
       .eq('user_id', currentUser.id)
-      .gte('created_at', todayTs);
-    if (res.data) res.data.forEach(function(r){ charged += (r.amount||0); });
+      .gte('created_at', todayStart);
+    if (chargeRes.data) chargeRes.data.forEach(function(r){ charged += (r.amount||0); });
   } catch(e) { console.warn('question_charges 조회 실패', e.message); }
-  var total = base + charged;
-  var left = Math.max(0, total - used);
+  var left = Math.max(0, base + charged - used);
   _questionCountCache = left;
   return left;
 }
@@ -2639,11 +2663,15 @@ async function getQuestionCount() {
 
 async function useQuestion() {
   if (!currentUser) return;
-  var today = new Date(); today.setHours(0,0,0,0);
-  var usedKey = 'q_used_' + currentUser.id + '_' + today.getTime();
-  var used = parseInt(localStorage.getItem(usedKey) || '0');
-  localStorage.setItem(usedKey, String(used + 1));
+  var todayKST = getKSTDate();
+  var localKey = 'q_used_' + currentUser.id + '_' + todayKST;
+  var used = parseInt(localStorage.getItem(localKey) || '0');
+  localStorage.setItem(localKey, String(used + 1));
   if (_questionCountCache !== null) _questionCountCache = Math.max(0, _questionCountCache - 1);
+  // 서버 캐시도 동기화
+  var srvKey = 'q_srv_' + currentUser.id + '_' + todayKST;
+  var srv = localStorage.getItem(srvKey);
+  if (srv !== null) localStorage.setItem(srvKey, String(Math.max(0, parseInt(srv) - 1)));
 }
 
 function updateQuestionBadge() {
@@ -2882,28 +2910,39 @@ async function callClaude(userMsg, apiKey) {
       } catch(_vfe) { console.warn('베딕 패치 실패', _vfe); }
     }
     var _vc = window._vedicCache;
+    console.log('[베딕 캐시]', _vc ? JSON.stringify(_vc).slice(0, 200) : 'null');
     if (_vc) {
+      var _vSun  = _vc.sunSign  || _vc.sun_sign  || _vc.sun  || '미상';
+      var _vMoon = _vc.moonSign || _vc.moon_sign || _vc.moon || '미상';
+      var _vAsc  = _vc.ascendant || _vc.lagna || _vc.rising || '미상';
+      var _vNak  = _vc.nakshatra || _vc.moon_nakshatra || '미상';
+      var _vPada = _vc.nakshatraPada || _vc.nakshatra_pada || _vc.pada || '';
+      var _vDasha = _vc.currentDasha || _vc.current_dasha || {};
+      var _vDP = _vDasha.planet || _vDasha.lord || '미상';
+      var _vDE = _vDasha.endDate || _vDasha.end_date || _vDasha.end || '미상';
       _vedicBlock =
-        '- 태양 라시: ' + (_vc.sunSign||'미상') + '\n' +
-        '- 달 라시: ' + (_vc.moonSign||'미상') + '\n' +
-        '- 라그나(상승궁): ' + (_vc.ascendant||'미상') + '\n' +
-        '- 나크샤트라: ' + (_vc.nakshatra||'미상') + ' ' + (_vc.nakshatraPada||'') + '파다\n' +
-        '- 현재 다샤: ' + ((_vc.currentDasha&&_vc.currentDasha.planet)||'미상') + ' (~' + ((_vc.currentDasha&&_vc.currentDasha.endDate)||'미상') + '까지)';
+        '- 태양 라시: ' + _vSun + '\n' +
+        '- 달 라시: ' + _vMoon + '\n' +
+        '- 라그나(상승궁): ' + _vAsc + '\n' +
+        '- 나크샤트라: ' + _vNak + ' ' + _vPada + '파다\n' +
+        '- 현재 다샤: ' + _vDP + ' (~' + _vDE + '까지)';
     }
   } catch(_ve) { console.warn('베딕 빌더 오류:', _ve.message); }
 
-  var _now = new Date(); var dateStr = _now.getFullYear() + '년 ' + (_now.getMonth()+1) + '월 ' + _now.getDate() + '일';
+  // KST 기준 현재 날짜
+  var _nowKST = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+  var dateStr = _nowKST.getUTCFullYear() + '년 ' + (_nowKST.getUTCMonth()+1) + '월 ' + _nowKST.getUTCDate() + '일';
   var todayGanji = getTodayGanji();
-  var monthGanji = getMonthGanji(_now.getFullYear(), _now.getMonth() + 1);
+  var monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1);
   var futureGanji = '';
 for (var i = 1; i <= 60; i++) {
-  var fd = new Date(_now);
-  fd.setDate(fd.getDate() + i);
-  futureGanji += fd.getFullYear() + '년 ' + (fd.getMonth()+1) + '월 ' + fd.getDate() + '일: ' + getTodayGanji(fd) + '일\n';
+  var _fd = new Date(new Date().getTime() + i * 86400000);
+  var _fdKST = new Date(_fd.getTime() + 9 * 60 * 60 * 1000);
+  futureGanji += _fdKST.getUTCFullYear() + '년 ' + (_fdKST.getUTCMonth()+1) + '월 ' + _fdKST.getUTCDate() + '일: ' + getTodayGanji(_fd) + '일\n';
 }
   var futureMonthGanji = '';
 for (var i = 1; i <= 6; i++) {
-  var fm = new Date(_now.getFullYear(), _now.getMonth() + i, 1);
+  var fm = new Date(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + i, 1);
   var fy = fm.getFullYear(); var fmo = fm.getMonth() + 1;
   futureMonthGanji += fy + '년 ' + fmo + '월: ' + getMonthGanji(fy, fmo) + '월\n';
 }
@@ -2965,6 +3004,7 @@ for (var i = 1; i <= 6; i++) {
   + '- 같은 고민 반복되면 패턴으로 짚어줘\n\n'
 
   + '【답변 규칙】\n'
+  + '- 언어: 모든 답변은 반드시 한국어로만 작성. 영어 단어 절대 사용 금지. house→궁, aspect→각도로 번역.\n'
   + '- 길이: 400~600자\n'
   + '- 구조: ①공감 한 줄 → ②사주/점성 근거 → ③현실 연결 → ④행동 한 줄\n'
   + '- ④행동은 한 줄로만. 목록 절대 금지\n'
@@ -3091,6 +3131,12 @@ for (var i = 1; i <= 6; i++) {
   var resData = await res.json();
   // 남은 횟수 업데이트
   updateQuotaDisplay(resData.free_left, resData.paid_left);
+  if (resData.free_left !== undefined && currentUser) {
+    var _srvTotal = (resData.free_left || 0) + (resData.paid_left || 0);
+    _questionCountCache = _srvTotal;
+    localStorage.setItem('q_srv_' + currentUser.id + '_' + getKSTDate(), String(_srvTotal));
+    updateQuestionBadge();
+  }
 
   // 스트리밍 말풍선 생성
   var container = document.getElementById('chatMessages');
