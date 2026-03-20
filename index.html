@@ -924,7 +924,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.3.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.4.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const VAPID_PUBLIC_KEY = 'BOZ_WFR7WctHK5NiBggYq4cE07WNEMYp8tlv_2L99m6e-IKx6_K5UoVEV2jf06X2FshL43qogZvnSfRWEOmpP5M';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3173,6 +3173,7 @@ for (var i = 1; i <= 6; i++) {
   var cleanReply = replyText
     .replace(/\[CARD\][^\n]*/g, '')  // [CARD] 줄 제거
     .replace(/\[CTX\][\s\S]*?\[\/CTX\]/g, '')
+    .replace(/^---+$/gm, '')
     .replace(/<[^>]*>/g, '')
     .replace(/&lt;[^&]*&gt;/g, '')
     .replace(/#{1,6}\s/g, '')
@@ -3248,12 +3249,16 @@ function appendMessage(role, content, animate) {
   div.className = 'msg' + (isUser ? ' user' : '') + (animate ? '' : '');
   if (!animate) div.style.animation = 'none';
 
-  // [CARD] 파싱 (appendMessage 경로)
+  // [CARD]/[CTX]/구분선 필터 (appendMessage 경로)
   var cardLine2 = '';
   if (!isUser) {
     var cardMatch2 = content.match(/\[CARD\]\s*(.+)/);
     if (cardMatch2) cardLine2 = cardMatch2[1].trim();
-    content = content.replace(/\[CARD\][^\n]*/g, '').trimEnd();
+    content = content
+      .replace(/\[CARD\][^\n]*/g, '')
+      .replace(/\[CTX\][\s\S]*?\[\/CTX\]/g, '')
+      .replace(/^---+$/gm, '')
+      .trimEnd();
   }
 
   var shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
