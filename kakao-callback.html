@@ -45,14 +45,20 @@ async function handleLogin() {
 
     // 2. 카카오 사용자 정보 가져오기
     const userRes = await fetch("https://kapi.kakao.com/v2/user/me", {
-      headers: { Authorization: `Bearer ${access_token}` }
+      method: "POST",
+      headers: { Authorization: `Bearer ${access_token}` },
+      body: new URLSearchParams({
+        property_keys: JSON.stringify(["kakao_account.email", "kakao_account.profile"])
+      })
     });
     const userData = await userRes.json();
     console.log('카카오 사용자 응답:', userData);
+    const email = userData.kakao_account?.email || null;
     const user = {
       id: "kakao_" + String(userData.id),
       kakao_id: String(userData.id),
       nickname: userData.properties?.nickname || "포르투나 회원",
+      email: email,
       provider: "kakao"
     };
 
