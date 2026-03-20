@@ -539,7 +539,7 @@
     font-size:9px; color:#e07070; background:rgba(200,50,50,0.15);
     border:1px solid rgba(200,50,50,0.3); border-radius:4px; padding:1px 5px;
   }
-  .tarot-result-area { background:var(--surface2); border-radius:10px; padding:14px; font-size:13px; color:var(--text); line-height:1.6; white-space:pre-wrap; }
+  .tarot-result-area { background:var(--surface2); border-radius:10px; padding:18px 16px; font-size:15px; color:var(--text); line-height:2.0; white-space:pre-wrap; letter-spacing:0.01em; }
   .tarot-close-btn {
     position:absolute; top:14px; right:14px; background:none; border:none;
     color:var(--text3); font-size:20px; cursor:pointer; line-height:1;
@@ -932,7 +932,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.8.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.9.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const VAPID_PUBLIC_KEY = 'BOZ_WFR7WctHK5NiBggYq4cE07WNEMYp8tlv_2L99m6e-IKx6_K5UoVEV2jf06X2FshL43qogZvnSfRWEOmpP5M';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2207,7 +2207,7 @@ async function interpretTarotWithAI(cards, reversals) {
     '앞으로의 흐름(' + (cardList[2]&&cardList[2].name||'카드3') + '): 1~2줄\n\n' +
     '③ ⭐ 지금 별자리 기운과 연결 1~2줄\n\n' +
     '④ 오늘 이것만 해보세요 — 한 줄 행동 제안\n\n' +
-    '전체 350~500자. 마지막은 반드시 희망적으로. ## ### ** 마크다운 절대 금지. 표/구분선 금지.';
+    '전체 500~700자. 마지막은 반드시 희망적으로. ## ### ** 마크다운 절대 금지. 표/구분선 금지.';
   var systemMsg = '당신은 타로와 점성술을 결합해 해석하는 운명 상담사입니다. 따뜻하고 구체적으로 답하되, 마크다운 기호(##, **, ---)와 표를 절대 사용하지 않습니다. 사주·자미두수·베딕은 언급하지 않습니다.';
   console.log('[타로 해석 요청]', userMsg);
   try {
@@ -2247,8 +2247,20 @@ async function interpretTarotWithAI(cards, reversals) {
     }
     updateQuestionBadge();
     console.log('[타로 해석 응답]', reply.slice(0, 100));
-    resultArea.style.opacity = '0';
-    setTimeout(function() { resultArea.innerHTML = renderMarkdown(reply) || '해석을 불러오지 못했어요.'; resultArea.style.opacity = '1'; }, 300);
+    resultArea.style.opacity = '1';
+    resultArea.textContent = '';
+    var _ti = 0, _tChunk = 4;
+    (function _typeStep() {
+      if (_ti < reply.length) {
+        resultArea.textContent = reply.slice(0, _ti + _tChunk);
+        _ti += _tChunk;
+        var tarotModal = document.querySelector('.tarot-modal');
+        if (tarotModal) tarotModal.scrollTop = tarotModal.scrollHeight;
+        setTimeout(_typeStep, 30);
+      } else {
+        resultArea.textContent = reply;
+      }
+    })();
   } catch(e) {
     clearInterval(waitTimer);
     resultArea.style.opacity = '1';
