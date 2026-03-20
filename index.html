@@ -2148,8 +2148,6 @@ function revealTarotCards() {
 }
 
 async function interpretTarotWithAI(cards, reversals) {
-  await useQuestion();
-  updateQuestionBadge();
   var resultArea = document.getElementById('tarotResultArea');
   resultArea.style.display = 'block';
   var waitMsgs = ['카드의 기운을 읽고 있어요... 🔮','별자리와 연결하고 있어요... ⭐','운명의 실마리를 찾고 있어요... 🌙','해석을 완성하고 있어요... ✨'];
@@ -2235,6 +2233,7 @@ async function interpretTarotWithAI(cards, reversals) {
     }
     var data = await res.json();
     var reply = data.reply || '';
+    await useQuestion(); updateQuestionBadge();
     console.log('[타로 해석 응답]', reply.slice(0, 100));
     resultArea.style.opacity = '0';
     setTimeout(function() { resultArea.innerHTML = renderMarkdown(reply) || '해석을 불러오지 못했어요.'; resultArea.style.opacity = '1'; }, 300);
