@@ -924,7 +924,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.0.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.0.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const VAPID_PUBLIC_KEY = 'BOZ_WFR7WctHK5NiBggYq4cE07WNEMYp8tlv_2L99m6e-IKx6_K5UoVEV2jf06X2FshL43qogZvnSfRWEOmpP5M';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3911,6 +3911,16 @@ document.addEventListener('visibilitychange', async function() {
 });
 
 initAuth();
+
+// ── 뒤로가기 로그아웃 방지 ───────────────────────────────────
+// 앱 시작 시 현재 상태를 history에 쌓아둠
+history.pushState(null, '', location.href);
+window.addEventListener('popstate', function() {
+  // 뒤로가기 눌러도 같은 페이지 유지 (세션 유지)
+  if (currentUser) {
+    history.pushState(null, '', location.href);
+  }
+});
 
 // ── Service Worker 메시지 수신 ───────────────────────────────
 if ('serviceWorker' in navigator) {
