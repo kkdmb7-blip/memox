@@ -1,5 +1,5 @@
 // ── 포르투나 Service Worker ──────────────────────────────────
-const CACHE_NAME = 'fortuna-cache-2.11.0';
+const CACHE_NAME = 'fortuna-cache-2.12.0';
 // self.registration.scope 기반 상대경로 (GitHub Pages 서브경로 대응)
 const BASE = self.registration.scope;
 const STATIC_ASSETS = [BASE, BASE + 'index.html', BASE + 'manifest.json', BASE + 'icon.svg'];
@@ -40,7 +40,19 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 정적 자원 → Cache First, 없으면 네트워크 후 캐시 갱신
+  // index.html(navigation) → Network First (F5 새로고침 시 항상 최신본)
+  if (request.mode === 'navigate') {
+    e.respondWith(
+      fetch(request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(c => c.put(request, clone));
+        return res;
+      }).catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // 나머지 정적 자원 → Cache First, 없으면 네트워크 후 캐시 갱신
   e.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;
@@ -50,7 +62,7 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE_NAME).then(c => c.put(request, clone));
         return res;
       });
-    }).catch(() => caches.match('/index.html'))
+    }).catch(() => caches.match(BASE + 'index.html'))
   );
 });
 
