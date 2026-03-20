@@ -922,7 +922,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.0.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.0.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const VAPID_PUBLIC_KEY = 'BOZ_WFR7WctHK5NiBggYq4cE07WNEMYp8tlv_2L99m6e-IKx6_K5UoVEV2jf06X2FshL43qogZvnSfRWEOmpP5M';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
 const WORKER_URL = 'https://fortuna.kkdmb7.workers.dev';
@@ -3590,6 +3591,38 @@ function closeNotifPrompt() {
   document.getElementById('notifPrompt').classList.remove('open');
 }
 
+// URL-safe Base64 → Uint8Array (VAPID 공개키 변환)
+function urlBase64ToUint8Array(base64String) {
+  var padding = '='.repeat((4 - base64String.length % 4) % 4);
+  var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  var rawData = atob(base64);
+  var outputArray = new Uint8Array(rawData.length);
+  for (var i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function subscribePush() {
+  if (!currentUser) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    var reg = await navigator.serviceWorker.ready;
+    var existing = await reg.pushManager.getSubscription();
+    var sub = existing || await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    var now = Date.now();
+    await sb.from('push_subscriptions').upsert({
+      user_id: currentUser.id,
+      subscription: sub.toJSON(),
+      created_at: now
+    }, { onConflict: 'user_id' });
+    console.log('Push 구독 저장 완료');
+  } catch(e) {
+    console.warn('Push 구독 실패:', e.message);
+  }
+}
+
 function allowNotification() {
   closeNotifPrompt();
   if (!('Notification' in window)) { toast('이 브라우저는 알림을 지원하지 않아요.'); return; }
@@ -3597,6 +3630,7 @@ function allowNotification() {
     if (permission === 'granted') {
       toast('✅ 매일 07:30에 오늘의 운세 알림을 보내드릴게요 🔮');
       scheduleFortunaNotification();
+      subscribePush();
     } else {
       toast('알림이 차단됐어요. 브라우저 설정 > 알림에서 허용해주세요.');
     }
@@ -3619,6 +3653,7 @@ function requestNotification() {
     if (permission === 'granted') {
       toast('✅ 매일 07:30에 오늘의 운세 알림을 보내드릴게요 🔮');
       scheduleFortunaNotification();
+      subscribePush();
     }
   });
 }

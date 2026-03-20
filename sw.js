@@ -1,5 +1,5 @@
 // ── 포르투나 Service Worker ──────────────────────────────────
-const CACHE_NAME = 'fortuna-cache-2.0.3';
+const CACHE_NAME = 'fortuna-cache-2.0.4';
 // self.registration.scope 기반 상대경로 (GitHub Pages 서브경로 대응)
 const BASE = self.registration.scope;
 const STATIC_ASSETS = [BASE, BASE + 'index.html', BASE + 'manifest.json', BASE + 'icon.svg'];
@@ -115,35 +115,32 @@ self.addEventListener('periodicsync', e => {
   }
 });
 
-// ── PUSH 알림 (향후 확장용) ──────────────────────────────────
+// ── PUSH 알림 ────────────────────────────────────────────────
 self.addEventListener('push', e => {
-  if (!e.data) return;
-  const data = e.data.json();
+  const data = e.data ? e.data.json() : {};
   e.waitUntil(
-    self.registration.showNotification(data.title || '포르투나', {
-      body: data.body || '',
-      icon: '/icon.svg',
-      badge: '/icon.svg',
+    self.registration.showNotification(data.title || '🔮 포르투나', {
+      body: data.body || '오늘의 운세가 도착했어요',
+      icon: '/memox/icon.svg',
+      badge: '/memox/icon.svg',
       tag: 'fortuna-push',
-      renotify: true
+      renotify: true,
+      data: { url: data.url || '/memox/' }
     })
   );
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const tag = e.notification.tag;
-  const targetUrl = (tag === 'fortuna-daily') ? '/?daily=1' : '/';
+  const targetUrl = (e.notification.data && e.notification.data.url) || '/memox/';
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
-      // 이미 열린 창이 있으면 포커스 + 메시지
       const existing = cs.find(w => w.url.includes(self.location.hostname) && 'focus' in w);
       if (existing) {
         existing.focus();
-        if (tag === 'fortuna-daily') existing.postMessage({ type: 'OPEN_DAILY_CARD' });
+        if (targetUrl.includes('daily=1')) existing.postMessage({ type: 'OPEN_DAILY_CARD' });
         return;
       }
-      // 닫혀있으면 ?daily=1 파라미터로 새로 열기
       return clients.openWindow(targetUrl);
     })
   );
