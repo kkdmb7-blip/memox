@@ -9,7 +9,8 @@
 - **GitHub Pages**: https://kkdmb7-blip.github.io/memox/
 - **레포**: `memox` (프론트), `fortuna` (Vercel API)
 - **DB**: Supabase (`ymghmfkqctckxxysxkvy`)
-- **현재 버전**: APP_VERSION `2.1.0` / CACHE_NAME `fortuna-cache-2.1.0`
+- **현재 버전**: APP_VERSION `2.13.0` / CACHE_NAME `fortuna-cache-2.13.0` (고정)
+- **버전 정책**: 배포 시 APP_VERSION만 올림. CACHE_NAME은 sw.js 로직 자체가 바뀔 때만 변경. (index.html은 네트워크 우선 전략이라 캐시 무효화 불필요)
 
 ---
 
