@@ -924,7 +924,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.5.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.6.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const VAPID_PUBLIC_KEY = 'BOZ_WFR7WctHK5NiBggYq4cE07WNEMYp8tlv_2L99m6e-IKx6_K5UoVEV2jf06X2FshL43qogZvnSfRWEOmpP5M';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2944,10 +2944,12 @@ async function callClaude(userMsg, apiKey) {
   var todayGanji = getTodayGanji();
   var monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1);
   var futureGanji = '';
+var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 for (var i = 1; i <= 60; i++) {
   var _fd = new Date(new Date().getTime() + i * 86400000);
   var _fdKST = new Date(_fd.getTime() + 9 * 60 * 60 * 1000);
-  futureGanji += _fdKST.getUTCFullYear() + '년 ' + (_fdKST.getUTCMonth()+1) + '월 ' + _fdKST.getUTCDate() + '일: ' + getTodayGanji(_fd) + '일\n';
+  var _fdDay = _weekDays[_fdKST.getUTCDay()];
+  futureGanji += _fdKST.getUTCFullYear() + '년 ' + (_fdKST.getUTCMonth()+1) + '월 ' + _fdKST.getUTCDate() + '일 (' + _fdDay + '): ' + getTodayGanji(_fd) + '일\n';
 }
   var futureMonthGanji = '';
 for (var i = 1; i <= 6; i++) {
