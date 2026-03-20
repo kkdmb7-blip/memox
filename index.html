@@ -3127,25 +3127,6 @@ for (var i = 1; i <= 6; i++) {
   // [CTX] 맥락 파싱 → 백그라운드 저장
   extractAndSaveContext(replyText);
 
-  // 버튼 추가
-  var streamShareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
-  var cardContent = cardLine || cleanReply;  // CARD 문장 없으면 전체 본문 fallback
-  var btnWrap = document.createElement('div');
-  btnWrap.className = 'bubble-actions';
-  var copyBtn = document.createElement('button');
-  copyBtn.className = 'bubble-icon-btn';
-  copyBtn.title = '복사';
-  copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="2" y="2" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/></svg>';
-  copyBtn.setAttribute('data-content', encodeURIComponent(cleanReply));
-  copyBtn.addEventListener('click', function(){ copyMessage(copyBtn); });
-  var hitBtn2 = document.createElement('button');
-  hitBtn2.className = 'bubble-icon-btn';
-  hitBtn2.title = '맞았어요';
-  hitBtn2.textContent = '🎯';
-  (function(reply){ hitBtn2.addEventListener('click', function(){ saveFortuneHit(reply, hitBtn2); hitBtn2.classList.add('hit-active'); }); })(cleanReply);
-  btnWrap.appendChild(copyBtn);
-  btnWrap.appendChild(hitBtn2);
-  bubble.parentNode.insertBefore(btnWrap, bubble.nextSibling);
   // 리포트 유도 (33% 확률)
   if (Math.random() > 0.66) {
     var nudge = document.createElement('a');
