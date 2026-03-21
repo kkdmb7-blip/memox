@@ -907,7 +907,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.16.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.17.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1428,8 +1428,17 @@ async function fetchSaju(birth, birthTime, city, gender, cal, midnight) {
     var bmm = (btParts[1]||'00').padStart(2,'0');
     var birthISO = birth + 'T' + bhh + ':' + bmm + ':00';
     console.log('사주 요청 날짜:', birthISO, 'gender:', gender === 'M' ? 'male' : 'female');
-    // city already comes as full name from select dropdown
-    var cityNorm = city;
+    var cityMap = {
+      '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시',
+      '인천': '인천광역시', '광주': '광주광역시', '대전': '대전광역시',
+      '울산': '울산광역시', '세종': '세종특별자치시', '수원': '수원시',
+      '성남': '성남시', '고양': '고양시', '용인': '용인시',
+      '청주': '청주시', '전주': '전주시', '천안': '천안시',
+      '안산': '안산시', '안양': '안양시', '남양주': '남양주시',
+      '화성': '화성시', '창원': '창원시', '포항': '포항시',
+      '강릉': '강릉시', '제주': '제주시', '해외': 'overseas'
+    };
+    var cityNorm = cityMap[city] || city;
     var body = {
       birth: birthISO,
       gender: gender === 'M' ? 'male' : 'female',
