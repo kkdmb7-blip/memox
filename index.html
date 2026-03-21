@@ -2516,17 +2516,27 @@ function startDailyChat(summary) {
 }
 
 async function loadChatHistory() {
-  // 최근 50개를 내림차순으로 가져온 뒤 다시 오름차순 정렬
-  var res = await sb.from('chat_messages')
+  var res;
+  if (currentUser && currentUser.provider === 'kakao') {
+    var r = await fetch('https://fortuna-silk.vercel.app/api/load-messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUser.id })
+    });
+    res = await r.json();
+    var msgs = (res.messages || []).reverse();
+    chatHistory = msgs.map(function(m) { return { role: m.role, content: m.content }; });
+    renderChatHistory();
+    return;
+  }
+  var supaRes = await sb.from('chat_messages')
     .select('*')
     .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false })
     .limit(50);
-  if (res.error) return;
-  var msgs = (res.data || []).reverse();
-  chatHistory = msgs.map(function(m) {
-    return { role: m.role, content: m.content };
-  });
+  if (supaRes.error) return;
+  var msgs = (supaRes.data || []).reverse();
+  chatHistory = msgs.map(function(m) { return { role: m.role, content: m.content }; });
   renderChatHistory();
 }
 
@@ -3236,13 +3246,15 @@ async function retryLastMessage() {
 }
 
 async function saveMessage(role, content) {
-  await sb.from('chat_messages').insert({
-    id: genId(),
-    user_id: currentUser.id,
-    role: role,
-    content: content,
-    created_at: Date.now()
-  });
+  if (currentUser && currentUser.provider === 'kakao') {
+    await fetch('https://fortuna-silk.vercel.app/api/save-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: genId(), user_id: currentUser.id, role, content, created_at: Date.now() })
+    });
+    return;
+  }
+  await sb.from('chat_messages').insert({ id: genId(), user_id: currentUser.id, role, content, created_at: Date.now() });
 }
 
 // ── UI ────────────────────────────────────────────────────────
