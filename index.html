@@ -3196,7 +3196,7 @@ for (var i = 1; i <= 6; i++) {
     nudge.href = 'https://fortuna-silk.vercel.app';
     nudge.target = '_blank';
     nudge.textContent = '더 깊이 알고 싶다면 → 📋 리포트 보기';
-    bubble.parentNode.insertBefore(nudge, btnWrap.nextSibling);
+    bubble.parentNode.appendChild(nudge);
   }
   scrollToBottom();
   return cleanReply;
