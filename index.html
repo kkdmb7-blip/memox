@@ -930,7 +930,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.14.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.16.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2170,7 +2170,7 @@ function revealTarotCards() {
 async function interpretTarotWithAI(cards, reversals) {
   var resultArea = document.getElementById('tarotResultArea');
   resultArea.style.display = 'block';
-  var waitMsgs = ['🌟 여신님이 카드를 읽는 중...','✨ 여신님이 별자리와 연결 중...','🔮 여신님이 운명을 젬펴보는 중...','💫 여신님이 해석하는 중...'];
+  var waitMsgs = ['🌟 여신님이 카드를 읽는 중...','✨ 여신님이 별자리와 연결 중...','🔮 여신님이 운명을 살펴보는 중...','💫 여신님이 해석하는 중...'];
   var msgIdx = 0;
   resultArea.style.transition = 'opacity 0.4s';
   resultArea.style.opacity = '1';
@@ -2221,8 +2221,8 @@ async function interpretTarotWithAI(cards, reversals) {
     '앞으로의 흐름(' + (cardList[2]&&cardList[2].name||'카드3') + '): 1~2줄\n\n' +
     '③ ⭐ 지금 별자리 기운과 연결 1~2줄\n\n' +
     '④ 오늘 이것만 해보세요 — 한 줄 행동 제안\n\n' +
-    '전체 350~500자. 마지막은 반드시 희망적으로. ## ### ** 마크다운 절대 금지. 표/구분선 금지.';
-  var systemMsg = '당신은 타로와 점성술을 결합해 해석하는 운명 상담사입니다. 따뜻하고 구체적으로 답하되, 마크다운 기호(##, **, ---)와 표를 절대 사용하지 않습니다. 사주·자미두수·베딕은 언급하지 않습니다.';
+    '전체 350~500자. 마지막은 반드시 희망적으로. ## ### 헤더 절대 금지. ** 볼드는 핵심 키워드 3~5개 사용. 표/구분선 금지.';
+  var systemMsg = '당신은 타로와 점성술을 결합해 해석하는 운명 상담사입니다. 따뜻하고 구체적으로 답하되, 헤더(##, ###)와 표(---)는 절대 사용하지 않습니다. ** 볼드는 핵심 키워드에 3~5개 사용하세요. 사주·자미두수·베딕은 언급하지 않습니다.';
   console.log('[타로 해석 요청]', userMsg);
   try {
     var user = currentUser || window._fortunaUser;
@@ -3375,9 +3375,9 @@ function showTyping() {
   div.id = 'typingIndicator';
   var personaK = (userProfile && userProfile.persona) || 'warm';
   var phraseMap = {
-    warm: ['🌟 여신님이 별자리를 읽는 중...', '✨ 여신님이 젬펴보는 중...', '🔮 여신님이 확인하는 중...', '💫 여신님이 운세를 보는 중...'],
-    analyst: ['🌟 여신님이 분석하는 중...', '✨ 여신님이 계산하는 중...', '🔮 여신님이 확인하는 중...', '💫 여신님이 젬펴보는 중...'],
-    coach: ['🌟 여신님이 젬펴보는 중...', '✨ 여신님이 읽는 중...', '🔮 여신님이 확인하는 중...', '💫 여신님이 보는 중...']
+    warm: ['🌟 여신님이 별자리를 읽는 중...', '✨ 여신님이 살펴보는 중...', '🔮 여신님이 확인하는 중...', '💫 여신님이 운세를 보는 중...'],
+    analyst: ['🌟 여신님이 분석하는 중...', '✨ 여신님이 계산하는 중...', '🔮 여신님이 확인하는 중...', '💫 여신님이 살펴보는 중...'],
+    coach: ['🌟 여신님이 살펴보는 중...', '✨ 여신님이 읽는 중...', '🔮 여신님이 확인하는 중...', '💫 여신님이 보는 중...']
   };
   var phrases = phraseMap[personaK] || phraseMap.warm;
   var phrase = phrases[Math.floor(Math.random() * phrases.length)];
