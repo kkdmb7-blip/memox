@@ -1364,12 +1364,26 @@ async function submitOnboard() {
 
     // AstrologyAPI 점성 계산
     btn.textContent = '⏳ 별자리 계산 중...';
-    toast('⭐ 별자리 데이터 계산 중...(최대 10초)');
+    toast('⭐ 별자리 데이터 계산 중...');
     var astroData = {};
+
+    // 별자리 계산 중 주기적 메시지
+    var _astroMsgs = [
+      '🌙 달의 위치를 계산하는 중...',
+      '☀️ 태양궁을 확인하는 중...',
+      '⭐ 행성 배치를 분석하는 중...',
+      '🔮 점성술 데이터를 완성하는 중...'
+    ];
+    var _astroIdx = 0;
+    var _astroTimer = setInterval(function() {
+      _astroIdx = (_astroIdx + 1) % _astroMsgs.length;
+      toast(_astroMsgs[_astroIdx]);
+      btn.textContent = '⏳ ' + _astroMsgs[_astroIdx];
+    }, 3000);
+
     try {
-      btn.textContent = '⏳ 별자리 계산 중...';
-      toast('⭐ 별자리 계산 중... (15초 소요)');
       astroData = await fetchAstro(birth, birthTime, city);
+      clearInterval(_astroTimer);
       if (astroData.error) {
         console.warn('점성 실패:', astroData.error);
         toast('⚠️ 별자리 데이터 없이 저장합니다');
@@ -1378,6 +1392,7 @@ async function submitOnboard() {
         console.log('점성 결과:', JSON.stringify(astroData).slice(0,100));
       }
     } catch(e) {
+      clearInterval(_astroTimer);
       console.warn('점성 실패, 건너뜀:', e.message);
       toast('⚠️ 별자리 데이터 없이 저장합니다');
       astroData = {};
