@@ -930,7 +930,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.16.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.16.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1951,28 +1951,28 @@ function renderRetroCard(card, dateStr) {
 // ════════════════════════════════════════════════════════
 var TAROT_CARDS = (function() {
   var majorImgs = [
-    'https://upload.wikimedia.org/wikipedia/commons/9/90/RWS_Tarot_00_Fool.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/1/10/RWS_Tarot_01_Magician.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/8/88/RWS_Tarot_02_High_Priestess.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/d/d2/RWS_Tarot_03_Empress.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/c/c3/RWS_Tarot_04_Emperor.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/8/8d/RWS_Tarot_05_Hierophant.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/3/3a/TheLovers.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/9/9b/RWS_Tarot_07_Chariot.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/f/f5/RWS_Tarot_08_Strength.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/4/4d/RWS_Tarot_09_Hermit.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/3/3c/RWS_Tarot_10_Wheel_of_Fortune.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/e/e0/RWS_Tarot_11_Justice.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/2/2b/RWS_Tarot_12_Hanged_Man.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/d/d7/RWS_Tarot_13_Death.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/f/f8/RWS_Tarot_14_Temperance.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/5/55/RWS_Tarot_15_Devil.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/5/53/RWS_Tarot_16_Tower.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/d/db/RWS_Tarot_17_Star.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/7/7f/RWS_Tarot_18_Moon.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/1/17/RWS_Tarot_19_Sun.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/d/dd/RWS_Tarot_20_Judgement.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/f/ff/RWS_Tarot_21_World.jpg'
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/9/90/RWS_Tarot_00_Fool.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/1/10/RWS_Tarot_01_Magician.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/8/88/RWS_Tarot_02_High_Priestess.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/d/d2/RWS_Tarot_03_Empress.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/c/c3/RWS_Tarot_04_Emperor.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/8/8d/RWS_Tarot_05_Hierophant.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/3/3a/TheLovers.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/9/9b/RWS_Tarot_07_Chariot.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/f/f5/RWS_Tarot_08_Strength.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/4/4d/RWS_Tarot_09_Hermit.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/3/3c/RWS_Tarot_10_Wheel_of_Fortune.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/e/e0/RWS_Tarot_11_Justice.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/2/2b/RWS_Tarot_12_Hanged_Man.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/d/d7/RWS_Tarot_13_Death.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/f/f8/RWS_Tarot_14_Temperance.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/5/55/RWS_Tarot_15_Devil.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/5/53/RWS_Tarot_16_Tower.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/d/db/RWS_Tarot_17_Star.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/7/7f/RWS_Tarot_18_Moon.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/1/17/RWS_Tarot_19_Sun.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/d/dd/RWS_Tarot_20_Judgement.jpg&w=300',
+    'https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/f/ff/RWS_Tarot_21_World.jpg&w=300'
   ];
   var majorNames = [
     '바보','마법사','여교황','여황제','황제','교황','연인','전차','힘','은둔자',
@@ -1981,13 +1981,13 @@ var TAROT_CARDS = (function() {
   var majorEmoji = ['🃏','🪄','🌙','👑','👸','⛪','💑','🏆','💪','🕯️','☸️','⚖️','🙃','💀','🏺','😈','🗼','⭐','🌛','☀️','📯','🌍'];
   var suits = [
     { name:'완드', emoji:'🪄', color:'#e07020',
-      imgs:['https://upload.wikimedia.org/wikipedia/commons/1/11/Wands01.jpg','https://upload.wikimedia.org/wikipedia/commons/0/0f/Wands02.jpg','https://upload.wikimedia.org/wikipedia/commons/f/ff/Wands03.jpg','https://upload.wikimedia.org/wikipedia/commons/a/a4/Wands04.jpg','https://upload.wikimedia.org/wikipedia/commons/9/9d/Wands05.jpg','https://upload.wikimedia.org/wikipedia/commons/3/3b/Wands06.jpg','https://upload.wikimedia.org/wikipedia/commons/e/e4/Wands07.jpg','https://upload.wikimedia.org/wikipedia/commons/6/6b/Wands08.jpg','https://upload.wikimedia.org/wikipedia/commons/4/4d/Tarot_Nine_of_Wands.jpg','https://upload.wikimedia.org/wikipedia/commons/0/0b/Wands10.jpg','https://upload.wikimedia.org/wikipedia/commons/6/6a/Wands11.jpg','https://upload.wikimedia.org/wikipedia/commons/0/0d/Wands12.jpg','https://upload.wikimedia.org/wikipedia/commons/1/16/Wands13.jpg','https://upload.wikimedia.org/wikipedia/commons/c/ce/Wands14.jpg'] },
+      imgs:['https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/1/11/Wands01.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/0/0f/Wands02.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/f/ff/Wands03.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/a/a4/Wands04.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/9/9d/Wands05.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/3/3b/Wands06.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/e/e4/Wands07.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/6/6b/Wands08.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/4/4d/Tarot_Nine_of_Wands.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/0/0b/Wands10.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/6/6a/Wands11.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/0/0d/Wands12.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/1/16/Wands13.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/c/ce/Wands14.jpg&w=300'] },
     { name:'컵', emoji:'🏆', color:'#2060c0',
-      imgs:['https://upload.wikimedia.org/wikipedia/commons/3/36/Cups01.jpg','https://upload.wikimedia.org/wikipedia/commons/f/f8/Cups02.jpg','https://upload.wikimedia.org/wikipedia/commons/7/7a/Cups03.jpg','https://upload.wikimedia.org/wikipedia/commons/3/35/Cups04.jpg','https://upload.wikimedia.org/wikipedia/commons/d/d7/Cups05.jpg','https://upload.wikimedia.org/wikipedia/commons/1/17/Cups06.jpg','https://upload.wikimedia.org/wikipedia/commons/a/ae/Cups07.jpg','https://upload.wikimedia.org/wikipedia/commons/6/60/Cups08.jpg','https://upload.wikimedia.org/wikipedia/commons/2/2f/Cups09.jpg','https://upload.wikimedia.org/wikipedia/commons/8/84/Cups10.jpg','https://upload.wikimedia.org/wikipedia/commons/a/ad/Cups11.jpg','https://upload.wikimedia.org/wikipedia/commons/6/62/Cups12.jpg','https://upload.wikimedia.org/wikipedia/commons/6/62/Cups13.jpg','https://upload.wikimedia.org/wikipedia/commons/f/fa/Cups14.jpg'] },
+      imgs:['https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/3/36/Cups01.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/f/f8/Cups02.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/7/7a/Cups03.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/3/35/Cups04.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/d/d7/Cups05.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/1/17/Cups06.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/a/ae/Cups07.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/6/60/Cups08.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/2/2f/Cups09.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/8/84/Cups10.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/a/ad/Cups11.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/6/62/Cups12.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/6/62/Cups13.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/f/fa/Cups14.jpg&w=300'] },
     { name:'검', emoji:'⚔️', color:'#a0a0c0',
-      imgs:['https://upload.wikimedia.org/wikipedia/commons/1/1a/Swords01.jpg','https://upload.wikimedia.org/wikipedia/commons/9/9e/Swords02.jpg','https://upload.wikimedia.org/wikipedia/commons/0/02/Swords03.jpg','https://upload.wikimedia.org/wikipedia/commons/b/bf/Swords04.jpg','https://upload.wikimedia.org/wikipedia/commons/2/23/Swords05.jpg','https://upload.wikimedia.org/wikipedia/commons/2/29/Swords06.jpg','https://upload.wikimedia.org/wikipedia/commons/3/34/Swords07.jpg','https://upload.wikimedia.org/wikipedia/commons/a/a7/Swords08.jpg','https://upload.wikimedia.org/wikipedia/commons/2/2f/Swords09.jpg','https://upload.wikimedia.org/wikipedia/commons/d/d4/Swords10.jpg','https://upload.wikimedia.org/wikipedia/commons/4/4c/Swords11.jpg','https://upload.wikimedia.org/wikipedia/commons/b/b0/Swords12.jpg','https://upload.wikimedia.org/wikipedia/commons/d/d4/Swords13.jpg','https://upload.wikimedia.org/wikipedia/commons/f/f5/Swords14.jpg'] },
+      imgs:['https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/1/1a/Swords01.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/9/9e/Swords02.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/0/02/Swords03.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/b/bf/Swords04.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/2/23/Swords05.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/2/29/Swords06.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/3/34/Swords07.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/a/a7/Swords08.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/2/2f/Swords09.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/d/d4/Swords10.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/4/4c/Swords11.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/b/b0/Swords12.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/d/d4/Swords13.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/f/f5/Swords14.jpg&w=300'] },
     { name:'펜타클', emoji:'⭐', color:'#40a040',
-      imgs:['https://upload.wikimedia.org/wikipedia/commons/f/fd/Pents01.jpg','https://upload.wikimedia.org/wikipedia/commons/9/9f/Pents02.jpg','https://upload.wikimedia.org/wikipedia/commons/4/42/Pents03.jpg','https://upload.wikimedia.org/wikipedia/commons/3/35/Pents04.jpg','https://upload.wikimedia.org/wikipedia/commons/9/96/Pents05.jpg','https://upload.wikimedia.org/wikipedia/commons/a/a6/Pents06.jpg','https://upload.wikimedia.org/wikipedia/commons/6/6a/Pents07.jpg','https://upload.wikimedia.org/wikipedia/commons/4/49/Pents08.jpg','https://upload.wikimedia.org/wikipedia/commons/f/f0/Pents09.jpg','https://upload.wikimedia.org/wikipedia/commons/4/42/Pents10.jpg','https://upload.wikimedia.org/wikipedia/commons/e/ec/Pents11.jpg','https://upload.wikimedia.org/wikipedia/commons/d/d5/Pents12.jpg','https://upload.wikimedia.org/wikipedia/commons/8/88/Pents13.jpg','https://upload.wikimedia.org/wikipedia/commons/1/1c/Pents14.jpg'] }
+      imgs:['https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/f/fd/Pents01.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/9/9f/Pents02.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/4/42/Pents03.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/3/35/Pents04.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/9/96/Pents05.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/a/a6/Pents06.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/6/6a/Pents07.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/4/49/Pents08.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/f/f0/Pents09.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/4/42/Pents10.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/e/ec/Pents11.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/d/d5/Pents12.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/8/88/Pents13.jpg&w=300','https://images.weserv.nl/?url=upload.wikimedia.org/wikipedia/commons/1/1c/Pents14.jpg&w=300'] }
   ];
   var numNames = ['에이스','2','3','4','5','6','7','8','9','10','페이지','나이트','퀸','킹'];
   var cards = [];
