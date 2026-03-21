@@ -21,8 +21,6 @@
 </div>
 <script>
 const WORKER = "https://fortuna.kkdmb7.workers.dev";
-const SB_URL = "https://ymghmfkqctckxxysxkvy.supabase.co";
-const SB_KEY = "sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x";
 
 async function handleLogin() {
   const code = new URLSearchParams(window.location.search).get("code");
@@ -36,12 +34,8 @@ async function handleLogin() {
       body: JSON.stringify({ code, redirect_uri: "https://kkdmb7-blip.github.io/memox/kakao-callback.html" })
     });
     const tokenData = await tokenRes.json();
-    console.log('카카오 토큰 응답:', tokenData);
     const access_token = tokenData.access_token;
-    if (!access_token) {
-      console.log('카카오 오류: access_token 없음', tokenData);
-      throw new Error("토큰 없음");
-    }
+    if (!access_token) throw new Error("토큰 없음");
 
     // 2. 카카오 사용자 정보 가져오기
     const userRes = await fetch("https://kapi.kakao.com/v2/user/me", {
@@ -52,32 +46,38 @@ async function handleLogin() {
       })
     });
     const userData = await userRes.json();
-    console.log('카카오 사용자 응답:', userData);
-    const email = userData.kakao_account?.email || null;
-    const user = {
-      id: "kakao_" + String(userData.id),
-      kakao_id: String(userData.id),
-      nickname: userData.properties?.nickname || "포르투나 회원",
-      email: email,
-      provider: "kakao"
-    };
 
-    // 3. localStorage 저장
-    localStorage.setItem("fortuna_kakao_user", JSON.stringify(user));
+    const email = userData.kakao_account?.email;
+    const nickname = userData.kakao_account?.profile?.nickname || userData.properties?.nickname;
 
-    // 4. Supabase chat_users upsert
-    await fetch(`${SB_URL}/rest/v1/chat_users`, {
-      method: "POST",
-      headers: {
-        "apikey": SB_KEY,
-        "Authorization": `Bearer ${SB_KEY}`,
-        "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates"
-      },
-      body: JSON.stringify({ id: user.id, name: user.nickname })
-    }).catch(e => console.warn("chat_users upsert 실패 (무시):", e));
+    if (!email) {
+      alert('카카오 이메일 동의가 필요합니다.');
+      location.href = "/memox/";
+      return;
+    }
 
-    // 5. 메인으로 이동
+    // 3. resolve-user API로 이메일 기반 유저 조회/생성
+    const resolveRes = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name: nickname })
+    });
+    const profile = await resolveRes.json();
+
+    if (!profile || profile.error) {
+      alert('로그인 처리 중 오류가 발생했습니다.');
+      location.href = "/memox/";
+      return;
+    }
+
+    // 4. localStorage에 카카오 유저 저장
+    localStorage.setItem('fortuna_kakao_user', JSON.stringify({
+      id: profile.id,
+      email,
+      name: nickname,
+      profile
+    }));
+
     location.href = "/memox/";
 
   } catch (e) {

@@ -965,6 +965,22 @@ var _authHandled = false;
 async function initAuth() {
   makeBgStars();
 
+  // 카카오 직접 로그인 체크
+  var _kakaoUser = localStorage.getItem('fortuna_kakao_user');
+  if (_kakaoUser) {
+    try {
+      var _ku = JSON.parse(_kakaoUser);
+      if (_ku && _ku.id) {
+        _authHandled = true;
+        currentUser = { id: _ku.id, email: _ku.email, user_metadata: { full_name: _ku.name }, provider: 'kakao' };
+        await setUser(currentUser);
+        return;
+      }
+    } catch(_ke) {
+      localStorage.removeItem('fortuna_kakao_user');
+    }
+  }
+
   // onAuthStateChange 먼저 등록 (OAuth 리다이렉트 후 SIGNED_IN 이벤트 유실 방지)
   sb.auth.onAuthStateChange(async function(event, session) {
     console.log('Auth event:', event, session ? session.user.email : 'no user');
@@ -1018,7 +1034,14 @@ document.getElementById('googleLoginBtn').addEventListener('click', function() {
 
 async function confirmLogout() {
   if (!confirm('로그아웃 할까요?')) return;
+  localStorage.removeItem('fortuna_kakao_user');
   await sb.auth.signOut();
+  currentUser = null; userProfile = null; chatHistory = [];
+  showScreen('login');
+}
+
+function logoutKakao() {
+  localStorage.removeItem('fortuna_kakao_user');
   currentUser = null; userProfile = null; chatHistory = [];
   showScreen('login');
 }
@@ -1059,12 +1082,39 @@ async function setUser(user) {
 
 // ── PROFILE ───────────────────────────────────────────────────
 async function loadProfile() {
+  // 카카오 유저: localStorage 캐시 우선 사용 (RLS 우회)
+  if (currentUser && currentUser.provider === 'kakao') {
+    try {
+      var _ku = JSON.parse(localStorage.getItem('fortuna_kakao_user') || 'null');
+      if (_ku && _ku.id === currentUser.id && _ku.profile && _ku.profile.birth_date) {
+        return _ku.profile;
+      }
+    } catch(e) {}
+    return null; // 온보딩 미완료 → 온보딩 표시
+  }
   var res = await sb.from('chat_users').select('*').eq('id', currentUser.id).maybeSingle();
   if (res.error || !res.data) return null;
   return res.data;
 }
 
 async function saveProfile(data) {
+  if (currentUser && currentUser.provider === 'kakao') {
+    // 카카오 유저: Vercel API 통해 저장 (RLS 우회)
+    var saveRes = await fetch('https://fortuna-silk.vercel.app/api/save-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!saveRes.ok) throw new Error('프로필 저장 실패');
+    // localStorage 캐시 갱신
+    var _kuRaw = localStorage.getItem('fortuna_kakao_user');
+    if (_kuRaw) {
+      var _kuData = JSON.parse(_kuRaw);
+      _kuData.profile = data;
+      localStorage.setItem('fortuna_kakao_user', JSON.stringify(_kuData));
+    }
+    return;
+  }
   var res = await sb.from('chat_users').upsert(data);
   if (res.error) throw new Error(res.error.message);
 }
