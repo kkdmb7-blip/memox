@@ -987,7 +987,17 @@ async function initAuth() {
     try {
       var _ku = JSON.parse(_kakaoUser);
       _authHandled = true;
-      await setUser({ id: _ku.id, user_metadata: { full_name: _ku.nickname }, provider: 'kakao' });
+      var _resolvedId = _ku.id;
+      // 카카오 이메일로 기존 유저(구글 등) 조회
+      if (_ku.email) {
+        var _existRes = await sb.from('chat_users').select('id').eq('email', _ku.email).maybeSingle();
+        if (_existRes.data && _existRes.data.id) {
+          _resolvedId = _existRes.data.id;
+          // kakao_id 컬럼 업데이트 (컬럼 없으면 무시)
+          await sb.from('chat_users').update({ kakao_id: _ku.kakao_id }).eq('id', _resolvedId).catch(function(){});
+        }
+      }
+      await setUser({ id: _resolvedId, user_metadata: { full_name: _ku.nickname }, provider: 'kakao' });
       return;
     } catch(_ke) {
       localStorage.removeItem('fortuna_kakao_user');
