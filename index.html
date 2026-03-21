@@ -3605,15 +3605,28 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // 모바일 키보드 대응
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', function() {
-      var chatWrap = document.getElementById('screenChat');
-      if (chatWrap) {
-        chatWrap.style.height = window.visualViewport.height + 'px';
-      }
-      scrollToBottom();
-    });
+  function fixChatHeight() {
+    var chatWrap = document.getElementById('screenChat');
+    if (chatWrap) {
+      var h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+      chatWrap.style.height = h + 'px';
+      chatWrap.style.maxHeight = h + 'px';
+    }
+    scrollToBottom();
   }
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fixChatHeight);
+    window.visualViewport.addEventListener('scroll', fixChatHeight);
+  }
+  window.addEventListener('resize', fixChatHeight);
+
+  // 화면 전환 시 높이 재조정
+  var _origShowScreen = showScreen;
+  showScreen = function(name) {
+    _origShowScreen(name);
+    if (name === 'chat') setTimeout(fixChatHeight, 100);
+  };
 });
 
 function downloadCardImage() {
