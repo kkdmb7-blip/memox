@@ -4010,8 +4010,17 @@ initAuth();
 // 앱 시작 시 현재 상태를 history에 쌓아둠
 history.pushState(null, '', location.href);
 window.addEventListener('popstate', function() {
-  // 뒤로가기 눌러도 같은 페이지 유지 (세션 유지)
-  if (currentUser) {
+  var onboardEl = document.getElementById('screenOnboard');
+  if (onboardEl && onboardEl.classList.contains('active')) {
+    // 온보딩 중 뒤로가기 → 로그아웃 후 로그인 화면
+    currentUser = null;
+    userProfile = null;
+    _authHandled = false;
+    localStorage.removeItem('fortuna_kakao_user');
+    showScreen('login');
+    history.pushState(null, '', location.href);
+  } else if (currentUser) {
+    // 로그인 상태에서 뒤로가기 → 현재 페이지 유지 (앱 종료 방지)
     history.pushState(null, '', location.href);
   }
 });
