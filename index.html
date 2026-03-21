@@ -539,7 +539,7 @@
     font-size:9px; color:#e07070; background:rgba(200,50,50,0.15);
     border:1px solid rgba(200,50,50,0.3); border-radius:4px; padding:1px 5px;
   }
-  .tarot-result-area { background:var(--surface2); border-radius:10px; padding:14px; font-size:13px; color:var(--text); line-height:1.6; white-space:pre-wrap; }
+  .tarot-result-area { background:var(--surface2); border-radius:10px; padding:14px; font-size:15px; color:var(--text); line-height:1.8; white-space:pre-wrap; }
   .tarot-close-btn {
     position:absolute; top:14px; right:14px; background:none; border:none;
     color:var(--text3); font-size:20px; cursor:pointer; line-height:1;
@@ -2154,7 +2154,7 @@ function revealTarotCards() {
 async function interpretTarotWithAI(cards, reversals) {
   var resultArea = document.getElementById('tarotResultArea');
   resultArea.style.display = 'block';
-  var waitMsgs = ['카드의 기운을 읽고 있어요... 🔮','별자리와 연결하고 있어요... ⭐','운명의 실마리를 찾고 있어요... 🌙','해석을 완성하고 있어요... ✨'];
+  var waitMsgs = ['🌟 여신님이 카드를 읽는 중...','✨ 여신님이 별자리와 연결 중...','🔮 여신님이 운명을 젬펴보는 중...','💫 여신님이 해석하는 중...'];
   var msgIdx = 0;
   resultArea.style.transition = 'opacity 0.4s';
   resultArea.style.opacity = '1';
@@ -2163,7 +2163,7 @@ async function interpretTarotWithAI(cards, reversals) {
     msgIdx = (msgIdx + 1) % waitMsgs.length;
     resultArea.style.opacity = '0';
     setTimeout(function() { resultArea.textContent = waitMsgs[msgIdx]; resultArea.style.opacity = '1'; }, 400);
-  }, 1000);
+  }, 2500);
   var labels = ['현재 상황', '핵심 원인', '앞으로의 흐름'];
   var question = (document.getElementById('tarotQuestion').value || '').trim();
   var cardList = cards || _drawnCards;
