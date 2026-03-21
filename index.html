@@ -1075,6 +1075,21 @@ async function confirmLogout() {
 async function setUser(user) {
   currentUser = user;
   var profile = await loadProfile();
+  // 프로필 없으면 이메일로 기존 계정 조회 (카카오↔구글 계정 통합)
+  if (!profile && currentUser.email) {
+    try {
+      var _mergeRes = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser.email })
+      });
+      var _mergeData = await _mergeRes.json();
+      if (_mergeData.id && _mergeData.id !== currentUser.id) {
+        currentUser = Object.assign({}, currentUser, { id: _mergeData.id });
+        profile = await loadProfile();
+      }
+    } catch(_me) {}
+  }
   if (!profile) {
     showScreen('onboard');
   } else {
