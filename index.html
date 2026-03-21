@@ -639,6 +639,10 @@
       Google로 시작하기
     </button>
 
+    <button class="kakao-btn" id="kakaoLoginBtn" style="background:#FEE500;color:#000;border:none;border-radius:8px;padding:12px 24px;font-size:16px;cursor:pointer;width:100%;margin-top:8px;">
+      카카오로 시작하기
+    </button>
+
     <div class="login-notice">무료로 시작 · 광고없음 · 내 정보는 나만 봄</div>
   </div>
 </div>
@@ -966,13 +970,12 @@ async function initAuth() {
   makeBgStars();
 
   // 카카오 유저 체크
-  var kakaoUser = localStorage.getItem('fortuna_kakao_user');
+  const kakaoUser = localStorage.getItem('fortuna_kakao_user');
   if (kakaoUser) {
     try {
-      var parsed = JSON.parse(kakaoUser);
+      const parsed = JSON.parse(kakaoUser);
       if (parsed.profile) {
-        _authHandled = true;
-        currentUser = { id: parsed.id, email: parsed.email, provider: 'kakao' };
+        currentUser = { id: parsed.id, email: parsed.email };
         applyProfile(parsed.profile);
         showScreen('chat');
         return;
@@ -1029,6 +1032,12 @@ document.getElementById('googleLoginBtn').addEventListener('click', function() {
       skipBrowserRedirect: false
     }
   });
+});
+
+document.getElementById('kakaoLoginBtn').addEventListener('click', function() {
+  const KAKAO_APP_KEY = '51b4f87ad9cfd6312c176ad34eb62025';
+  const REDIRECT_URI = 'https://kkdmb7-blip.github.io/memox/kakao-callback.html';
+  window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_APP_KEY}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=profile_nickname,account_email`;
 });
 
 
