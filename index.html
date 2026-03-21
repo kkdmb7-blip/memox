@@ -80,19 +80,6 @@
     position:relative; z-index:10;
   }
   .google-btn:hover { border-color:rgba(200,162,245,0.4); transform:translateY(-1px); }
-  .kakao-login-btn {
-    width:100%; max-width:320px; padding:15px 20px;
-    border-radius:14px; border:none;
-    background:#fee500; color:#000;
-    font-size:14px; font-weight:700;
-    cursor:pointer; font-family:'Noto Sans KR',sans-serif;
-    display:flex; align-items:center; justify-content:center;
-    gap:10px; transition:all 0.2s;
-    box-shadow:0 4px 20px rgba(0,0,0,0.3);
-    margin-top:12px;
-    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
-  }
-  .kakao-login-btn:hover { background:#ffd900; transform:translateY(-1px); }
 
   .login-notice { font-size:11px; color:var(--text3); text-align:center; line-height:1.8; }
 
@@ -652,13 +639,6 @@
       Google로 시작하기
     </button>
 
-    <a class="kakao-login-btn" href="https://kauth.kakao.com/oauth/authorize?client_id=51b4f87ad9cfd6312c176ad34eb62025&redirect_uri=https://kkdmb7-blip.github.io/memox/kakao-callback.html&response_type=code">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path fill="#000" d="M12 3C7.03 3 3 6.36 3 10.5c0 2.62 1.65 4.93 4.14 6.28-.18.67-.65 2.43-.74 2.81 0 0-.01.1.05.14.06.04.14.01.14.01.19-.03 2.17-1.43 2.97-1.97.47.07.95.1 1.44.1 4.97 0 9-3.36 9-7.5S16.97 3 12 3z"/>
-      </svg>
-      카카오로 시작하기
-    </a>
-
     <div class="login-notice">무료로 시작 · 광고없음 · 내 정보는 나만 봄</div>
   </div>
 </div>
@@ -791,7 +771,11 @@
       </div>
     </div>
 
-
+    <div class="form-group">
+      <label class="form-label">Gemini API 키</label>
+      <input class="form-input" id="inputApiKey" type="password" placeholder="AIza... (aistudio.google.com에서 무료 발급)" />
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;">aistudio.google.com → Get API key → Create API key</div>
+    </div>
   </div>
   <div class="onboard-footer">
     <button class="btn btn-primary" id="onboardSubmitBtn" onclick="submitOnboard()">🔮 운명 분석 시작하기</button>
@@ -940,7 +924,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.13.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.7.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const VAPID_PUBLIC_KEY = 'BOZ_WFR7WctHK5NiBggYq4cE07WNEMYp8tlv_2L99m6e-IKx6_K5UoVEV2jf06X2FshL43qogZvnSfRWEOmpP5M';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -981,38 +965,6 @@ var _authHandled = false;
 async function initAuth() {
   makeBgStars();
 
-  // 카카오 직접 로그인 체크
-  var _kakaoUser = localStorage.getItem('fortuna_kakao_user');
-  if (_kakaoUser) {
-    try {
-      var _ku = JSON.parse(_kakaoUser);
-      _authHandled = true;
-      var _resolvedProfile = null;
-      // 카카오 이메일로 기존 유저 프로필 조회 (Vercel API 통해 RLS 우회)
-      if (_ku.email) {
-        try {
-          var _resolveRes = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: _ku.email })
-          });
-          var _resolveData = await _resolveRes.json();
-          if (_resolveData.profile) _resolvedProfile = _resolveData.profile;
-        } catch(_re) {}
-      }
-      if (_resolvedProfile) {
-        // 기존 유저 프로필 직접 사용 (RLS 우회 완료)
-        currentUser = { id: _resolvedProfile.id, email: _ku.email, user_metadata: { full_name: _ku.nickname }, provider: 'kakao' };
-        await _applyProfile(_resolvedProfile);
-      } else {
-        await setUser({ id: _ku.id, email: _ku.email, user_metadata: { full_name: _ku.nickname }, provider: 'kakao' });
-      }
-      return;
-    } catch(_ke) {
-      localStorage.removeItem('fortuna_kakao_user');
-    }
-  }
-
   // onAuthStateChange 먼저 등록 (OAuth 리다이렉트 후 SIGNED_IN 이벤트 유실 방지)
   sb.auth.onAuthStateChange(async function(event, session) {
     console.log('Auth event:', event, session ? session.user.email : 'no user');
@@ -1052,11 +1004,6 @@ async function initAuth() {
   }
 }
 
-function logoutKakao() {
-  localStorage.removeItem('fortuna_kakao_user');
-  showScreen('login');
-}
-
 document.getElementById('googleLoginBtn').addEventListener('click', function() {
   sb.auth.signInWithOAuth({
     provider: 'google',
@@ -1076,54 +1023,37 @@ async function confirmLogout() {
   showScreen('login');
 }
 
-async function _applyProfile(profile) {
-  userProfile = profile;
-  await loadChatHistory();
-  loadDailyCard();
-  showScreen('chat');
-  updateChatHeader();
-  loadQuestionCount().then(updateQuestionBadge);
-  handleReferralOnLoad();
-  updateStreak();
-  loadUserContext();
-  loadWeekAgoFortune();
-  if (chatHistory.length === 0) showWelcome();
-  if ('Notification' in window) {
-    if (Notification.permission === 'granted') {
-      scheduleFortunaNotification();
-    } else if (Notification.permission === 'default' && !localStorage.getItem('fortuna_notif_asked')) {
-      setTimeout(showNotifPrompt, 3000);
-    }
-  }
-  if (new URLSearchParams(location.search).get('daily') === '1') {
-    history.replaceState(null, '', '/');
-    localStorage.removeItem('fortuna_daily_dismissed');
-    loadDailyCard();
-  }
-}
-
 async function setUser(user) {
   currentUser = user;
   var profile = await loadProfile();
-  // 프로필 없으면 이메일로 기존 계정 조회 (카카오↔구글 계정 통합, RLS 우회)
-  if (!profile && currentUser.email) {
-    try {
-      var _mergeRes = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: currentUser.email })
-      });
-      var _mergeData = await _mergeRes.json();
-      if (_mergeData.profile) {
-        currentUser = Object.assign({}, currentUser, { id: _mergeData.profile.id });
-        profile = _mergeData.profile;
-      }
-    } catch(_me) {}
-  }
   if (!profile) {
     showScreen('onboard');
   } else {
-    await _applyProfile(profile);
+    userProfile = profile;
+    await loadChatHistory();
+    loadDailyCard();
+    showScreen('chat');
+    updateChatHeader();
+    loadQuestionCount().then(updateQuestionBadge);
+    handleReferralOnLoad();
+    updateStreak();
+    loadUserContext();
+  loadWeekAgoFortune();
+    if (chatHistory.length === 0) showWelcome();
+    // 알림 스케줄링: 이미 허용 → 재예약 / 첫 방문 → 커스텀 다이얼로그
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        scheduleFortunaNotification();
+      } else if (Notification.permission === 'default' && !localStorage.getItem('fortuna_notif_asked')) {
+        setTimeout(showNotifPrompt, 3000);
+      }
+    }
+    // ?daily=1 파라미터 → 알림 클릭으로 앱 열린 경우
+    if (new URLSearchParams(location.search).get('daily') === '1') {
+      history.replaceState(null, '', '/');
+      localStorage.removeItem('fortuna_daily_dismissed');
+      loadDailyCard();
+    }
   }
 }
 
@@ -1360,9 +1290,12 @@ async function submitOnboard() {
   var birth = year + '-' + month + '-' + day;
   var birthTime = hour.padStart(2,'0') + ':' + (min || '00').toString().padStart(2,'0');
   var city = document.getElementById('inputCity').value.trim();
+  var apiKey = document.getElementById('inputApiKey').value.trim();
+
   if (!name) return toast('이름을 입력해주세요');
 
   if (!city) return toast('출생지역을 선택해주세요');
+  if (!apiKey) return toast('Gemini API 키를 입력해주세요');
 
   var btn = document.getElementById('onboardSubmitBtn');
   btn.disabled = true;
@@ -1423,7 +1356,7 @@ async function submitOnboard() {
       gender: selectedGender,
       saju_data: sajuSave,
       astro_data: astroData,
-      gemini_key: 'fortuna',
+      gemini_key: apiKey,
       calendar: selectedCal,
       is_leap_month: selectedCal === 'lunar' && document.getElementById('leapMonthCheck').checked,
       created_at: Date.now(),
@@ -1431,6 +1364,7 @@ async function submitOnboard() {
     };
 
     await saveProfile(profile);
+    localStorage.setItem('memox_gemini_key', apiKey);
     userProfile = profile;
     await loadChatHistory();
     showScreen('chat');
@@ -3258,7 +3192,7 @@ for (var i = 1; i <= 6; i++) {
     nudge.href = 'https://fortuna-silk.vercel.app';
     nudge.target = '_blank';
     nudge.textContent = '더 깊이 알고 싶다면 → 📋 리포트 보기';
-    bubble.parentNode.appendChild(nudge);
+    bubble.parentNode.insertBefore(nudge, btnWrap.nextSibling);
   }
   scrollToBottom();
   return cleanReply;
@@ -4036,17 +3970,8 @@ initAuth();
 // 앱 시작 시 현재 상태를 history에 쌓아둠
 history.pushState(null, '', location.href);
 window.addEventListener('popstate', function() {
-  var onboardEl = document.getElementById('screenOnboard');
-  if (onboardEl && onboardEl.classList.contains('active')) {
-    // 온보딩 중 뒤로가기 → 로그아웃 후 로그인 화면
-    currentUser = null;
-    userProfile = null;
-    _authHandled = false;
-    localStorage.removeItem('fortuna_kakao_user');
-    showScreen('login');
-    history.pushState(null, '', location.href);
-  } else if (currentUser) {
-    // 로그인 상태에서 뒤로가기 → 현재 페이지 유지 (앱 종료 방지)
+  // 뒤로가기 눌러도 같은 페이지 유지 (세션 유지)
+  if (currentUser) {
     history.pushState(null, '', location.href);
   }
 });
