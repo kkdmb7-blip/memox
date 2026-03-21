@@ -3817,9 +3817,9 @@ function scheduleFortunaNotification() {
     if (Notification.permission === 'granted') {
       var body = name ? name + '님의 오늘 운세가 도착했어요' : '오늘 운세가 도착했어요';
       var notif = new Notification('🔮 포르투나', {
-        body: body,
-        icon: '/icon.svg',
-        badge: '/icon.svg',
+        body: name ? name + '님의 오늘 운세가 도착했어요. 지금 확인해보세요!' : '오늘의 운세가 도착했어요. 지금 확인해보세요!',
+        icon: '/memox/goddess.png',
+        badge: '/memox/goddess.png',
         tag: 'fortuna-daily',
         renotify: true
       });
