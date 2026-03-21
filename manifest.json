@@ -1,6 +1,6 @@
 {
-  "name": "운명에게 물어봐",
-  "short_name": "운명챗봇",
+  "name": "포르투나",
+  "short_name": "포르투나",
   "description": "사주와 별자리로 운명을 읽어드려요",
   "id": "/memox/",
   "start_url": "/memox/",
