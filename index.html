@@ -3950,6 +3950,13 @@ document.addEventListener('visibilitychange', async function() {
 
   // 세션 갱신
   if (!currentUser) return;
+
+  // 카카오 유저는 Supabase 세션 없음 - 스킵
+  if (currentUser.provider === 'kakao') {
+    console.log('카카오 유저 세션 갱신 스킵');
+    return;
+  }
+
   try {
     var res = await sb.auth.getSession();
     if (!res.data || !res.data.session) {
@@ -3963,7 +3970,6 @@ document.addEventListener('visibilitychange', async function() {
     console.log('세션 갱신 완료');
   } catch(e) {
     console.warn('세션 갱신 실패:', e);
-    // 갱신 실패해도 버튼은 살려둠
     if (sendBtn) sendBtn.disabled = false;
   }
 });
