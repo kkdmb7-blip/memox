@@ -965,18 +965,19 @@ var _authHandled = false;
 async function initAuth() {
   makeBgStars();
 
-  // 카카오 직접 로그인 체크
-  var _kakaoUser = localStorage.getItem('fortuna_kakao_user');
-  if (_kakaoUser) {
+  // 카카오 유저 체크
+  var kakaoUser = localStorage.getItem('fortuna_kakao_user');
+  if (kakaoUser) {
     try {
-      var _ku = JSON.parse(_kakaoUser);
-      if (_ku && _ku.id) {
+      var parsed = JSON.parse(kakaoUser);
+      if (parsed.profile) {
         _authHandled = true;
-        currentUser = { id: _ku.id, email: _ku.email, user_metadata: { full_name: _ku.name }, provider: 'kakao' };
-        await setUser(currentUser);
+        currentUser = { id: parsed.id, email: parsed.email, provider: 'kakao' };
+        applyProfile(parsed.profile);
+        showScreen('chat');
         return;
       }
-    } catch(_ke) {
+    } catch(e) {
       localStorage.removeItem('fortuna_kakao_user');
     }
   }
@@ -1046,14 +1047,9 @@ function logoutKakao() {
   showScreen('login');
 }
 
-async function setUser(user) {
-  currentUser = user;
-  var profile = await loadProfile();
-  if (!profile) {
-    showScreen('onboard');
-  } else {
-    userProfile = profile;
-    await loadChatHistory();
+function applyProfile(profile) {
+  userProfile = profile;
+  loadChatHistory().then(function() {
     loadDailyCard();
     showScreen('chat');
     updateChatHeader();
@@ -1061,9 +1057,8 @@ async function setUser(user) {
     handleReferralOnLoad();
     updateStreak();
     loadUserContext();
-  loadWeekAgoFortune();
+    loadWeekAgoFortune();
     if (chatHistory.length === 0) showWelcome();
-    // 알림 스케줄링: 이미 허용 → 재예약 / 첫 방문 → 커스텀 다이얼로그
     if ('Notification' in window) {
       if (Notification.permission === 'granted') {
         scheduleFortunaNotification();
@@ -1071,12 +1066,21 @@ async function setUser(user) {
         setTimeout(showNotifPrompt, 3000);
       }
     }
-    // ?daily=1 파라미터 → 알림 클릭으로 앱 열린 경우
     if (new URLSearchParams(location.search).get('daily') === '1') {
       history.replaceState(null, '', '/');
       localStorage.removeItem('fortuna_daily_dismissed');
       loadDailyCard();
     }
+  });
+}
+
+async function setUser(user) {
+  currentUser = user;
+  var profile = await loadProfile();
+  if (!profile) {
+    showScreen('onboard');
+  } else {
+    applyProfile(profile);
   }
 }
 
