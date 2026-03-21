@@ -1383,6 +1383,12 @@ async function submitOnboard() {
       astroData = {};
     }
 
+    btn.textContent = '⏳ 운명 지도를 그리는 중...';
+    toast('🌙 포르투나 여신이 운명 지도를 그리는 중...');
+    await new Promise(function(r){ setTimeout(r, 1500); });
+    btn.textContent = '⏳ 거의 다 됐어요...';
+    toast('✨ 당신만의 운세 데이터를 완성하는 중...');
+    await new Promise(function(r){ setTimeout(r, 1500); });
     btn.textContent = '⏳ 저장 중...';
     toast('💾 데이터 저장 중...');
     // 저장
