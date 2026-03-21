@@ -629,16 +629,6 @@
       <span class="badge badge-gold">⭐ 점성술</span>
       <span class="badge badge-green">✨ 나만의 분석</span>
     </div>
-    <button class="google-btn" id="googleLoginBtn">
-      <svg width="18" height="18" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-      </svg>
-      Google로 시작하기
-    </button>
-
     <button class="google-btn" id="kakaoLoginBtn" style="background:#FEE500;color:#3C1E1E;border:none;">
       카카오로 시작하기
     </button>
@@ -928,7 +918,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.13.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.14.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 const VAPID_PUBLIC_KEY = 'BOZ_WFR7WctHK5NiBggYq4cE07WNEMYp8tlv_2L99m6e-IKx6_K5UoVEV2jf06X2FshL43qogZvnSfRWEOmpP5M';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -968,8 +958,6 @@ var _authHandled = false;
 
 async function initAuth() {
   makeBgStars();
-
-  // 카카오 유저 체크
   const kakaoUser = localStorage.getItem('fortuna_kakao_user');
   if (kakaoUser) {
     try {
@@ -977,62 +965,14 @@ async function initAuth() {
       if (parsed.profile) {
         currentUser = { id: parsed.id, email: parsed.email };
         applyProfile(parsed.profile);
-        showScreen('chat');
         return;
       }
     } catch(e) {
       localStorage.removeItem('fortuna_kakao_user');
     }
   }
-
-  // onAuthStateChange 먼저 등록 (OAuth 리다이렉트 후 SIGNED_IN 이벤트 유실 방지)
-  sb.auth.onAuthStateChange(async function(event, session) {
-    console.log('Auth event:', event, session ? session.user.email : 'no user');
-    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && session.user) {
-      _authHandled = true;
-      await setUser(session.user);
-    } else if (event === 'INITIAL_SESSION' && !session) {
-      if (!_authHandled) showScreen('login');
-    } else if (event === 'SIGNED_OUT') {
-      _authHandled = false;
-      showScreen('login');
-    }
-  });
-
-  // URL에 토큰이 있으면 세션 처리 (OAuth 리다이렉트 후)
-  var hash = window.location.hash;
-  var search = window.location.search;
-  if ((hash && hash.includes('access_token')) || (search && search.includes('code='))) {
-    try {
-      if (search && search.includes('code=')) {
-        await sb.auth.exchangeCodeForSession(new URLSearchParams(search).get('code'));
-      } else {
-        await sb.auth.getSession();
-      }
-    } catch(e) { console.warn('Session exchange error:', e); }
-    window.history.replaceState(null, '', window.location.pathname);
-  }
-
-  var res = await sb.auth.getSession();
-  if (res.data && res.data.session && res.data.session.user) {
-    if (!_authHandled) {
-      _authHandled = true;
-      await setUser(res.data.session.user);
-    }
-  } else {
-    if (!_authHandled) showScreen('login');
-  }
+  showScreen('login');
 }
-
-document.getElementById('googleLoginBtn').addEventListener('click', function() {
-  sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: { 
-      redirectTo: 'https://kkdmb7-blip.github.io/memox/',
-      skipBrowserRedirect: false
-    }
-  });
-});
 
 document.getElementById('kakaoLoginBtn').addEventListener('click', function() {
   const KAKAO_APP_KEY = '51b4f87ad9cfd6312c176ad34eb62025';
