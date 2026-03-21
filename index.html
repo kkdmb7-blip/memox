@@ -3293,17 +3293,41 @@ function appendMessage(role, content, animate) {
     var btnRow = div.querySelector('.bubble-actions');
     var copyBtn2 = document.createElement('button');
     copyBtn2.className = 'bubble-icon-btn';
-    copyBtn2.title = '복사';
-    copyBtn2.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="2" y="2" width="8" height="9" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/></svg>';
+    copyBtn2.style.cssText = 'padding:4px 10px;font-size:12px;border-radius:12px;';
+    copyBtn2.innerHTML = '📋 복사';
     copyBtn2.setAttribute('data-content', encodeURIComponent(content));
     copyBtn2.addEventListener('click', function(){ copyMessage(copyBtn2); });
-    var hitBtn3 = document.createElement('button');
-    hitBtn3.className = 'bubble-icon-btn';
-    hitBtn3.title = '맞았어요';
-    hitBtn3.textContent = '🎯';
-    (function(ct){ hitBtn3.addEventListener('click', function(){ saveFortuneHit(ct, hitBtn3); hitBtn3.classList.add('hit-active'); }); })(content);
+
+    var kakaoBtn = document.createElement('button');
+    kakaoBtn.className = 'bubble-icon-btn';
+    kakaoBtn.style.cssText = 'padding:4px 10px;font-size:12px;border-radius:12px;background:#FEE500;color:#3C1E1E;border:none;';
+    kakaoBtn.innerHTML = '카카오 공유';
+    kakaoBtn.setAttribute('data-content', encodeURIComponent(content));
+    kakaoBtn.addEventListener('click', function() {
+      var text = decodeURIComponent(kakaoBtn.getAttribute('data-content'));
+      if (window.Kakao && window.Kakao.isInitialized()) {
+        window.Kakao.Share.sendDefault({
+          objectType: 'text',
+          text: '🔮 포르투나 운세\n\n' + text.slice(0, 200),
+          link: {
+            mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/',
+            webUrl: 'https://kkdmb7-blip.github.io/memox/'
+          },
+          buttons: [{
+            title: '나도 운세 보기',
+            link: {
+              mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/',
+              webUrl: 'https://kkdmb7-blip.github.io/memox/'
+            }
+          }]
+        });
+      } else {
+        toast('카카오 공유를 불러오는 중이에요. 잠시 후 다시 시도해주세요.');
+      }
+    });
+
     btnRow.appendChild(copyBtn2);
-    btnRow.appendChild(hitBtn3);
+    btnRow.appendChild(kakaoBtn);
   }
 
   container.appendChild(div);
