@@ -997,9 +997,9 @@ function logoutKakao() {
 
 function applyProfile(profile) {
   userProfile = profile;
+  showScreen('chat');
   loadChatHistory().then(function() {
     loadDailyCard();
-    showScreen('chat');
     updateChatHeader();
     loadQuestionCount().then(updateQuestionBadge);
     handleReferralOnLoad();
@@ -1019,6 +1019,8 @@ function applyProfile(profile) {
       localStorage.removeItem('fortuna_daily_dismissed');
       loadDailyCard();
     }
+  }).catch(function() {
+    showScreen('chat');
   });
 }
 
