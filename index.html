@@ -958,11 +958,11 @@ async function initAuth() {
     try {
       const parsed = JSON.parse(kakaoUser);
       if (parsed.profile && parsed.profile.birth_date) {
-        currentUser = { id: parsed.id, email: parsed.email };
+        currentUser = { id: parsed.id, email: parsed.email, provider: 'kakao' };
         applyProfile(parsed.profile);
         return;
       } else if (parsed.profile) {
-        currentUser = { id: parsed.id, email: parsed.email };
+        currentUser = { id: parsed.id, email: parsed.email, provider: 'kakao' };
         showScreen('onboard');
         return;
       }
