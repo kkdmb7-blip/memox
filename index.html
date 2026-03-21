@@ -3750,11 +3750,19 @@ async function subscribePush() {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
     var now = Date.now();
-    await sb.from('push_subscriptions').upsert({
-      user_id: currentUser.id,
-      subscription: sub.toJSON(),
-      created_at: now
-    }, { onConflict: 'user_id' });
+    if (currentUser && currentUser.provider === 'kakao') {
+      await fetch('https://fortuna-silk.vercel.app/api/save-push-sub', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUser.id, subscription: sub.toJSON() })
+      });
+    } else {
+      await sb.from('push_subscriptions').upsert({
+        user_id: currentUser.id,
+        subscription: sub.toJSON(),
+        created_at: now
+      }, { onConflict: 'user_id' });
+    }
     console.log('Push 구독 저장 완료');
   } catch(e) {
     console.warn('Push 구독 실패:', e.message);
