@@ -639,7 +639,7 @@
       Google로 시작하기
     </button>
 
-    <button class="kakao-btn" id="kakaoLoginBtn" style="background:#FEE500;color:#000;border:none;border-radius:8px;padding:12px 24px;font-size:16px;cursor:pointer;width:100%;margin-top:8px;">
+    <button class="google-btn" id="kakaoLoginBtn" style="background:#FEE500;color:#3C1E1E;border:none;">
       카카오로 시작하기
     </button>
 
@@ -1085,12 +1085,17 @@ function applyProfile(profile) {
 
 async function setUser(user) {
   currentUser = user;
-  var profile = await loadProfile();
-  if (!profile) {
-    showScreen('onboard');
-  } else {
-    applyProfile(profile);
+  // 카카오 유저면 이미 applyProfile 완료된 상태
+  const kakaoUser = localStorage.getItem('fortuna_kakao_user');
+  if (kakaoUser) {
+    try {
+      const parsed = JSON.parse(kakaoUser);
+      if (parsed.profile) return;
+    } catch(e) {}
   }
+  var profile = await loadProfile();
+  if (!profile) { showScreen('onboard'); }
+  else { applyProfile(profile); }
 }
 
 // ── PROFILE ───────────────────────────────────────────────────
