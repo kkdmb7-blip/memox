@@ -987,8 +987,8 @@ async function initAuth() {
     try {
       var _ku = JSON.parse(_kakaoUser);
       _authHandled = true;
-      var _resolvedId = _ku.id;
-      // 카카오 이메일로 기존 유저(구글 등) 조회 (Vercel API 통해 RLS 우회)
+      var _resolvedProfile = null;
+      // 카카오 이메일로 기존 유저 프로필 조회 (Vercel API 통해 RLS 우회)
       if (_ku.email) {
         try {
           var _resolveRes = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
@@ -997,12 +997,16 @@ async function initAuth() {
             body: JSON.stringify({ email: _ku.email })
           });
           var _resolveData = await _resolveRes.json();
-          if (_resolveData.id) {
-            _resolvedId = _resolveData.id;
-          }
-        } catch(_re) { /* 실패 시 kakao id 그대로 사용 */ }
+          if (_resolveData.profile) _resolvedProfile = _resolveData.profile;
+        } catch(_re) {}
       }
-      await setUser({ id: _resolvedId, user_metadata: { full_name: _ku.nickname }, provider: 'kakao' });
+      if (_resolvedProfile) {
+        // 기존 유저 프로필 직접 사용 (RLS 우회 완료)
+        currentUser = { id: _resolvedProfile.id, email: _ku.email, user_metadata: { full_name: _ku.nickname }, provider: 'kakao' };
+        await _applyProfile(_resolvedProfile);
+      } else {
+        await setUser({ id: _ku.id, email: _ku.email, user_metadata: { full_name: _ku.nickname }, provider: 'kakao' });
+      }
       return;
     } catch(_ke) {
       localStorage.removeItem('fortuna_kakao_user');
@@ -1072,10 +1076,36 @@ async function confirmLogout() {
   showScreen('login');
 }
 
+async function _applyProfile(profile) {
+  userProfile = profile;
+  await loadChatHistory();
+  loadDailyCard();
+  showScreen('chat');
+  updateChatHeader();
+  loadQuestionCount().then(updateQuestionBadge);
+  handleReferralOnLoad();
+  updateStreak();
+  loadUserContext();
+  loadWeekAgoFortune();
+  if (chatHistory.length === 0) showWelcome();
+  if ('Notification' in window) {
+    if (Notification.permission === 'granted') {
+      scheduleFortunaNotification();
+    } else if (Notification.permission === 'default' && !localStorage.getItem('fortuna_notif_asked')) {
+      setTimeout(showNotifPrompt, 3000);
+    }
+  }
+  if (new URLSearchParams(location.search).get('daily') === '1') {
+    history.replaceState(null, '', '/');
+    localStorage.removeItem('fortuna_daily_dismissed');
+    loadDailyCard();
+  }
+}
+
 async function setUser(user) {
   currentUser = user;
   var profile = await loadProfile();
-  // 프로필 없으면 이메일로 기존 계정 조회 (카카오↔구글 계정 통합)
+  // 프로필 없으면 이메일로 기존 계정 조회 (카카오↔구글 계정 통합, RLS 우회)
   if (!profile && currentUser.email) {
     try {
       var _mergeRes = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
@@ -1084,40 +1114,16 @@ async function setUser(user) {
         body: JSON.stringify({ email: currentUser.email })
       });
       var _mergeData = await _mergeRes.json();
-      if (_mergeData.id && _mergeData.id !== currentUser.id) {
-        currentUser = Object.assign({}, currentUser, { id: _mergeData.id });
-        profile = await loadProfile();
+      if (_mergeData.profile) {
+        currentUser = Object.assign({}, currentUser, { id: _mergeData.profile.id });
+        profile = _mergeData.profile;
       }
     } catch(_me) {}
   }
   if (!profile) {
     showScreen('onboard');
   } else {
-    userProfile = profile;
-    await loadChatHistory();
-    loadDailyCard();
-    showScreen('chat');
-    updateChatHeader();
-    loadQuestionCount().then(updateQuestionBadge);
-    handleReferralOnLoad();
-    updateStreak();
-    loadUserContext();
-  loadWeekAgoFortune();
-    if (chatHistory.length === 0) showWelcome();
-    // 알림 스케줄링: 이미 허용 → 재예약 / 첫 방문 → 커스텀 다이얼로그
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
-        scheduleFortunaNotification();
-      } else if (Notification.permission === 'default' && !localStorage.getItem('fortuna_notif_asked')) {
-        setTimeout(showNotifPrompt, 3000);
-      }
-    }
-    // ?daily=1 파라미터 → 알림 클릭으로 앱 열린 경우
-    if (new URLSearchParams(location.search).get('daily') === '1') {
-      history.replaceState(null, '', '/');
-      localStorage.removeItem('fortuna_daily_dismissed');
-      loadDailyCard();
-    }
+    await _applyProfile(profile);
   }
 }
 
