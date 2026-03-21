@@ -3488,6 +3488,17 @@ document.addEventListener('DOMContentLoaded', function() {
       if (e.target === modal) closeCardModal();
     });
   }
+
+  // 모바일 키보드 대응
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function() {
+      var chatWrap = document.getElementById('screenChat');
+      if (chatWrap) {
+        chatWrap.style.height = window.visualViewport.height + 'px';
+      }
+      scrollToBottom();
+    });
+  }
 });
 
 function downloadCardImage() {
