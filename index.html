@@ -907,7 +907,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.17.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.17.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1196,12 +1196,26 @@ async function resetProfile() {
 }
 
 async function resetProfileFull() {
-  if (!confirm('모든 정보, 대화 내역, API 키가 전부 삭제돼요. 계속할까요?')) return;
-  await sb.from('chat_users').delete().eq('id', currentUser.id);
-  await sb.from('chat_messages').delete().eq('user_id', currentUser.id);
+  if (!confirm('모든 정보, 대화 내역이 전부 삭제돼요. 계속할까요?')) return;
+  try {
+    if (currentUser && currentUser.provider === 'kakao') {
+      await fetch('https://fortuna-silk.vercel.app/api/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUser.id })
+      });
+      localStorage.removeItem('fortuna_kakao_user');
+    } else {
+      await sb.from('chat_users').delete().eq('id', currentUser.id);
+      await sb.from('chat_messages').delete().eq('user_id', currentUser.id);
+      await sb.auth.signOut();
+    }
+  } catch(e) {
+    console.warn('삭제 실패:', e);
+  }
+  currentUser = null; userProfile = null; chatHistory = [];
   localStorage.removeItem('memox_gemini_key');
-  userProfile = null; chatHistory = [];
-  showScreen('onboard');
+  showScreen('login');
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────
