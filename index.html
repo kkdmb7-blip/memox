@@ -1016,7 +1016,6 @@ function applyProfile(profile) {
   userProfile = profile;
   showScreen('chat');
   loadChatHistory().then(function() {
-    loadDailyCard();
     updateChatHeader();
     loadQuestionCount().then(updateQuestionBadge);
     handleReferralOnLoad();
