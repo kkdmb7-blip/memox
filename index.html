@@ -658,122 +658,60 @@
 <div class="screen" id="screenOnboard">
   <div class="onboard-header">
     <div>
-      <div class="onboard-step">처음 한 번만 입력해요</div>
-      <div class="onboard-title">기본 정보 입력</div>
+      <div class="onboard-step" id="onboardStepLabel">1 / 3</div>
+      <div class="onboard-title" id="onboardStepTitle">기본 정보</div>
     </div>
   </div>
-  <div class="onboard-body">
-    <div class="onboard-desc">정확한 운세 분석을 위해 생년월일과 출생 정보가 필요해요. 입력한 정보는 안전하게 저장되어 다시 입력하지 않아도 돼요.</div>
 
+  <!-- 1단계: 이름 + 성별 -->
+  <div class="onboard-body" id="onboardStep1">
+    <div class="onboard-desc">처음 한 번만 입력해요. 입력한 정보는 안전하게 저장돼요.</div>
     <div class="form-group">
       <label class="form-label">이름</label>
       <input class="form-input" id="inputName" placeholder="이름을 입력해주세요" />
     </div>
-
     <div class="form-group">
       <label class="form-label">성별</label>
       <div class="radio-group">
-        <button class="radio-btn selected" id="genderM" onclick="selectGender('M')">남성</button>
-        <button class="radio-btn" id="genderF" onclick="selectGender('F')">여성</button>
+        <button class="radio-btn selected" id="genderM" onclick="selectGender('M')">여성</button>
+        <button class="radio-btn" id="genderF" onclick="selectGender('F')">남성</button>
       </div>
     </div>
+    <div class="onboard-footer">
+      <button class="btn btn-primary" onclick="onboardNext(1)">다음 →</button>
+    </div>
+  </div>
 
+  <!-- 2단계: 생년월일 + 출생시간 -->
+  <div class="onboard-body" id="onboardStep2" style="display:none">
+    <div class="onboard-desc">정확한 사주 분석을 위해 생년월일과 출생시간이 필요해요.</div>
     <div class="form-group">
       <label class="form-label">생년월일</label>
       <div class="form-row">
-        <select class="form-input" id="inputYear">
-          <option value="">년도</option>
-        </select>
-        <select class="form-input" id="inputMonth">
-          <option value="">월</option>
-        </select>
-        <select class="form-input" id="inputDay">
-          <option value="">일</option>
-        </select>
+        <select class="form-input" id="inputYear"><option value="">년도</option></select>
+        <select class="form-input" id="inputMonth"><option value="">월</option></select>
+        <select class="form-input" id="inputDay"><option value="">일</option></select>
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">출생시간</label>
       <div class="form-row">
-        <select class="form-input" id="inputHour">
-          <option value="">시</option>
-        </select>
-        <select class="form-input" id="inputMin">
-          <option value="">분</option>
-        </select>
+        <select class="form-input" id="inputHour"><option value="">시</option></select>
+        <select class="form-input" id="inputMin"><option value="">분</option></select>
       </div>
     </div>
-
-    <div class="form-group">
-      <label class="form-label">출생지역</label>
-      <select class="form-input" id="inputCity">
-        <option value="">지역 선택</option>
-        <option value="강릉시" data-lat="37.7519" data-lon="128.8760">강릉</option>
-        <option value="거제시" data-lat="34.8803" data-lon="128.6214">거제</option>
-        <option value="경주시" data-lat="35.8562" data-lon="129.2247">경주</option>
-        <option value="고양시" data-lat="37.6583" data-lon="126.8320">고양</option>
-        <option value="광명시" data-lat="37.4784" data-lon="126.8647">광명</option>
-        <option value="광주광역시" data-lat="35.1595" data-lon="126.8526">광주</option>
-        <option value="구미시" data-lat="36.1196" data-lon="128.3446">구미</option>
-        <option value="군산시" data-lat="35.9676" data-lon="126.7368">군산</option>
-        <option value="김해시" data-lat="35.2285" data-lon="128.8892">김해</option>
-        <option value="남양주시" data-lat="37.6359" data-lon="127.2162">남양주</option>
-        <option value="대구광역시" data-lat="35.8714" data-lon="128.6014">대구</option>
-        <option value="대전광역시" data-lat="36.3504" data-lon="127.3845">대전</option>
-        <option value="목포시" data-lat="34.8118" data-lon="126.3922">목포</option>
-        <option value="부산광역시" data-lat="35.1796" data-lon="129.0756">부산</option>
-        <option value="부천시" data-lat="37.5034" data-lon="126.7660">부천</option>
-        <option value="사천시" data-lat="35.0036" data-lon="128.0645">사천</option>
-        <option value="서울특별시" data-lat="37.5665" data-lon="126.9780">서울</option>
-        <option value="성남시" data-lat="37.4449" data-lon="127.1388">성남</option>
-        <option value="세종특별자치시" data-lat="36.4801" data-lon="127.2890">세종</option>
-        <option value="수원시" data-lat="37.2636" data-lon="127.0286">수원</option>
-        <option value="순천시" data-lat="34.9506" data-lon="127.4874">순천</option>
-        <option value="시흥시" data-lat="37.3800" data-lon="126.8030">시흥</option>
-        <option value="아산시" data-lat="36.7898" data-lon="127.0016">아산</option>
-        <option value="안산시" data-lat="37.3219" data-lon="126.8309">안산</option>
-        <option value="안성시" data-lat="37.0079" data-lon="127.2797">안성</option>
-        <option value="안양시" data-lat="37.3943" data-lon="126.9568">안양</option>
-        <option value="양산시" data-lat="35.3350" data-lon="129.0369">양산</option>
-        <option value="여수시" data-lat="34.7604" data-lon="127.6622">여수</option>
-        <option value="오산시" data-lat="37.1498" data-lon="127.0774">오산</option>
-        <option value="용인시" data-lat="37.2411" data-lon="127.1775">용인</option>
-        <option value="원주시" data-lat="37.3422" data-lon="127.9202">원주</option>
-        <option value="울산광역시" data-lat="35.5384" data-lon="129.3114">울산</option>
-        <option value="의정부시" data-lat="37.7381" data-lon="127.0337">의정부</option>
-        <option value="이천시" data-lat="37.2722" data-lon="127.4352">이천</option>
-        <option value="인천광역시" data-lat="37.4563" data-lon="126.7052">인천</option>
-        <option value="전주시" data-lat="35.8242" data-lon="127.1480">전주</option>
-        <option value="제주시" data-lat="33.4996" data-lon="126.5312">제주</option>
-        <option value="진주시" data-lat="35.1799" data-lon="128.1076">진주</option>
-        <option value="창원시" data-lat="35.2280" data-lon="128.6811">창원</option>
-        <option value="천안시" data-lat="36.8151" data-lon="127.1139">천안</option>
-        <option value="청주시" data-lat="36.6424" data-lon="127.4890">청주</option>
-        <option value="춘천시" data-lat="37.8813" data-lon="127.7298">춘천</option>
-        <option value="통영시" data-lat="34.8544" data-lon="128.4332">통영</option>
-        <option value="평택시" data-lat="36.9921" data-lon="127.1128">평택</option>
-        <option value="포항시" data-lat="36.0190" data-lon="129.3435">포항</option>
-        <option value="하남시" data-lat="37.5396" data-lon="127.2147">하남</option>
-        <option value="화성시" data-lat="37.1997" data-lon="126.8311">화성</option>
-        <option value="해외" data-lat="37.5665" data-lon="126.9780">해외 (서울 기준)</option>
-      </select>
-    </div>
-
     <div class="form-group">
       <label class="form-label">양력/음력</label>
       <div class="radio-group">
         <button class="radio-btn selected" id="calSolar" onclick="selectCal('solar')">양력</button>
         <button class="radio-btn" id="calLunar" onclick="selectCal('lunar')">음력</button>
-
-
-    <div class="form-group" id="leapMonthGroup" style="display:none;margin-top:-8px;">
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer;">
-        <input type="checkbox" id="leapMonthCheck" style="width:15px;height:15px;accent-color:#c9a84c;">
-        윤달(閏月)에 태어나셔요?
-      </label>
-    </div>      </div>
+      </div>
+      <div class="form-group" id="leapMonthGroup" style="display:none;margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
+          <input type="checkbox" id="leapMonthCheck"> 윤달(閏月)에 태어나셨나요?
+        </label>
+      </div>
     </div>
-
     <div class="form-group" id="midnightGroup" style="display:none">
       <label class="form-label">자시 구분 (00~01시)</label>
       <div class="midnight-group">
@@ -781,10 +719,49 @@
         <button class="midnight-btn" id="mid1" onclick="selectMidnight('1')">전날 자시 (전통 방식)</button>
       </div>
     </div>
-
+    <div class="onboard-footer" style="display:flex;gap:8px;">
+      <button class="btn" style="flex:1;background:var(--surface2);" onclick="onboardBack(2)">← 이전</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="onboardNext(2)">다음 →</button>
+    </div>
   </div>
-  <div class="onboard-footer">
-    <button class="btn btn-primary" id="onboardSubmitBtn" onclick="submitOnboard()">🔮 운명 분석 시작하기</button>
+
+  <!-- 3단계: 출생지역 -->
+  <div class="onboard-body" id="onboardStep3" style="display:none">
+    <div class="onboard-desc">출생지역으로 더 정확한 점성술 분석이 가능해요.</div>
+    <div class="form-group">
+      <label class="form-label">출생지역</label>
+      <select class="form-input" id="inputCity">
+        <option value="">지역 선택</option>
+        <option value="서울">서울</option>
+        <option value="부산">부산</option>
+        <option value="대구">대구</option>
+        <option value="인천">인천</option>
+        <option value="광주">광주</option>
+        <option value="대전">대전</option>
+        <option value="울산">울산</option>
+        <option value="세종">세종</option>
+        <option value="수원">수원</option>
+        <option value="성남">성남</option>
+        <option value="고양">고양</option>
+        <option value="용인">용인</option>
+        <option value="청주">청주</option>
+        <option value="전주">전주</option>
+        <option value="천안">천안</option>
+        <option value="안산">안산</option>
+        <option value="안양">안양</option>
+        <option value="남양주">남양주</option>
+        <option value="화성">화성</option>
+        <option value="창원">창원</option>
+        <option value="포항">포항</option>
+        <option value="강릉">강릉</option>
+        <option value="제주">제주</option>
+        <option value="해외">해외</option>
+      </select>
+    </div>
+    <div class="onboard-footer" style="display:flex;gap:8px;">
+      <button class="btn" style="flex:1;background:var(--surface2);" onclick="onboardBack(3)">← 이전</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="submitOnboard()">🔮 운명 분석 시작하기</button>
+    </div>
   </div>
 </div>
 
@@ -930,7 +907,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.16.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.16.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -974,6 +951,10 @@ async function initAuth() {
   if (kakaoUser) {
     try {
       const parsed = JSON.parse(kakaoUser);
+      if (parsed.name) {
+        var nameInput = document.getElementById('inputName');
+        if (nameInput) nameInput.value = parsed.name;
+      }
       if (parsed.profile && parsed.profile.birth_date) {
         currentUser = { id: parsed.id, email: parsed.email, provider: 'kakao' };
         applyProfile(parsed.profile);
@@ -1224,6 +1205,42 @@ async function resetProfileFull() {
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────
+function onboardNext(step) {
+  if (step === 1) {
+    var name = document.getElementById('inputName').value.trim();
+    if (!name) return toast('이름을 입력해주세요');
+    document.getElementById('onboardStep1').style.display = 'none';
+    document.getElementById('onboardStep2').style.display = 'block';
+    document.getElementById('onboardStepLabel').textContent = '2 / 3';
+    document.getElementById('onboardStepTitle').textContent = '생년월일';
+  } else if (step === 2) {
+    var year = document.getElementById('inputYear').value;
+    var month = document.getElementById('inputMonth').value;
+    var day = document.getElementById('inputDay').value;
+    var hour = document.getElementById('inputHour').value;
+    if (!year || !month || !day) return toast('생년월일을 선택해주세요');
+    if (!hour) return toast('출생시간을 선택해주세요');
+    document.getElementById('onboardStep2').style.display = 'none';
+    document.getElementById('onboardStep3').style.display = 'block';
+    document.getElementById('onboardStepLabel').textContent = '3 / 3';
+    document.getElementById('onboardStepTitle').textContent = '출생지역';
+  }
+}
+
+function onboardBack(step) {
+  if (step === 2) {
+    document.getElementById('onboardStep2').style.display = 'none';
+    document.getElementById('onboardStep1').style.display = 'block';
+    document.getElementById('onboardStepLabel').textContent = '1 / 3';
+    document.getElementById('onboardStepTitle').textContent = '기본 정보';
+  } else if (step === 3) {
+    document.getElementById('onboardStep3').style.display = 'none';
+    document.getElementById('onboardStep2').style.display = 'block';
+    document.getElementById('onboardStepLabel').textContent = '2 / 3';
+    document.getElementById('onboardStepTitle').textContent = '생년월일';
+  }
+}
+
 function selectGender(g) {
   selectedGender = g;
   document.getElementById('genderM').className = 'radio-btn' + (g==='M'?' selected':'');
