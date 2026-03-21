@@ -3323,21 +3323,39 @@ function appendMessage(role, content, animate) {
     kakaoBtn.addEventListener('click', function() {
       var text = decodeURIComponent(kakaoBtn.getAttribute('data-content'));
       if (window.Kakao && window.Kakao.isInitialized()) {
-        window.Kakao.Share.sendDefault({
-          objectType: 'text',
-          text: '🔮 포르투나 운세\n\n' + text.slice(0, 200),
-          link: {
-            mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/',
-            webUrl: 'https://kkdmb7-blip.github.io/memox/'
-          },
-          buttons: [{
-            title: '나도 운세 보기',
+        try {
+          window.Kakao.Link.sendDefault({
+            objectType: 'text',
+            text: '🔮 포르투나 운세\n\n' + text.slice(0, 200),
             link: {
               mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/',
               webUrl: 'https://kkdmb7-blip.github.io/memox/'
-            }
-          }]
-        });
+            },
+            buttons: [{
+              title: '나도 운세 보기',
+              link: {
+                mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/',
+                webUrl: 'https://kkdmb7-blip.github.io/memox/'
+              }
+            }]
+          });
+        } catch(e) {
+          window.Kakao.Share.sendDefault({
+            objectType: 'text',
+            text: '🔮 포르투나 운세\n\n' + text.slice(0, 200),
+            link: {
+              mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/',
+              webUrl: 'https://kkdmb7-blip.github.io/memox/'
+            },
+            buttons: [{
+              title: '나도 운세 보기',
+              link: {
+                mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/',
+                webUrl: 'https://kkdmb7-blip.github.io/memox/'
+              }
+            }]
+          });
+        }
       } else {
         toast('카카오 공유를 불러오는 중이에요. 잠시 후 다시 시도해주세요.');
       }
