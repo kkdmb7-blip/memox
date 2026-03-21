@@ -988,14 +988,19 @@ async function initAuth() {
       var _ku = JSON.parse(_kakaoUser);
       _authHandled = true;
       var _resolvedId = _ku.id;
-      // 카카오 이메일로 기존 유저(구글 등) 조회
+      // 카카오 이메일로 기존 유저(구글 등) 조회 (Vercel API 통해 RLS 우회)
       if (_ku.email) {
-        var _existRes = await sb.from('chat_users').select('id').eq('email', _ku.email).maybeSingle();
-        if (_existRes.data && _existRes.data.id) {
-          _resolvedId = _existRes.data.id;
-          // kakao_id 컬럼 업데이트 (컬럼 없으면 무시)
-          await sb.from('chat_users').update({ kakao_id: _ku.kakao_id }).eq('id', _resolvedId).catch(function(){});
-        }
+        try {
+          var _resolveRes = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: _ku.email })
+          });
+          var _resolveData = await _resolveRes.json();
+          if (_resolveData.id) {
+            _resolvedId = _resolveData.id;
+          }
+        } catch(_re) { /* 실패 시 kakao id 그대로 사용 */ }
       }
       await setUser({ id: _resolvedId, user_metadata: { full_name: _ku.nickname }, provider: 'kakao' });
       return;
