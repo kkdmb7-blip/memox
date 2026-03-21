@@ -243,21 +243,38 @@
   }
   .msg-time { font-size:10px; color:var(--text3); margin-top:4px; text-align:right; }
   .msg.user .msg-time { text-align:left; }
-  /* ── 버블 액션 버튼 (복사/맞았어요 — 우하단 아이콘) ── */
+  /* ── 버블 액션 버튼 ── */
   .bubble-actions {
-    display:flex; gap:4px; justify-content:flex-end; margin-top:6px;
-    opacity:0; transition:opacity 0.15s;
+    display:flex; gap:6px; justify-content:flex-end; margin-top:8px;
   }
-  .msg:hover .bubble-actions,
-  .msg.touch .bubble-actions { opacity:1; }
   @media (hover:none) { .bubble-actions { opacity:1; } }
   .bubble-icon-btn {
-    background:none; border:none; cursor:pointer;
-    font-size:13px; padding:3px 6px; border-radius:5px;
-    color:var(--text3); line-height:1; transition:background 0.15s, color 0.15s;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    cursor:pointer;
+    font-size:12px;
+    padding:5px 12px;
+    border-radius:20px;
+    color:var(--text2);
+    line-height:1;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+    letter-spacing: 0.3px;
   }
-  .bubble-icon-btn:hover { background:var(--surface2); color:var(--text); }
-  .bubble-icon-btn.hit-active { color:#c9a84c; }
+  .bubble-icon-btn:hover {
+    background: rgba(255,255,255,0.15);
+    color:var(--text);
+    border-color: rgba(255,255,255,0.25);
+  }
+  .bubble-icon-btn.kakao-share-btn {
+    background: rgba(254,229,0,0.15);
+    border-color: rgba(254,229,0,0.3);
+    color: #FEE500;
+  }
+  .bubble-icon-btn.kakao-share-btn:hover {
+    background: rgba(254,229,0,0.25);
+    border-color: rgba(254,229,0,0.5);
+  }
   #fortunaCardCanvas { position:fixed; left:-9999px; top:-9999px; pointer-events:none; }
 
   /* 알림 권한 다이얼로그 */
@@ -3293,14 +3310,14 @@ function appendMessage(role, content, animate) {
     var btnRow = div.querySelector('.bubble-actions');
     var copyBtn2 = document.createElement('button');
     copyBtn2.className = 'bubble-icon-btn';
-    copyBtn2.style.cssText = 'padding:4px 10px;font-size:12px;border-radius:12px;';
+    copyBtn2.style.cssText = '';
     copyBtn2.innerHTML = '📋 복사';
     copyBtn2.setAttribute('data-content', encodeURIComponent(content));
     copyBtn2.addEventListener('click', function(){ copyMessage(copyBtn2); });
 
     var kakaoBtn = document.createElement('button');
-    kakaoBtn.className = 'bubble-icon-btn';
-    kakaoBtn.style.cssText = 'padding:4px 10px;font-size:12px;border-radius:12px;background:#FEE500;color:#3C1E1E;border:none;';
+    kakaoBtn.className = 'bubble-icon-btn kakao-share-btn';
+    kakaoBtn.style.cssText = '';
     kakaoBtn.innerHTML = '카카오 공유';
     kakaoBtn.setAttribute('data-content', encodeURIComponent(content));
     kakaoBtn.addEventListener('click', function() {
