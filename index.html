@@ -2896,9 +2896,13 @@ async function handleReferralOnLoad() {
   var alreadyKey = 'ref_done_' + currentUser.id;
   if (localStorage.getItem(alreadyKey)) return;
   try {
-    await sb.from('referrals').insert({ referrer_id: ref, referee_id: currentUser.id, rewarded: false, created_at: Date.now() });
-    await sb.from('question_charges').insert({ user_id: ref, amount: 3, payment_id: 'referral_' + currentUser.id, type: 'referral', created_at: Date.now() });
+    await fetch('https://fortuna-silk.vercel.app/api/referral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ referrer_id: ref, referee_id: currentUser.id })
+    });
     localStorage.setItem(alreadyKey, '1');
+    toast('🎉 친구 초대 완료! 친구에게 질문 3개가 충전됐어요!');
     var url = window.location.href.replace(/[?&]ref=[^&]+/, '').replace(/[?&]$/, '');
     window.history.replaceState({}, '', url);
   } catch(e) { console.warn('referral \uCC98\uB9AC \uC2E4\uD328', e.message); }
