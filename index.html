@@ -2629,10 +2629,17 @@ function showWelcome() {
   if (!userProfile) return;
   var name = userProfile.name || '당신';
   var astro = userProfile.astro_data || {};
+  var saju = userProfile.saju_data || {};
   var sun = astro.sun || '';
-  var welcome = name + '님, 안녕하세요! 🔮\n\n저는 ' + name + '님의 사주와 별자리를 기반으로 운명을 읽어드리는 AI예요.\n\n' +
-    (sun ? '태양궁 ' + sun + '인 ' + name + '님에 대해 ' : '') +
-    '무엇이든 편하게 물어보세요. 올해 운세, 연애운, 직업운, 대인관계 등 궁금한 것 뭐든지요!';
+  var pillars = saju.saju_pillars || '';
+  var ilgan = '';
+  if (pillars && pillars.day) {
+    ilgan = pillars.day.split('')[0] || '';
+  }
+  var welcome = name + '님, 안녕하세요! 🔮\n\n' +
+    (ilgan ? name + '님은 **' + ilgan + '일간** — ' : '') +
+    (sun ? '태양궁 **' + sun + '** — ' : '') +
+    '사주와 별자리를 기억하는 AI 운세 상담가예요.\n\n무엇이든 편하게 물어보세요!';
   appendMessage('assistant', welcome, true);
   updateSuggestChips();
 }
