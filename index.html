@@ -1660,8 +1660,8 @@ function getCityCoords(city) {
 
 // ── CHAT ──────────────────────────────────────────────────────
 // KST 기준 오늘 날짜 "YYYY-MM-DD"
-function getKSTDate() {
-  var d = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+function getKSTDate(date) {
+  var d = new Date((date || new Date()).getTime() + 9 * 60 * 60 * 1000);
   return d.toISOString().slice(0, 10);
 }
 
