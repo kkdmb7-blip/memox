@@ -996,6 +996,7 @@ function logoutKakao() {
 function applyProfile(profile) {
   userProfile = profile;
   showScreen('chat');
+  if (Notification.permission === 'granted') subscribePush();
   loadChatHistory().then(function() {
     updateChatHeader();
     loadQuestionCount().then(updateQuestionBadge);
