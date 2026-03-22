@@ -1727,6 +1727,10 @@ function getKSTDateOffset(days) {
 
 async function updateStreak() {
   if (!currentUser) return;
+  if (currentUser && currentUser.provider === 'kakao') {
+    console.log('카카오 유저 스트릭 스킵');
+    return;
+  }
   var today = getKSTDate();
   try {
     var res = await sb.from('user_streaks').select('*').eq('user_id', currentUser.id).maybeSingle();
@@ -3039,12 +3043,21 @@ async function callClaude(userMsg, apiKey) {
   var dateStr = _nowKST.getUTCFullYear() + '년 ' + (_nowKST.getUTCMonth()+1) + '월 ' + _nowKST.getUTCDate() + '일';
   var todayGanji = getTodayGanji();
   var monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1);
+  var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+  var pastGanji = '';
+for (var i = 60; i >= 1; i--) {
+  var _pd = new Date(new Date().getTime() - i * 86400000);
+  var _pdKST = new Date(_pd.getTime() + 9 * 60 * 60 * 1000);
+  var _pdDay = _weekDays[_pdKST.getUTCDay()];
+  pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _pdDay + '): ' + getTodayGanji(_pd) + '일
+';
+}
   var futureGanji = '';
-var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+var _weekDays2 = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 for (var i = 1; i <= 60; i++) {
   var _fd = new Date(new Date().getTime() + i * 86400000);
   var _fdKST = new Date(_fd.getTime() + 9 * 60 * 60 * 1000);
-  var _fdDay = _weekDays[_fdKST.getUTCDay()];
+  var _fdDay = _weekDays2[_fdKST.getUTCDay()];
   futureGanji += _fdKST.getUTCFullYear() + '년 ' + (_fdKST.getUTCMonth()+1) + '월 ' + _fdKST.getUTCDate() + '일 (' + _fdDay + '): ' + getTodayGanji(_fd) + '일\n';
 }
   var futureMonthGanji = '';
