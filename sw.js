@@ -134,7 +134,7 @@ self.addEventListener('push', e => {
     self.registration.showNotification(data.title || '🔮 포르투나', {
       body: data.body || '오늘의 운세가 도착했어요. 지금 확인해보세요!',
       icon: '/memox/goddess.png',
-      badge: '/memox/goddess.png',
+      badge: '/memox/badge.png',
       tag: 'fortuna-push',
       renotify: true,
       data: { url: data.url || '/memox/' }
