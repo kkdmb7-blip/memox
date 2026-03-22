@@ -1,5 +1,5 @@
 // ── 포르투나 Service Worker ──────────────────────────────────
-const CACHE_NAME = 'fortuna-cache-2.13.0';
+const CACHE_NAME = 'fortuna-cache-2.18.7';
 // self.registration.scope 기반 상대경로 (GitHub Pages 서브경로 대응)
 const BASE = self.registration.scope;
 const STATIC_ASSETS = [BASE, BASE + 'index.html', BASE + 'manifest.json', BASE + 'icon.svg'];
