@@ -1748,56 +1748,27 @@ function getKSTDateOffset(days) {
 }
 
 async function updateStreak() {
-  if (!currentUser) return;
-  if (currentUser && currentUser.provider === 'kakao') {
-    console.log('카카오 유저 스트릭 스킵');
+  var today = getKSTDate();
+  var storageKey = 'fortuna_streak_' + (currentUser ? currentUser.id : 'guest');
+  var streakData = JSON.parse(localStorage.getItem(storageKey) || '{"streak":1,"last_date":""}');
+
+  if (streakData.last_date === today) {
+    renderStreakBadge(streakData.streak);
     return;
   }
-  var today = getKSTDate();
-  try {
-    var res = await sb.from('user_streaks').select('*').eq('user_id', currentUser.id).maybeSingle();
-    var data = res.data;
-    var newStreak = 1;
-    var maxStreak = 1;
 
-    if (data) {
-      maxStreak = data.max_streak || 1;
-      if (data.last_visit === today) {
-        // 오늘 이미 체크됨 → 표시만
-        renderStreakBadge(data.current_streak);
-        scheduleStreakReminder(data.current_streak);
-        return;
-      }
-      var yesterday = getKSTDateOffset(-1);
-      newStreak = (data.last_visit === yesterday) ? (data.current_streak || 1) + 1 : 1;
-      maxStreak = Math.max(newStreak, maxStreak);
-    }
-
-    await sb.from('user_streaks').upsert({
-      user_id: currentUser.id,
-      current_streak: newStreak,
-      last_visit: today,
-      max_streak: maxStreak,
-      updated_at: Date.now()
-    });
-
-    renderStreakBadge(newStreak);
-
-    // 마일스톤 팝업 (하루 1회)
-    if ([7, 30, 100].includes(newStreak)) {
-      var mKey = 'fortuna_milestone_' + newStreak;
-      if (localStorage.getItem(mKey) !== today) {
-        localStorage.setItem(mKey, today);
-        showStreakMilestone(newStreak);
-      }
-    }
-
-    // 21:00 스트릭 유지 알림
-    if (newStreak > 1) scheduleStreakReminder(newStreak);
-
-  } catch(e) {
-    console.warn('스트릭 오류:', e);
+  var yesterday = getKSTDate(new Date(Date.now() - 86400000));
+  if (streakData.last_date === yesterday) {
+    streakData.streak += 1;
+  } else if (streakData.last_date !== today) {
+    streakData.streak = 1;
   }
+
+  streakData.last_date = today;
+  localStorage.setItem(storageKey, JSON.stringify(streakData));
+  renderStreakBadge(streakData.streak);
+  showStreakMilestone(streakData.streak);
+  scheduleStreakReminder(streakData.streak);
 }
 
 function renderStreakBadge(streak) {
