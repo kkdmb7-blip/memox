@@ -3392,13 +3392,18 @@ function appendMessage(role, content, animate) {
     kakaoBtn.style.cssText = '';
     kakaoBtn.innerHTML = '카카오 공유';
     kakaoBtn.setAttribute('data-content', encodeURIComponent(content));
+    kakaoBtn.setAttribute('data-card', encodeURIComponent(cardLine2 || ''));
     kakaoBtn.addEventListener('click', function() {
       var text = decodeURIComponent(kakaoBtn.getAttribute('data-content'));
+      var card = decodeURIComponent(kakaoBtn.getAttribute('data-card') || '');
+      var shareText = card
+        ? '🔮 오늘 포르투나가 전하는 한 마디\n\n✨ ' + card + '\n\n' + text.slice(0, 150) + '\n\n나도 운세 보기 👇'
+        : '🔮 포르투나 운세\n\n' + text.slice(0, 200);
       if (window.Kakao && window.Kakao.isInitialized()) {
         try {
           window.Kakao.Link.sendDefault({
             objectType: 'text',
-            text: '🔮 포르투나 운세\n\n' + text.slice(0, 200),
+            text: shareText,
             link: {
               mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/',
               webUrl: 'https://kkdmb7-blip.github.io/memox/'
@@ -3414,7 +3419,7 @@ function appendMessage(role, content, animate) {
         } catch(e) {
           window.Kakao.Share.sendDefault({
             objectType: 'text',
-            text: '🔮 포르투나 운세\n\n' + text.slice(0, 200),
+            text: shareText,
             link: {
               mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/',
               webUrl: 'https://kkdmb7-blip.github.io/memox/'
