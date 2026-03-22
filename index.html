@@ -3816,6 +3816,9 @@ async function subscribePush() {
   if (!currentUser) return;
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   try {
+    var reg2 = await navigator.serviceWorker.ready;
+    var existingSub = await reg2.pushManager.getSubscription();
+    if (existingSub) await existingSub.unsubscribe();
     var reg = await navigator.serviceWorker.ready;
     var existing = await reg.pushManager.getSubscription();
     var sub = existing || await reg.pushManager.subscribe({
