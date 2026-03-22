@@ -3044,14 +3044,8 @@ async function callClaude(userMsg, apiKey) {
   var todayGanji = getTodayGanji();
   var monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1);
   var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
-  var pastGanji = '';
-for (var i = 60; i >= 1; i--) {
-  var _pd = new Date(new Date().getTime() - i * 86400000);
-  var _pdKST = new Date(_pd.getTime() + 9 * 60 * 60 * 1000);
-  var _pdDay = _weekDays[_pdKST.getUTCDay()];
-  pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _pdDay + '): ' + getTodayGanji(_pd) + '일
-';
-}
+var pastGanji = '';
+for (var i = 60; i >= 1; i--) { var _pd = new Date(new Date().getTime() - i * 86400000); var _pdKST = new Date(_pd.getTime() + 9 * 60 * 60 * 1000); var _pdDay = _weekDays[_pdKST.getUTCDay()]; pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _pdDay + '): ' + getTodayGanji(_pd) + '일\n'; }
   var futureGanji = '';
 var _weekDays2 = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 for (var i = 1; i <= 60; i++) {
