@@ -929,7 +929,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.17.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.17.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1977,7 +1977,7 @@ async function loadWeekAgoFortune() {
   const user = window._fortunaUser;
   if (!user) return;
   const kst = new Date(new Date().getTime() + 9*60*60*1000);
-  kst.setDate(kst.getDate() - 7);
+  kst.setUTCDate(kst.getUTCDate() - 7);
   const dateStr = kst.toISOString().slice(0,10);
   try {
     const res = await fetch(SUPABASE_URL + '/rest/v1/daily_fortune?kakao_id=eq.' + encodeURIComponent(user.id) + '&date=eq.' + dateStr + '&limit=1', {
@@ -2342,7 +2342,8 @@ async function callDailyFortune() {
   var name = profile.name || '당신';
   var today = getKSTDate();
   var now = new Date();
-  var dateLabel = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일';
+  var _nowForLabel = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  var dateLabel = _nowForLabel.getUTCFullYear() + '년 ' + (_nowForLabel.getUTCMonth()+1) + '월 ' + _nowForLabel.getUTCDate() + '일';
 
   // 현재 대운 찾기
   var bigLuck = saju.saju_big_luck || [];
@@ -3548,7 +3549,8 @@ function saveCard(encodedContent) {
   if (firstSentence.length > 80) firstSentence = firstSentence.slice(0, 78) + '…';
 
   var today = new Date();
-  var dateStr = today.getFullYear() + '년 ' + (today.getMonth()+1) + '월 ' + today.getDate() + '일';
+  var _todayKST = new Date(today.getTime() + 9 * 60 * 60 * 1000);
+  var dateStr = _todayKST.getUTCFullYear() + '년 ' + (_todayKST.getUTCMonth()+1) + '월 ' + _todayKST.getUTCDate() + '일';
 
   // 카드 DOM 생성 (오프스크린)
   var card = document.createElement('div');
