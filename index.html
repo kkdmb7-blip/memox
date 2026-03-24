@@ -2651,7 +2651,7 @@ async function loadChatHistory() {
     .limit(50);
   if (supaRes.error) return;
   var msgs = (supaRes.data || []).reverse();
-  chatHistory = msgs.map(function(m) { return { role: m.role, content: m.content }; });
+  chatHistory = msgs.map(function(m) { return { role: m.role, content: m.content, created_at: m.created_at }; });
   renderChatHistory();
 }
 
@@ -2659,7 +2659,7 @@ function renderChatHistory() {
   var container = document.getElementById('chatMessages');
   container.innerHTML = '';
   chatHistory.forEach(function(m) {
-    appendMessage(m.role, m.content, false);
+    appendMessage(m.role, m.content, false, m.created_at);
   });
   scrollToBottom();
   updateSuggestChips();
@@ -3332,6 +3332,7 @@ for (var i = 1; i <= 6; i++) {
   var cardLine = '';
   var cardMatch = replyText.match(/\[CARD\]\s*(.+)/);
   if (cardMatch) cardLine = cardMatch[1].trim();
+  var _rNameStream = (userProfile && userProfile.name) || '당신';
   var cleanReply = replyText
     .replace(/\[CARD\][^\n]*/g, '')  // [CARD] 줄 제거
     .replace(/\[CTX\][\s\S]*?\[\/CTX\]/g, '')
@@ -3340,6 +3341,7 @@ for (var i = 1; i <= 6; i++) {
     .replace(/&lt;[^&]*&gt;/g, '')
     .replace(/#{1,6}\s/g, '')
     .replace(/【([^】]+)】/g, '$1')
+    .replace(/\{이름\}/g, _rNameStream)
     .trimEnd();
   bubble.innerHTML = renderMarkdown(cleanReply);
   // [CTX] 맥락 파싱 → 백그라운드 저장
@@ -3404,24 +3406,27 @@ async function saveMessage(role, content) {
 }
 
 // ── UI ────────────────────────────────────────────────────────
-function appendMessage(role, content, animate) {
+function appendMessage(role, content, animate, created_at) {
   var container = document.getElementById('chatMessages');
   var isUser = role === 'user';
-  var time = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
+  var _ts = created_at ? new Date(created_at) : new Date();
+  var time = _ts.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
 
   var div = document.createElement('div');
   div.className = 'msg' + (isUser ? ' user' : '') + (animate ? '' : '');
   if (!animate) div.style.animation = 'none';
 
-  // [CARD]/[CTX]/구분선 필터 (appendMessage 경로)
+  // [CARD]/[CTX]/구분선 필터 + {이름} 치환 (appendMessage 경로)
   var cardLine2 = '';
   if (!isUser) {
     var cardMatch2 = content.match(/\[CARD\]\s*(.+)/);
     if (cardMatch2) cardLine2 = cardMatch2[1].trim();
+    var _rName = (userProfile && userProfile.name) || '당신';
     content = content
       .replace(/\[CARD\][^\n]*/g, '')
       .replace(/\[CTX\][\s\S]*?\[\/CTX\]/g, '')
       .replace(/^---+$/gm, '')
+      .replace(/\{이름\}/g, _rName)
       .trimEnd();
   }
 
