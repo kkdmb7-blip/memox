@@ -3271,6 +3271,7 @@ for (var i = 1; i <= 6; i++) {
     var _ctrl = new AbortController();
     var _tmr = setTimeout(function(){ _ctrl.abort(); }, 30000);
     try {
+      console.log('=== SYSTEM PROMPT ===', systemPrompt);
       res = await fetch('https://fortuna-silk.vercel.app/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
