@@ -3101,7 +3101,7 @@ async function callClaude(userMsg, apiKey) {
   var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 var pastGanji = '';
 for (var i = 60; i >= 1; i--) { var _pd = new Date(new Date().getTime() - i * 86400000); var _pdKST = new Date(_pd.getTime() + 9 * 60 * 60 * 1000); var _pdDay = _weekDays[_pdKST.getUTCDay()]; pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _pdDay + '): ' + getTodayGanji(_pd) + '일\n'; }
-  var futureGanji = '';
+  var futureGanji = '(※ 아래 표는 내일부터 시작. 오늘=' + dateStr + '은 포함 안 됨)\n';
 var _weekDays2 = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 for (var i = 1; i <= 60; i++) {
   var _fd = new Date(new Date().getTime() + i * 86400000);
@@ -3118,7 +3118,7 @@ for (var i = 1; i <= 6; i++) {
   var systemPrompt = personaPrompt + outputControl + '\n\n【절대 규칙 - 반드시 준수】\n' + '오늘 날짜: ' + dateStr + '\n' + '오늘 일진: ' + todayGanji + '일\n' + '이번 달 월건: ' + monthGanji + '월\n' + '⚠️ 위 일진/월건은 시스템이 직접 계산한 정확한 값이다.\n' + '절대 스스로 계산하거나 추측하지 말 것.\n' + '반드시 위 값만 사용할 것.\n\n' +
 '【향후 6개월 월건 - 월운 질문 시 반드시 이 표를 참고하라】\n' + futureMonthGanji + '\n' +
 '【과거 60일 일진】\n' + pastGanji + '\n' +
-'【향후 60일 일진 - 미래 날짜 질문 시 반드시 이 표를 참고하라】\n' + futureGanji + '\n' +
+'【향후 60일 일진 - 내일부터 시작, 오늘(' + dateStr + ')은 위 일진 참고】\n' + futureGanji + '\n' +
     '【내담자 정보】\n' +
     '이름: ' + (profile.name || '미상') + '\n' +
     '성별: ' + (profile.gender === 'M' ? '남성' : '여성') + '\n' +
