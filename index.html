@@ -963,7 +963,11 @@ const sb = window.supabase.createClient(SB_URL, SB_KEY);
 var currentUser = null;
 var userProfile = null;
 var chatHistory = [];
-var currentSessionId = Date.now().toString();
+var currentSessionId = localStorage.getItem('memox_session_id');
+if (!currentSessionId) {
+  currentSessionId = Date.now().toString();
+  localStorage.setItem('memox_session_id', currentSessionId);
+}
 var AVATAR_MAP = {
   warm: 'goddess.png',
   analyst: 'goddess.png',
@@ -1158,6 +1162,7 @@ async function saveProfile(data) {
 
 function newChat() {
   currentSessionId = Date.now().toString();
+  localStorage.setItem('memox_session_id', currentSessionId);
   chatHistory = [];
   var container = document.getElementById('chatMessages');
   if (container) container.innerHTML = '';
