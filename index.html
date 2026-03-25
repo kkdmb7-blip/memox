@@ -2654,9 +2654,9 @@ function startDailyChat(summary) {
 async function loadChatHistory() {
   var res;
   if (currentUser && currentUser.provider === 'kakao') {
-    var r = await fetch('https://fortuna-silk.vercel.app/api/messages?user_id=' + currentUser.id);
+    var r = await fetch('https://fortuna-silk.vercel.app/api/messages?user_id=' + currentUser.id + '&session_id=' + currentSessionId);
     res = await r.json();
-    var msgs = (res.messages || []).reverse();
+    var msgs = (res.messages || []).filter(function(m) { return m.session_id === currentSessionId; }).reverse();
     chatHistory = msgs.map(function(m) { return { role: m.role, content: m.content, created_at: m.created_at }; });
     renderChatHistory();
     return;
