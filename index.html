@@ -3101,13 +3101,21 @@ async function callClaude(userMsg, apiKey) {
   var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 var pastGanji = '';
 for (var i = 60; i >= 1; i--) { var _pd = new Date(new Date().getTime() - i * 86400000); var _pdKST = new Date(_pd.getTime() + 9 * 60 * 60 * 1000); var _pdDay = _weekDays[_pdKST.getUTCDay()]; pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _pdDay + '): ' + getTodayGanji(_pd) + '일\n'; }
-  var futureGanji = '(※ 아래 표는 내일부터 시작. 오늘=' + dateStr + '은 포함 안 됨)\n';
+  // KST 기준 내일 시작
+var _kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+var _tomorrow = new Date(_kstNow.getTime() + 86400000);
 var _weekDays2 = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
-for (var i = 1; i <= 60; i++) {
-  var _fd = new Date(new Date().getTime() + i * 86400000);
-  var _fdKST = new Date(_fd.getTime() + 9 * 60 * 60 * 1000);
+var futureGanji = '';
+
+for (var i = 0; i < 60; i++) {
+  var _fdKST = new Date(_tomorrow.getTime() + i * 86400000);
   var _fdDay = _weekDays2[_fdKST.getUTCDay()];
-  futureGanji += _fdKST.getUTCFullYear() + '년 ' + (_fdKST.getUTCMonth()+1) + '월 ' + _fdKST.getUTCDate() + '일 (' + _fdDay + '): ' + getTodayGanji(_fd) + '일\n';
+  var prefix = (i === 0) ? '[내일] ' : '';
+  futureGanji += prefix
+    + _fdKST.getUTCFullYear() + '년 '
+    + (_fdKST.getUTCMonth()+1) + '월 '
+    + _fdKST.getUTCDate() + '일 (' + _fdDay + '): '
+    + getTodayGanji(_fdKST) + '일\n';
 }
   var futureMonthGanji = '';
 for (var i = 1; i <= 6; i++) {
