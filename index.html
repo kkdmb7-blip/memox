@@ -3108,8 +3108,8 @@ var _weekDays2 = ['일요일','월요일','화요일','수요일','목요일','�
 var futureGanji = '';
 
 for (var i = 0; i < 60; i++) {
-  var _fdKST = new Date(_tomorrow.getTime() + i * 86400000);
-  var _fd = new Date(_fdKST.getTime() - 9 * 60 * 60 * 1000);
+  var _fd = new Date(_tomorrow.getTime() + i * 86400000);
+  var _fdKST = new Date(_fd.getTime() + 9 * 60 * 60 * 1000);
   var _fdDay = _weekDays2[_fdKST.getUTCDay()];
   var prefix = (i === 0) ? '[내일] ' : '';
   futureGanji += prefix
