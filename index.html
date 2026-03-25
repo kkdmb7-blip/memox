@@ -2655,7 +2655,7 @@ async function loadChatHistory() {
     var r = await fetch('https://fortuna-silk.vercel.app/api/messages?user_id=' + currentUser.id);
     res = await r.json();
     var msgs = (res.messages || []).reverse();
-    chatHistory = msgs.map(function(m) { return { role: m.role, content: m.content }; });
+    chatHistory = msgs.map(function(m) { return { role: m.role, content: m.content, created_at: m.created_at }; });
     renderChatHistory();
     return;
   }
@@ -2750,7 +2750,7 @@ async function sendMessage() {
   input.value = '';
   autoResize(input);
   appendMessage('user', text, true);
-  chatHistory.push({ role: 'user', content: text });
+  chatHistory.push({ role: 'user', content: text, created_at: new Date().toISOString() });
   trackEmotionAndTopic(text);
   await saveMessage('user', text);
 
@@ -2760,7 +2760,7 @@ async function sendMessage() {
 
   try {
     var reply = await callClaude(text, apiKey);
-    chatHistory.push({ role: 'assistant', content: reply });
+    chatHistory.push({ role: 'assistant', content: reply, created_at: new Date().toISOString() });
     await saveMessage('assistant', reply);
     await useQuestion(); updateQuestionBadge();
   } catch(e) {
@@ -3391,7 +3391,7 @@ async function retryLastMessage() {
   showTyping();
   try {
     var reply = await callClaude(lastUser, apiKey);
-    chatHistory.push({ role: 'assistant', content: reply });
+    chatHistory.push({ role: 'assistant', content: reply, created_at: new Date().toISOString() });
     await saveMessage('assistant', reply);
   } catch(e) {
     hideTyping();
