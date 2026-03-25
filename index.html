@@ -1129,7 +1129,7 @@ async function refetchAspects(profile) {
     await saveProfile(updated);
     console.log('aspects_summary 백그라운드 업데이트 완료:', summary.slice(0, 80));
   } catch(e) {
-    console.warn('refetchAspects 실패 (무시):', e);
+    if (e.name !== 'AbortError') console.warn('refetchAspects 실패 (무시):', e);
   }
 }
 
@@ -1606,7 +1606,7 @@ async function fetchSaju(birth, birthTime, city, gender, cal, midnight) {
 // ── ASTRO API ─────────────────────────────────────────────────
 function fetchWithTimeout(url, options, ms) {
   var controller = new AbortController();
-  var timer = setTimeout(function() { controller.abort(); }, ms);
+  var timer = setTimeout(function() { controller.abort(new DOMException('timeout', 'AbortError')); }, ms);
   return fetch(url, Object.assign({}, options, { signal: controller.signal }))
     .finally(function() { clearTimeout(timer); });
 }
