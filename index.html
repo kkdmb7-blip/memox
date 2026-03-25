@@ -963,6 +963,7 @@ const sb = window.supabase.createClient(SB_URL, SB_KEY);
 var currentUser = null;
 var userProfile = null;
 var chatHistory = [];
+var currentSessionId = Date.now().toString();
 var AVATAR_MAP = {
   warm: 'goddess.png',
   analyst: 'goddess.png',
@@ -1156,6 +1157,7 @@ async function saveProfile(data) {
 }
 
 function newChat() {
+  currentSessionId = Date.now().toString();
   chatHistory = [];
   var container = document.getElementById('chatMessages');
   if (container) container.innerHTML = '';
@@ -2662,6 +2664,7 @@ async function loadChatHistory() {
   var supaRes = await sb.from('chat_messages')
     .select('*')
     .eq('user_id', currentUser.id)
+    .eq('session_id', currentSessionId)
     .order('created_at', { ascending: false })
     .limit(50);
   if (supaRes.error) return;
@@ -3408,11 +3411,11 @@ async function saveMessage(role, content) {
     await fetch('https://fortuna-silk.vercel.app/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: genId(), user_id: currentUser.id, role, content, created_at: Date.now() })
+      body: JSON.stringify({ id: genId(), user_id: currentUser.id, role, content, created_at: Date.now(), session_id: currentSessionId })
     });
     return;
   }
-  await sb.from('chat_messages').insert({ id: genId(), user_id: currentUser.id, role, content, created_at: Date.now() });
+  await sb.from('chat_messages').insert({ id: genId(), user_id: currentUser.id, role, content, created_at: Date.now(), session_id: currentSessionId });
 }
 
 // ── UI ────────────────────────────────────────────────────────
