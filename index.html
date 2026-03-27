@@ -359,12 +359,7 @@
 
   /* 달 위상 뱃지 */
   #moonPhaseDisplay { font-size:10.5px; color:#9b8fb0; margin-top:2px; letter-spacing:0.02em; cursor:default; }
-  /* 차트 버튼 */
-  .chart-btn { height:44px; padding:0 11px; border-radius:22px; border:1px solid rgba(201,168,76,0.35); background:rgba(201,168,76,0.08); color:#c9a84c; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; transition:all 0.18s; font-family:'Noto Sans KR',sans-serif; }
-  .chart-btn:hover { background:rgba(201,168,76,0.2); border-color:#c9a84c; color:#fff; }
-  .chart-btn:active { transform:scale(0.95); }
-
-  /* 베딕 퀵메뉴 */
+/* 베딕 퀵메뉴 */
   .vedic-chips { display:flex; flex-wrap:nowrap; gap:6px; padding:7px 14px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; background:rgba(30,15,60,0.5); border-bottom:1px solid rgba(201,168,76,0.12); }
   .vedic-chips::-webkit-scrollbar { display:none; }
   .vchip { padding:5px 11px; border-radius:14px; border:1px solid rgba(201,168,76,0.28); background:rgba(201,168,76,0.07); color:#c9a84c; font-size:11px; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.15s; }
@@ -859,8 +854,7 @@
       <textarea class="chat-textarea" id="chatInput" placeholder="🔮 무엇이든 물어보세요..." rows="1"
         oninput="autoResize(this)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendMessage()"></textarea>
-      <button class="chart-btn" id="birthChartBtn" onclick="openBirthChart()">출생 차트</button>
-      <button class="tarot-btn" id="tarotOpenBtn" onclick="openTarotModal()">타로보기</button>
+<button class="tarot-btn" id="tarotOpenBtn" onclick="openTarotModal()">타로보기</button>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">전송</button>
     </div>
   </div>
@@ -2786,47 +2780,6 @@ async function loadMoonPhase() {
     if (sign) label += ' · ' + sign;
     el.textContent = label ? '🌙 ' + label : '';
   } catch(e) {}
-}
-
-// ── 출생 차트 SVG ───────────────────────────────────────────────
-async function openBirthChart() {
-  var profile = userProfile || {};
-  if (!profile.birth_date) {
-    appendRawBubble('<span style="color:#f87171">출생 정보가 없습니다. 프로필에서 생년월일을 먼저 입력해주세요.</span>');
-    return;
-  }
-  var btn = document.getElementById('birthChartBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '로딩 중...'; }
-  try {
-    var bd = profile.birth_date.split('-');
-    var bt = (profile.birth_time || '12:00').split(':');
-    var coords = getCityCoords(profile.birth_place || '서울특별시');
-    var body = {
-      year: parseInt(bd[0]), month: parseInt(bd[1]), day: parseInt(bd[2]),
-      hour: parseInt(bt[0]) - 9, // KST → UTC
-      lat: coords.lat, lon: coords.lon
-    };
-    var res = await fetch(WORKER_URL + '/chart-svg', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error('chart-svg 오류 ' + res.status);
-    var svgText = await res.text();
-    var blob = new Blob([svgText], { type: 'image/svg+xml' });
-    var url  = URL.createObjectURL(blob);
-    appendRawBubble(
-      '<div style="font-size:12px;color:#c4b5fd;margin-bottom:8px"><strong>' +
-      (profile.name || '내') + '님의 출생 차트</strong> · ' + profile.birth_date + ' ' + (profile.birth_time || '') +
-      ' · ' + (profile.birth_place || '') + '</div>' +
-      '<img src="' + url + '" style="width:100%;max-width:380px;border-radius:12px;display:block;" ' +
-      'onload="URL.revokeObjectURL(this.src)" alt="출생 차트">'
-    );
-  } catch(e) {
-    appendRawBubble('<span style="color:#f87171">차트 생성 실패: ' + e.message + '</span>');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '출생 차트'; }
-  }
 }
 
 // ── 베딕 퀵메뉴 ────────────────────────────────────────────────
