@@ -570,6 +570,23 @@
     position:absolute; top:14px; right:14px; background:none; border:none;
     color:var(--text3); font-size:20px; cursor:pointer; line-height:1;
   }
+  /* ── 상대방 정보 모달 ── */
+  .partner-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .partner-modal { background:var(--surface); border:1px solid #3a2a5a; border-radius:16px; width:100%; max-width:400px; padding:24px; position:relative; }
+  .partner-modal h2 { font-size:17px; color:#c9a84c; margin:0 0 18px; text-align:center; font-weight:700; }
+  .partner-field { margin-bottom:14px; }
+  .partner-field label { display:block; font-size:12px; color:var(--text3); margin-bottom:5px; }
+  .partner-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:9px 13px; color:var(--text); font-size:14px; box-sizing:border-box; font-family:'Noto Sans KR',sans-serif; }
+  .partner-input:focus { outline:none; border-color:var(--accent2); }
+  .partner-dob-row { display:flex; gap:6px; }
+  .partner-dob-row .partner-input { text-align:center; }
+  .partner-gender-row { display:flex; gap:8px; }
+  .partner-gender-btn { flex:1; padding:9px 0; border-radius:10px; border:1px solid var(--border); background:var(--surface2); color:var(--text3); font-size:13px; cursor:pointer; transition:all 0.15s; font-family:'Noto Sans KR',sans-serif; }
+  .partner-gender-btn.selected { border-color:var(--accent2); background:rgba(139,92,246,0.15); color:#c4b5fd; font-weight:700; }
+  .partner-confirm-btn { width:100%; margin-top:18px; padding:13px 0; border-radius:12px; border:none; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#fff; font-size:15px; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif; }
+  .partner-confirm-btn:hover { opacity:0.9; }
+  .partner-skip { font-size:11px; color:var(--text3); cursor:pointer; text-decoration:underline; margin-left:6px; }
+
   .tarot-btn {
     height:44px; padding:0 16px; border-radius:22px;
     background:transparent;
@@ -857,6 +874,39 @@
 <button class="tarot-btn" id="tarotOpenBtn" onclick="openTarotModal()">타로보기</button>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">전송</button>
     </div>
+  </div>
+</div>
+
+<!-- 상대방 정보 모달 -->
+<div id="partnerModal" class="partner-overlay" style="display:none;">
+  <div class="partner-modal">
+    <button class="tarot-close-btn" onclick="closePartnerModal()">✕</button>
+    <h2 id="partnerModalTitle">상대방 정보 입력</h2>
+    <div class="partner-field">
+      <label>이름 <span style="color:var(--text3)">(선택)</span></label>
+      <input class="partner-input" id="partnerName" type="text" placeholder="상대방 이름">
+    </div>
+    <div class="partner-field">
+      <label>생년월일</label>
+      <div class="partner-dob-row">
+        <input class="partner-input" id="partnerYear"  type="number" placeholder="년" min="1900" max="2025" style="flex:2">
+        <input class="partner-input" id="partnerMonth" type="number" placeholder="월" min="1" max="12" style="flex:1">
+        <input class="partner-input" id="partnerDay"   type="number" placeholder="일" min="1" max="31" style="flex:1">
+      </div>
+    </div>
+    <div class="partner-field">
+      <label>태어난 시간 <span class="partner-skip" onclick="document.getElementById('partnerHour').value=''">모르면 건너뛰기</span></label>
+      <input class="partner-input" id="partnerHour" type="number" placeholder="시 (0~23, 선택)" min="0" max="23">
+    </div>
+    <div class="partner-field">
+      <label>성별 <span style="color:var(--text3)">(선택)</span></label>
+      <div class="partner-gender-row">
+        <button class="partner-gender-btn" id="pgBtnMale"   onclick="selectPartnerGender('M')">남성</button>
+        <button class="partner-gender-btn" id="pgBtnFemale" onclick="selectPartnerGender('F')">여성</button>
+        <button class="partner-gender-btn" id="pgBtnNone"   onclick="selectPartnerGender('')" style="flex:0.6">미선택</button>
+      </div>
+    </div>
+    <button class="partner-confirm-btn" onclick="confirmPartnerModal()">확인</button>
   </div>
 </div>
 
@@ -2782,6 +2832,63 @@ async function loadMoonPhase() {
   } catch(e) {}
 }
 
+// ── 상대방 정보 모달 ────────────────────────────────────────────
+var _partnerChipText = '';
+var _partnerGender = '';
+
+function openPartnerModal(chipText) {
+  _partnerChipText = chipText;
+  _partnerGender = '';
+  document.getElementById('partnerModalTitle').textContent = chipText === '궁합 보기' ? '상대방 정보 입력' : '상대방 정보 입력';
+  document.getElementById('partnerName').value = '';
+  document.getElementById('partnerYear').value = '';
+  document.getElementById('partnerMonth').value = '';
+  document.getElementById('partnerDay').value = '';
+  document.getElementById('partnerHour').value = '';
+  ['pgBtnMale','pgBtnFemale','pgBtnNone'].forEach(function(id) {
+    document.getElementById(id).classList.remove('selected');
+  });
+  document.getElementById('pgBtnNone').classList.add('selected');
+  document.getElementById('partnerModal').style.display = 'flex';
+}
+
+function closePartnerModal() {
+  document.getElementById('partnerModal').style.display = 'none';
+}
+
+function selectPartnerGender(g) {
+  _partnerGender = g;
+  document.getElementById('pgBtnMale').classList.toggle('selected', g === 'M');
+  document.getElementById('pgBtnFemale').classList.toggle('selected', g === 'F');
+  document.getElementById('pgBtnNone').classList.toggle('selected', g === '');
+}
+
+function confirmPartnerModal() {
+  var y = document.getElementById('partnerYear').value.trim();
+  var m = document.getElementById('partnerMonth').value.trim();
+  var d = document.getElementById('partnerDay').value.trim();
+  if (!y || !m || !d) {
+    document.getElementById('partnerYear').focus();
+    return;
+  }
+  var name   = document.getElementById('partnerName').value.trim();
+  var hour   = document.getElementById('partnerHour').value.trim();
+  var gender = _partnerGender === 'M' ? '남성' : _partnerGender === 'F' ? '여성' : '';
+
+  var parts = [];
+  parts.push(parseInt(y) + '년 ' + parseInt(m) + '월 ' + parseInt(d) + '일생');
+  if (hour !== '') parts.push(parseInt(hour) + '시생');
+  if (gender)      parts.push(gender);
+  if (name)        parts.push('(' + name + ')');
+
+  var label = name ? name + ' ' : '상대: ';
+  var text = _partnerChipText + ' — ' + label + parts.join(' ');
+
+  closePartnerModal();
+  document.getElementById('chatInput').value = text;
+  sendMessage();
+}
+
 // ── 베딕 퀵메뉴 ────────────────────────────────────────────────
 async function ensureVedicMuhurta() {
   if (window._vedicCache && window._vedicCache.muhurta) return;
@@ -2829,6 +2936,10 @@ function appendRawBubble(html) {
 }
 
 async function sendVedicChip(text) {
+  if (text === '궁합 보기' || text === '결혼운 보기') {
+    openPartnerModal(text);
+    return;
+  }
   if (text === '길일 잡기') {
     await ensureVedicMuhurta();
     var cached = window._vedicCache;
