@@ -357,6 +357,13 @@
   .chip:hover { background:rgba(139,92,246,0.2); border-color:var(--accent); color:#fff; }
   .chip:active { transform:scale(0.96); }
 
+  /* 베딕 퀵메뉴 */
+  .vedic-chips { display:flex; flex-wrap:nowrap; gap:6px; padding:7px 14px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; background:rgba(30,15,60,0.5); border-bottom:1px solid rgba(201,168,76,0.12); }
+  .vedic-chips::-webkit-scrollbar { display:none; }
+  .vchip { padding:5px 11px; border-radius:14px; border:1px solid rgba(201,168,76,0.28); background:rgba(201,168,76,0.07); color:#c9a84c; font-size:11px; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.15s; }
+  .vchip:hover { background:rgba(201,168,76,0.18); border-color:#c9a84c; color:#fff; }
+  .vchip:active { transform:scale(0.95); }
+
   /* 리포트 연결 버튼 */
   @keyframes shimmer {
     0% { background-position: -200% center; }
@@ -822,6 +829,17 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- 베딕 퀵메뉴 -->
+  <div class="vedic-chips" id="vedicChips">
+    <button class="vchip" onclick="sendVedicChip('오늘 운세 한마디')">오늘 운세 한마디</button>
+    <button class="vchip" onclick="sendVedicChip('내 탄생별 알기')">내 탄생별 알기</button>
+    <button class="vchip" onclick="sendVedicChip('내 인생 지금 어느 시기?')">내 인생 지금 어느 시기?</button>
+    <button class="vchip" onclick="sendVedicChip('나만의 운명 조합')">나만의 운명 조합</button>
+    <button class="vchip" onclick="sendVedicChip('궁합 보기')">궁합 보기</button>
+    <button class="vchip" onclick="sendVedicChip('길일 잡기')">길일 잡기</button>
+    <button class="vchip" onclick="sendVedicChip('결혼운 보기')">결혼운 보기</button>
   </div>
 
   <div class="chat-messages" id="chatMessages"></div>
@@ -2735,10 +2753,75 @@ function sendChip(text) {
   sendMessage();
 }
 
+// ── 베딕 퀵메뉴 ────────────────────────────────────────────────
+async function ensureVedicMuhurta() {
+  if (window._vedicCache && window._vedicCache.muhurta) return;
+  var profile = userProfile || {};
+  if (!profile.birth_date) return;
+  var bd = profile.birth_date.split('-');
+  var bt = (profile.birth_time || '12:00').split(':');
+  var url = WORKER_URL + '/vedic?year=' + bd[0] + '&month=' + parseInt(bd[1]) + '&day=' + parseInt(bd[2]) + '&hour=' + parseInt(bt[0]);
+  try {
+    var res = await fetch(url);
+    if (res.ok) { var d = await res.json(); if (!d.error) { window._vedicCache = d; window._vedicFetched = true; } }
+  } catch(e) {}
+}
+
+function renderMuhurtaHtml(muhurta) {
+  var today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+  var html = '<div style="font-size:12.5px;line-height:1.9"><strong>이번 주 베딕 길흉일</strong><br><br>';
+  muhurta.forEach(function(d) {
+    var isToday = d.date === today;
+    var color = (d.quality === '대길') ? '#6ee7b7' : (d.quality === '길') ? '#86efac' :
+                (d.quality === '흉')   ? '#f87171' : (d.quality === '주의') ? '#fbbf24' : '#c4b5fd';
+    var row = '<div style="margin-bottom:7px' + (isToday ? ';border-left:2px solid #fbbf24;padding-left:8px' : '') + '">';
+    row += '<strong>' + d.date.slice(5).replace('-','/') + ' ' + d.weekday + '</strong>';
+    if (isToday) row += ' <span style="color:#fbbf24;font-size:10px">◀ 오늘</span>';
+    row += ' <span style="color:' + color + ';font-weight:700">' + d.quality + '</span>';
+    if (d.specials && d.specials.length) row += ' <span style="color:#fbbf24;font-size:11px">✦ ' + d.specials.join(' · ') + '</span>';
+    row += '<br><span style="color:#9b8fb0;font-size:11px">' + d.nakshatra + ' · ' + d.tithi + ' · ' + d.yoga + '</span>';
+    if (isToday) row += '<br><span style="color:#f87171;font-size:11px">⚠ 라후칼라 ' + d.rahuKala + ' — 중요한 일 피하세요</span>';
+    if (d.cautions && d.cautions.length) row += '<br><span style="color:#f87171;font-size:11px">주의: ' + d.cautions.join(' · ') + '</span>';
+    row += '</div>';
+    html += row;
+  });
+  return html + '</div>';
+}
+
+function appendRawBubble(html) {
+  var container = document.getElementById('chatMessages');
+  var div = document.createElement('div');
+  div.className = 'msg';
+  var time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  div.innerHTML = '<div class="msg-avatar">' + getAvatar() + '</div>' +
+    '<div><div class="msg-bubble">' + html + '</div><div class="msg-time">' + time + '</div></div>';
+  container.appendChild(div);
+  scrollToBottom();
+}
+
+async function sendVedicChip(text) {
+  var vc = document.getElementById('vedicChips');
+  if (vc) vc.style.display = 'none';
+
+  if (text === '길일 잡기') {
+    await ensureVedicMuhurta();
+    var cached = window._vedicCache;
+    if (cached && cached.muhurta) appendRawBubble(renderMuhurtaHtml(cached.muhurta));
+    document.getElementById('chatInput').value = '이번 주 베딕 무후르타 길흉일을 내 사주와 연결해서 해석해줘. 특히 오늘 피해야 할 시간대와 이번 주 가장 좋은 날도 알려줘.';
+    sendMessage();
+    return;
+  }
+  document.getElementById('chatInput').value = text;
+  sendMessage();
+}
+
 async function sendMessage() {
   var input = document.getElementById('chatInput');
   var text = input.value.trim();
   if (!text) return;
+  // 첫 메시지 전송 시 베딕 퀵메뉴 숨기기
+  var _vc = document.getElementById('vedicChips');
+  if (_vc) _vc.style.display = 'none';
   // isTyping stuck 방지: 5초 이상 지나면 강제 해제
   if (isTyping) {
     if (!window._typingStart || Date.now() - window._typingStart > 10000) {
@@ -3098,6 +3181,18 @@ async function callClaude(userMsg, apiKey) {
         '- 라그나(상승궁): ' + _vAsc + '\n' +
         '- 나크샤트라: ' + _vNak + ' ' + _vPada + '파다\n' +
         '- 현재 다샤: ' + _vDP + ' (~' + _vDE + '까지)';
+      // 무후르타 (이번 주 길흉일) — 계약·중요 결정 질문에 AI가 자동 활용
+      var _mhu = _vc.muhurta;
+      if (Array.isArray(_mhu)) {
+        var _todayKST = new Date(Date.now() + 9*3600000).toISOString().slice(0,10);
+        var _mhuLines = _mhu.map(function(d) {
+          var mark = d.date === _todayKST ? '[오늘]' : '';
+          var sp = d.specials && d.specials.length ? ' (' + d.specials.join(',') + ')' : '';
+          var ca = d.cautions && d.cautions.length ? ' 주의:' + d.cautions.join(',') : '';
+          return d.date + ' ' + d.weekday + ' ' + mark + ': ' + d.quality + sp + ca + ' | 라후칼라 ' + d.rahuKala;
+        }).join('\n');
+        _vedicBlock += '\n- 이번 주 무후르타(베딕 길흉):\n' + _mhuLines;
+      }
     }
   } catch(_ve) { console.warn('베딕 빌더 오류:', _ve.message); }
 
