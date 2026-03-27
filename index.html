@@ -940,7 +940,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.17.10'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.17.11'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3241,8 +3241,12 @@ for (var i = 1; i <= 6; i++) {
   + '[/CTX]\n'
   + '이 태그는 사용자에게 보이지 않음\n';
 
-  // 최근 20개 대화 포함 (맥락 유지)
-  var recentHistory = chatHistory.slice(-20);
+  // 오늘 KST 날짜 이후 메시지만 포함 (어제 날짜 오염 방지)
+  var todayKST = new Date(Date.now() + 9 * 3600000).toISOString().split('T')[0];
+  var recentHistory = chatHistory.filter(function(m) {
+    if (!m.created_at) return true;
+    return m.created_at.slice(0, 10) === todayKST;
+  }).slice(-20);
   // Claude는 user로 시작해야 함 - assistant로 시작하면 제거
   var messages = recentHistory.map(function(m) {
     return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] };
