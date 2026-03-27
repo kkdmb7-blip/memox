@@ -2876,9 +2876,6 @@ function appendRawBubble(html) {
 }
 
 async function sendVedicChip(text) {
-  var vc = document.getElementById('vedicChips');
-  if (vc) vc.style.display = 'none';
-
   if (text === '길일 잡기') {
     await ensureVedicMuhurta();
     var cached = window._vedicCache;
@@ -2895,9 +2892,6 @@ async function sendMessage() {
   var input = document.getElementById('chatInput');
   var text = input.value.trim();
   if (!text) return;
-  // 첫 메시지 전송 시 베딕 퀵메뉴 숨기기
-  var _vc = document.getElementById('vedicChips');
-  if (_vc) _vc.style.display = 'none';
   // isTyping stuck 방지: 5초 이상 지나면 강제 해제
   if (isTyping) {
     if (!window._typingStart || Date.now() - window._typingStart > 10000) {
