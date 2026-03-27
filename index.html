@@ -3245,7 +3245,7 @@ for (var i = 1; i <= 6; i++) {
   var todayKST = new Date(Date.now() + 9 * 3600000).toISOString().split('T')[0];
   var recentHistory = chatHistory.filter(function(m) {
     if (!m.created_at) return true;
-    return m.created_at.slice(0, 10) === todayKST;
+    return String(m.created_at).slice(0, 10) === todayKST;
   }).slice(-20);
   // Claude는 user로 시작해야 함 - assistant로 시작하면 제거
   var messages = recentHistory.map(function(m) {
