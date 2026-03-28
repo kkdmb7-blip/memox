@@ -56,10 +56,18 @@ async function handleLogin() {
       return;
     }
 
-    // 3. 최소 정보만 저장 후 단순 이동 (포르투나 방식 — URL 파라미터 없음)
-    //    profile은 index.html initAuth()에서 resolve-user로 조회
+    // 3. resolve-user로 프로필 조회/생성 (완료 후 저장)
+    const resolveRes = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name: nickname })
+    });
+    const profile = await resolveRes.json();
+    if (!profile || profile.error) throw new Error('프로필 조회 실패');
+
+    // 4. 완전한 데이터 저장 후 이동 (initAuth에서 추가 API 호출 불필요)
     localStorage.setItem('fortuna_kakao_user', JSON.stringify({
-      email, name: nickname
+      id: profile.id, email, name: nickname, profile
     }));
 
     location.href = "/memox/";
