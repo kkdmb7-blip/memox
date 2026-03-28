@@ -70,15 +70,16 @@ async function handleLogin() {
       return;
     }
 
-    // 4. localStorage에 카카오 유저 저장
-    localStorage.setItem('fortuna_kakao_user', JSON.stringify({
-      id: profile.id,
-      email,
-      name: nickname,
-      profile
-    }));
+    // 4. 유저 데이터 준비
+    const userData = { id: profile.id, email, name: nickname, profile };
 
-    location.href = "/memox/";
+    // 5. localStorage 저장 (일반 브라우저용)
+    try { localStorage.setItem('fortuna_kakao_user', JSON.stringify(userData)); } catch(e) {}
+
+    // 6. 인앱 브라우저 대비: URL 파라미터로도 전달
+    //    btoa(encodeURIComponent(JSON)) 방식으로 인코딩
+    const encoded = btoa(encodeURIComponent(JSON.stringify(userData)));
+    location.href = "/memox/?kauth=" + encodeURIComponent(encoded);
 
   } catch (e) {
     console.error(e);
