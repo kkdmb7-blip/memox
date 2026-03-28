@@ -76,8 +76,10 @@ async function handleLogin() {
     // 5. localStorage 저장 (일반 브라우저용)
     try { localStorage.setItem('fortuna_kakao_user', JSON.stringify(kauthData)); } catch(e) {}
 
-    // 6. 인앱 브라우저 대비: URL 파라미터로도 전달
-    const encoded = btoa(encodeURIComponent(JSON.stringify(kauthData)));
+    // 6. 인앱 브라우저 대비: URL 파라미터로 최소 정보만 전달 (URL too long 방지)
+    //    전체 profile 제외, id/email/name만 인코딩
+    const minData = { id: profile.id, email, name: nickname };
+    const encoded = btoa(encodeURIComponent(JSON.stringify(minData)));
     location.href = "/memox/?kauth=" + encodeURIComponent(encoded);
 
   } catch (e) {

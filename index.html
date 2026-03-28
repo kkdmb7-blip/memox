@@ -1014,7 +1014,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.17'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.18'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1062,14 +1062,29 @@ var _authHandled = false;
   try {
     const params = new URLSearchParams(window.location.search);
     const kauth = params.get('kauth');
-    if (kauth) {
-      const userData = JSON.parse(decodeURIComponent(atob(decodeURIComponent(kauth))));
-      if (userData && userData.id) {
-        localStorage.setItem('fortuna_kakao_user', JSON.stringify(userData));
-      }
-      // URL에서 파라미터 제거 (뒤로가기/공유 시 재처리 방지)
-      history.replaceState({}, '', '/memox/');
+    if (!kauth) return;
+    history.replaceState({}, '', '/memox/');
+    const minData = JSON.parse(decodeURIComponent(atob(decodeURIComponent(kauth))));
+    if (!minData || !minData.id) return;
+    // localStorage에 기존 저장값 있으면 그대로 사용, 없으면 resolve-user로 재조회
+    const existing = localStorage.getItem('fortuna_kakao_user');
+    if (existing) {
+      try { const p = JSON.parse(existing); if (p.id === minData.id) return; } catch(e) {}
     }
+    // 인앱 브라우저 환경 — resolve-user로 전체 프로필 재조회 후 저장
+    fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: minData.email, name: minData.name })
+    }).then(function(r){ return r.json(); }).then(function(profile) {
+      if (profile && !profile.error) {
+        localStorage.setItem('fortuna_kakao_user', JSON.stringify({
+          id: minData.id, email: minData.email, name: minData.name, profile
+        }));
+        // 저장 완료 후 페이지 reload로 initAuth 재실행
+        location.reload();
+      }
+    }).catch(function(){});
   } catch(e) {}
 })();
 
