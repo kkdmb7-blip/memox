@@ -1011,7 +1011,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.17.11'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.10'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1578,7 +1578,17 @@ async function submitOnboard() {
       saju_big_luck: sajuData.big_luck || sajuData.saju_big_luck,
       saju_lucky: sajuData.lucky || sajuData.saju_lucky,
       saju_branch_relations: sajuData.branch_relations_kor || sajuData.saju_branch_relations,
-      saju_zodiac_compatibility: (sajuData.zodiac_compatibility || sajuData.saju_zodiac_compatibility || []).slice(0,12)
+      saju_zodiac_compatibility: (sajuData.zodiac_compatibility || sajuData.saju_zodiac_compatibility || []).slice(0,12),
+      // 확장 필드
+      saju_twelve_growth: sajuData.twelve_growth_kor || sajuData.saju_twelve_growth,
+      saju_johu: sajuData.johu ? { temperature: sajuData.johu.temperature, humidity: sajuData.johu.humidity, needs_kor: sajuData.johu.needs_kor } : sajuData.saju_johu,
+      saju_gongmang: (sajuData.relations_ui && sajuData.relations_ui.gongmang) ? { void_branches_kor: sajuData.relations_ui.gongmang.void_branches_kor, present_branches_kor: sajuData.relations_ui.gongmang.present_branches_kor } : sajuData.saju_gongmang,
+      saju_hehua: sajuData.hehua ? { applied: sajuData.hehua.applied, effective: sajuData.hehua.effective, yongshin_changed: sajuData.hehua.yongshin_changed, five_changed: sajuData.hehua.five_changed } : sajuData.saju_hehua,
+      saju_tonggeun: sajuData.tonggeun ? { with_root: sajuData.tonggeun.stems_with_root, without_root: sajuData.tonggeun.stems_without_root } : sajuData.saju_tonggeun,
+      saju_five_star: sajuData.five_star || sajuData.saju_five_star,
+      saju_relations_extra: sajuData.branch_relations_kor ? { harms: sajuData.branch_relations_kor.harms, breaks: sajuData.branch_relations_kor.breaks, wonjins: sajuData.branch_relations_kor.wonjins, half_three_harmonies: sajuData.branch_relations_kor.half_three_harmonies, guimuns: sajuData.branch_relations_kor.guimuns } : sajuData.saju_relations_extra,
+      saju_strength_score: sajuData.strength_score != null ? sajuData.strength_score : sajuData.saju_strength_score,
+      saju_relations_headline: (sajuData.relations_ui && sajuData.relations_ui.summary) ? sajuData.relations_ui.summary.headline : sajuData.saju_relations_headline
     };
     var profile = {
       id: currentUser.id,
@@ -3373,6 +3383,19 @@ for (var i = 1; i <= 6; i++) {
     '합: ' + JSON.stringify(branchRel.harmonies || []) + '\n' +
     '충: ' + JSON.stringify(branchRel.clashes || []) + '\n' +
     '형: ' + JSON.stringify(branchRel.punishments || []) + '\n\n' +
+    (saju.saju_relations_extra ? '【지지 관계 확장】\n' +
+    (saju.saju_relations_headline ? '요약: ' + saju.saju_relations_headline + '\n' : '') +
+    '해(害): ' + JSON.stringify(saju.saju_relations_extra.harms || []) + '\n' +
+    '파(破): ' + JSON.stringify(saju.saju_relations_extra.breaks || []) + '\n' +
+    '원진: ' + JSON.stringify(saju.saju_relations_extra.wonjins || []) + '\n' +
+    '반삼합: ' + JSON.stringify(saju.saju_relations_extra.half_three_harmonies || []) + '\n' +
+    '귀문: ' + JSON.stringify(saju.saju_relations_extra.guimuns || []) + '\n\n' : '') +
+    (saju.saju_twelve_growth ? '【십이운성】\n' + (typeof saju.saju_twelve_growth === 'object' ? JSON.stringify(saju.saju_twelve_growth) : saju.saju_twelve_growth) + '\n\n' : '') +
+    (saju.saju_five_star ? '【오행 별점】\n' + (typeof saju.saju_five_star === 'object' ? '목: ' + (saju.saju_five_star.wood||'-') + ' / 화: ' + (saju.saju_five_star.fire||'-') + ' / 토: ' + (saju.saju_five_star.earth||'-') + ' / 금: ' + (saju.saju_five_star.metal||'-') + ' / 수: ' + (saju.saju_five_star.water||'-') : saju.saju_five_star) + '\n\n' : '') +
+    (saju.saju_johu ? '【조후】\n' + '한열조습: ' + (saju.saju_johu.temperature||'') + ' ' + (saju.saju_johu.humidity||'') + '\n필요오행: ' + (saju.saju_johu.needs_kor||'미상') + '\n\n' : '') +
+    (saju.saju_gongmang ? '【공망】\n' + '공망 지지: ' + (saju.saju_gongmang.void_branches_kor||'미상') + '\n사주 내 공망: ' + (saju.saju_gongmang.present_branches_kor||'없음') + '\n\n' : '') +
+    (saju.saju_hehua ? '【합화】\n' + '적용 합화: ' + JSON.stringify(saju.saju_hehua.applied||[]) + '\n유효 합화: ' + JSON.stringify(saju.saju_hehua.effective||[]) + '\n용신 변화: ' + (saju.saju_hehua.yongshin_changed||'없음') + '\n오행 변화: ' + (saju.saju_hehua.five_changed||'없음') + '\n\n' : '') +
+    (saju.saju_tonggeun ? '【통근】\n' + '뿌리 있는 천간: ' + JSON.stringify(saju.saju_tonggeun.with_root||[]) + '\n뿌리 없는 천간: ' + JSON.stringify(saju.saju_tonggeun.without_root||[]) + '\n\n' : '') +
     '【띠 궁합】\n' +
     (Array.isArray(zodiacComp) ? zodiacComp.slice(0,4).map(function(z){ return z.animal + '(' + z.score + '점): ' + z.desc; }).join('\n') : '미상') + '\n\n' +
     '【점성술 데이터】\n' +
