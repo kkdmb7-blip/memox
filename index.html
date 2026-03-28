@@ -679,13 +679,14 @@
     <!-- 인앱 브라우저 감지 시 표시 -->
     <div id="inappGuide" style="display:none;margin-top:16px;padding:16px;background:rgba(255,235,0,0.08);border:1px solid rgba(255,235,0,0.25);border-radius:12px;text-align:center;">
       <div style="font-size:13px;color:#ede6f8;line-height:1.8;margin-bottom:12px;">
-        📱 카카오 로그인은 <strong>Safari / Chrome</strong>에서<br>사용해주세요.
+        카카오톡에서는 로그인이 안 돼요 😅<br>
+        아래 버튼을 눌러 링크를 복사한 후<br>
+        <strong>Safari</strong>에서 열어주세요.
       </div>
-      <div style="background:rgba(255,255,255,0.06);border-radius:8px;padding:9px 12px;font-size:12px;color:#c4b5fd;margin-bottom:10px;word-break:break-all;" id="inappUrl">https://kkdmb7-blip.github.io/memox/</div>
       <button onclick="copyAppUrl()" id="copyUrlBtn" style="background:#FEE500;color:#3C1E1E;border:none;border-radius:10px;padding:11px 0;font-size:14px;font-weight:700;cursor:pointer;width:100%;">
         링크 복사하기
       </button>
-      <div style="font-size:11px;color:#9b8fb0;margin-top:8px;">복사 후 Safari 주소창에 붙여넣기 해주세요</div>
+      <div style="font-size:11px;color:#9b8fb0;margin-top:8px;">복사 후 Safari 주소창에 붙여넣기 → 카카오 로그인</div>
     </div>
 
     <div class="login-notice">무료로 시작 · 광고없음 · 내 정보는 나만 봄</div>
@@ -1026,7 +1027,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.24'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.25'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1152,10 +1153,17 @@ function fallbackCopy(url, btn) {
 
 // 로그인 화면 진입 시 인앱브라우저 체크
 function checkInAppBrowser() {
-  if (isInAppBrowser()) {
-    document.getElementById('inappGuide').style.display = 'block';
-    document.getElementById('kakaoLoginBtn').style.display = 'none';
+  if (!isInAppBrowser()) return;
+  var ua = navigator.userAgent || '';
+  // Android: intent 스킴으로 Chrome에서 자동으로 열기
+  if (/Android/i.test(ua)) {
+    var target = encodeURIComponent('https://kkdmb7-blip.github.io/memox/');
+    location.href = 'intent://kkdmb7-blip.github.io/memox/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + target + ';end';
+    return;
   }
+  // iOS: 복사 안내 표시
+  document.getElementById('inappGuide').style.display = 'block';
+  document.getElementById('kakaoLoginBtn').style.display = 'none';
 }
 
 document.getElementById('kakaoLoginBtn').addEventListener('click', function() {
