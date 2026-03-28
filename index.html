@@ -882,29 +882,29 @@
   <div class="partner-modal">
     <button class="tarot-close-btn" onclick="closePartnerModal()">✕</button>
     <h2 id="partnerModalTitle">상대방 정보 입력</h2>
-    <div class="partner-field">
-      <label>이름 <span style="color:var(--text3)">(선택)</span></label>
-      <input class="partner-input" id="partnerName" type="text" placeholder="상대방 이름">
+    <div class="form-group">
+      <label class="form-label">이름 <span style="color:var(--text3);font-weight:400">(선택)</span></label>
+      <input class="form-input" id="partnerName" type="text" placeholder="상대방 이름">
     </div>
-    <div class="partner-field">
-      <label>생년월일</label>
-      <div class="partner-dob-row">
-        <input class="partner-input" id="partnerYear"  type="number" placeholder="년" min="1900" max="2025" style="flex:2">
-        <input class="partner-input" id="partnerMonth" type="number" placeholder="월" min="1" max="12" style="flex:1">
-        <input class="partner-input" id="partnerDay"   type="number" placeholder="일" min="1" max="31" style="flex:1">
+    <div class="form-group">
+      <label class="form-label">성별 <span style="color:var(--text3);font-weight:400">(선택)</span></label>
+      <div class="radio-group">
+        <button class="radio-btn" id="pgBtnMale"   onclick="selectPartnerGender('M')">남성</button>
+        <button class="radio-btn" id="pgBtnFemale" onclick="selectPartnerGender('F')">여성</button>
+        <button class="radio-btn selected" id="pgBtnNone" onclick="selectPartnerGender('')">미선택</button>
       </div>
     </div>
-    <div class="partner-field">
-      <label>태어난 시간 <span class="partner-skip" onclick="document.getElementById('partnerHour').value=''">모르면 건너뛰기</span></label>
-      <input class="partner-input" id="partnerHour" type="number" placeholder="시 (0~23, 선택)" min="0" max="23">
-    </div>
-    <div class="partner-field">
-      <label>성별 <span style="color:var(--text3)">(선택)</span></label>
-      <div class="partner-gender-row">
-        <button class="partner-gender-btn" id="pgBtnMale"   onclick="selectPartnerGender('M')">남성</button>
-        <button class="partner-gender-btn" id="pgBtnFemale" onclick="selectPartnerGender('F')">여성</button>
-        <button class="partner-gender-btn" id="pgBtnNone"   onclick="selectPartnerGender('')" style="flex:0.6">미선택</button>
+    <div class="form-group">
+      <label class="form-label">생년월일</label>
+      <div class="form-row">
+        <select class="form-input" id="partnerYear"><option value="">년도</option></select>
+        <select class="form-input" id="partnerMonth"><option value="">월</option></select>
+        <select class="form-input" id="partnerDay"><option value="">일</option></select>
       </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">출생시간 <span style="color:var(--text3);font-weight:400">(선택)</span></label>
+      <select class="form-input" id="partnerHour"><option value="">시 (모르면 선택 안 해도 돼요)</option></select>
     </div>
     <button class="partner-confirm-btn" onclick="confirmPartnerModal()">확인</button>
   </div>
@@ -1011,7 +1011,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.11'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.12'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2846,10 +2846,43 @@ async function loadMoonPhase() {
 var _partnerChipText = '';
 var _partnerGender = '';
 
+// 파트너 모달 select 초기화 (한 번만)
+(function initPartnerDropdowns() {
+  var pyEl = document.getElementById('partnerYear');
+  var pmEl = document.getElementById('partnerMonth');
+  var phEl = document.getElementById('partnerHour');
+  var curYear = new Date().getFullYear();
+  for (var y = curYear; y >= 1930; y--) {
+    var o = document.createElement('option'); o.value = y; o.textContent = y + '년'; pyEl.appendChild(o);
+  }
+  for (var m = 1; m <= 12; m++) {
+    var o = document.createElement('option'); o.value = String(m).padStart(2,'0'); o.textContent = m + '월'; pmEl.appendChild(o);
+  }
+  for (var h = 0; h <= 23; h++) {
+    var o = document.createElement('option'); o.value = String(h).padStart(2,'0'); o.textContent = h + '시'; phEl.appendChild(o);
+  }
+  // 월 변경 시 일 목록 갱신
+  function updatePartnerDays() {
+    var pdEl = document.getElementById('partnerDay');
+    var y = parseInt(pyEl.value) || 2000;
+    var m = parseInt(pmEl.value) || 1;
+    var max = new Date(y, m, 0).getDate();
+    var prev = pdEl.value;
+    pdEl.innerHTML = '<option value="">일</option>';
+    for (var d = 1; d <= max; d++) {
+      var o = document.createElement('option'); o.value = String(d).padStart(2,'0'); o.textContent = d + '일'; pdEl.appendChild(o);
+    }
+    if (prev && parseInt(prev) <= max) pdEl.value = prev;
+  }
+  pmEl.addEventListener('change', updatePartnerDays);
+  pyEl.addEventListener('change', updatePartnerDays);
+  updatePartnerDays();
+})();
+
 function openPartnerModal(chipText) {
   _partnerChipText = chipText;
   _partnerGender = '';
-  document.getElementById('partnerModalTitle').textContent = chipText === '궁합 보기' ? '상대방 정보 입력' : '상대방 정보 입력';
+  document.getElementById('partnerModalTitle').textContent = chipText === '궁합 보기' ? '궁합 보기 — 상대방 정보' : '결혼운 보기 — 상대방 정보';
   document.getElementById('partnerName').value = '';
   document.getElementById('partnerYear').value = '';
   document.getElementById('partnerMonth').value = '';
@@ -2874,15 +2907,15 @@ function selectPartnerGender(g) {
 }
 
 function confirmPartnerModal() {
-  var y = document.getElementById('partnerYear').value.trim();
-  var m = document.getElementById('partnerMonth').value.trim();
-  var d = document.getElementById('partnerDay').value.trim();
+  var y = document.getElementById('partnerYear').value;
+  var m = document.getElementById('partnerMonth').value;
+  var d = document.getElementById('partnerDay').value;
   if (!y || !m || !d) {
     document.getElementById('partnerYear').focus();
     return;
   }
   var name   = document.getElementById('partnerName').value.trim();
-  var hour   = document.getElementById('partnerHour').value.trim();
+  var hour   = document.getElementById('partnerHour').value;
   var gender = _partnerGender === 'M' ? '남성' : _partnerGender === 'F' ? '여성' : '';
 
   var parts = [];
