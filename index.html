@@ -1014,7 +1014,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.13'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.14'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2933,12 +2933,101 @@ function confirmPartnerModal() {
   if (gender)      parts.push(gender);
   if (name)        parts.push('(' + name + ')');
 
+  // 상대방 사주 계산 (hour 없으면 12시 기본)
+  var pHour = hour !== '' ? parseInt(hour) : 12;
+  window._partnerSaju = calcPartnerSaju(parseInt(y), parseInt(m), parseInt(d), pHour);
+  window._partnerSaju.name = name || '상대방';
+  window._partnerSaju.gender = gender;
+
   var label = name ? name + ' ' : '상대: ';
   var text = _partnerChipText + ' — ' + label + parts.join(' ');
 
   closePartnerModal();
   document.getElementById('chatInput').value = text;
   sendMessage();
+}
+
+// ── 상대방 사주 직접 계산 (fortuneteller 오픈소스 로직) ────────
+function calcPartnerSaju(year, month, day, hour) {
+  const STEMS   = ['갑','을','병','정','무','기','경','신','임','계'];
+  const BRANCHES= ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+  const ZODIAC  = ['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
+  const STEM_EL  = ['목','목','화','화','토','토','금','금','수','수'];
+  const BRANCH_EL= ['수','토','목','목','토','화','화','토','금','금','토','수'];
+
+  // 절기 근사 [그레고리월, 일, 월지 인덱스(BRANCHES 기준)]
+  const JEOLGI = [
+    [1, 6, 1],[2, 4, 2],[3, 6, 3],[4, 5, 4],
+    [5, 6, 5],[6, 6, 6],[7, 7, 7],[8, 8, 8],
+    [9, 8, 9],[10,8,10],[11,7,11],[12,7, 0],
+  ];
+  const birthMs = Date.UTC(year, month - 1, day);
+
+  // 월지 결정: 생일이 해당 절기일 이후인 마지막 절기
+  var monthBranchIdx = 1; // default: 축월
+  for (var ji = 0; ji < JEOLGI.length; ji++) {
+    var jm = JEOLGI[ji][0], jd = JEOLGI[ji][1], bi = JEOLGI[ji][2];
+    if (birthMs >= Date.UTC(year, jm - 1, jd)) monthBranchIdx = bi;
+  }
+
+  // 년주: 입춘(2/4) 전이면 전년도
+  var sajuYear = (birthMs < Date.UTC(year, 1, 4)) ? year - 1 : year;
+  var yearIdx      = ((sajuYear - 4) % 60 + 60) % 60;
+  var yearStemIdx  = yearIdx % 10;
+  var yearBranchIdx= yearIdx % 12;
+
+  // 월주: 오호둔법 (년간 기준 인월 천간 결정)
+  var MONTH_STEM_BASE = [2, 4, 6, 8, 0]; // 갑기→병, 을경→무, 병신→경, 정임→임, 무계→갑
+  var inMonthBase = MONTH_STEM_BASE[yearStemIdx % 5];
+  var MONTH_BRANCH_ORDER = [2,3,4,5,6,7,8,9,10,11,0,1]; // 인월=0 순서
+  var monthOrderIdx = MONTH_BRANCH_ORDER.indexOf(monthBranchIdx);
+  var monthStemIdx  = (inMonthBase + monthOrderIdx) % 10;
+
+  // 일주: 기준일 2024-02-10 = 갑진(index 40)
+  var BASE_UTC = Date.UTC(2024, 1, 10);
+  var diffDays = Math.round((birthMs - BASE_UTC) / 86400000);
+  var dayIdx      = ((40 + diffDays) % 60 + 60) % 60;
+  var dayStemIdx  = dayIdx % 10;
+  var dayBranchIdx= dayIdx % 12;
+
+  // 시주: 오호둔법 (일간 기준 자시 천간 결정)
+  var hourBranchIdx = (hour === 23) ? 0 : Math.floor((hour + 1) / 2) % 12;
+  var HOUR_STEM_BASE = [0, 2, 4, 6, 8]; // 갑기→갑, 을경→병, 병신→무, 정임→경, 무계→임
+  var hourStemBase = HOUR_STEM_BASE[dayStemIdx % 5];
+  var hourStemIdx  = (hourStemBase + hourBranchIdx) % 10;
+
+  // 오행 비율
+  var elCount = {목:0, 화:0, 토:0, 금:0, 수:0};
+  [yearStemIdx, monthStemIdx, dayStemIdx, hourStemIdx].forEach(function(i){ elCount[STEM_EL[i]]++; });
+  [yearBranchIdx, monthBranchIdx, dayBranchIdx, hourBranchIdx].forEach(function(i){ elCount[BRANCH_EL[i]]++; });
+  var fivePct = {};
+  Object.keys(elCount).forEach(function(k){ fivePct[k] = Math.round(elCount[k] / 8 * 100); });
+
+  // 신강/신약 (일간 오행 + 비겁·인성 지지 개수)
+  var dayEl = STEM_EL[dayStemIdx];
+  var PARENT_EL = {목:'수', 화:'목', 토:'화', 금:'토', 수:'금'};
+  var parentEl = PARENT_EL[dayEl];
+  var support = 0;
+  [yearStemIdx, monthStemIdx, hourStemIdx].forEach(function(i){
+    if (STEM_EL[i] === dayEl || STEM_EL[i] === parentEl) support++;
+  });
+  [yearBranchIdx, monthBranchIdx, dayBranchIdx, hourBranchIdx].forEach(function(i){
+    if (BRANCH_EL[i] === dayEl || BRANCH_EL[i] === parentEl) support++;
+  });
+  var strength = support >= 3 ? '신강' : '신약';
+
+  return {
+    pillars: {
+      year:  STEMS[yearStemIdx]  + BRANCHES[yearBranchIdx],
+      month: STEMS[monthStemIdx] + BRANCHES[monthBranchIdx],
+      day:   STEMS[dayStemIdx]   + BRANCHES[dayBranchIdx],
+      hour:  STEMS[hourStemIdx]  + BRANCHES[hourBranchIdx],
+    },
+    zodiac: ZODIAC[yearBranchIdx],
+    fivePct: fivePct,
+    strength: strength,
+    dayElement: dayEl,
+  };
 }
 
 // ── 베딕 퀵메뉴 ────────────────────────────────────────────────
@@ -3440,6 +3529,17 @@ for (var i = 1; i <= 6; i++) {
     (saju.saju_tonggeun ? '【통근】\n' + '뿌리 있는 천간: ' + JSON.stringify(saju.saju_tonggeun.with_root||[]) + '\n뿌리 없는 천간: ' + JSON.stringify(saju.saju_tonggeun.without_root||[]) + '\n\n' : '') +
     '【띠 궁합】\n' +
     (Array.isArray(zodiacComp) ? zodiacComp.slice(0,4).map(function(z){ return z.animal + '(' + z.score + '점): ' + z.desc; }).join('\n') : '미상') + '\n\n' +
+    (window._partnerSaju ? (function(){
+      var ps = window._partnerSaju;
+      var fp = ps.fivePct || {};
+      return '【상대방 사주 데이터】\n' +
+        '이름: ' + (ps.name||'상대방') + (ps.gender ? ' (' + ps.gender + ')' : '') + '\n' +
+        '사주 기둥: 년주 ' + ps.pillars.year + ' / 월주 ' + ps.pillars.month + ' / 일주 ' + ps.pillars.day + ' / 시주 ' + ps.pillars.hour + '\n' +
+        '띠: ' + (ps.zodiac||'미상') + '\n' +
+        '일간 오행: ' + (ps.dayElement||'미상') + '\n' +
+        '신강/신약: ' + (ps.strength||'미상') + '\n' +
+        '오행 비율: 목 ' + (fp.목||0) + '% / 화 ' + (fp.화||0) + '% / 토 ' + (fp.토||0) + '% / 금 ' + (fp.금||0) + '% / 수 ' + (fp.수||0) + '%\n\n';
+    })() : '') +
     '【점성술 데이터】\n' +
     '지배행성: ' + (astro.dominant_planet||'미상') + '\n' +
     '어센던트: ' + (astro.ascendant||'미상') + '\n' +
