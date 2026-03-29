@@ -1027,7 +1027,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.26'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.27'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3421,22 +3421,33 @@ async function handleSubCharge() {
 }
 
 async function handleReferralOnLoad() {
-  var urlParams = new URLSearchParams(window.location.search);
-  var ref = urlParams.get('ref');
-  if (!ref || !currentUser || ref === currentUser.id) return;
+  // URL 파라미터 또는 localStorage에 저장된 ref 확인 (로그인 리다이렉트 후에도 동작)
+  var ref = new URLSearchParams(window.location.search).get('ref')
+         || localStorage.getItem('fortuna_pending_ref');
+  if (!ref || !currentUser || ref === currentUser.id) {
+    localStorage.removeItem('fortuna_pending_ref');
+    return;
+  }
   var alreadyKey = 'ref_done_' + currentUser.id;
-  if (localStorage.getItem(alreadyKey)) return;
+  if (localStorage.getItem(alreadyKey)) {
+    localStorage.removeItem('fortuna_pending_ref');
+    return;
+  }
   try {
-    await fetch('https://fortuna-silk.vercel.app/api/referral', {
+    var res = await fetch('https://fortuna-silk.vercel.app/api/referral', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ referrer_id: ref, referee_id: currentUser.id })
     });
-    localStorage.setItem(alreadyKey, '1');
-    toast('🎉 친구 초대 완료! 친구에게 질문 3개가 충전됐어요!');
+    localStorage.removeItem('fortuna_pending_ref');
+    if (res.ok) {
+      localStorage.setItem(alreadyKey, '1');
+      toast('🎉 친구 초대 완료! 친구에게 질문 3개가 충전됐어요!');
+    }
     var url = window.location.href.replace(/[?&]ref=[^&]+/, '').replace(/[?&]$/, '');
     window.history.replaceState({}, '', url);
-  } catch(e) { console.warn('referral \uCC98\uB9AC \uC2E4\uD328', e.message); }
+  } catch(e) { console.warn('referral 처리 실패', e.message); }
+} catch(e) { console.warn('referral \uCC98\uB9AC \uC2E4\uD328', e.message); }
 }
 // ── 질문 충전 시스템 끝 ────────────────────────────────────
 
@@ -4728,6 +4739,17 @@ document.addEventListener('visibilitychange', async function() {
     if (sendBtn) sendBtn.disabled = false;
   }
 });
+
+// ?ref= 파라미터 저장 (로그인 후에도 유지)
+(function() {
+  var ref = new URLSearchParams(window.location.search).get('ref');
+  if (ref) {
+    localStorage.setItem('fortuna_pending_ref', ref);
+    // URL에서 ref 제거 (노출 방지)
+    var clean = window.location.href.replace(/[?&]ref=[^&]+/, '').replace(/[?&]$/, '');
+    window.history.replaceState({}, '', clean);
+  }
+})();
 
 initAuth();
 
