@@ -689,6 +689,7 @@
       <div style="font-size:11px;color:#9b8fb0;margin-top:8px;">복사 후 Safari 주소창에 붙여넣기 → 카카오 로그인</div>
     </div>
 
+    <div id="totalConsultations" style="font-size:12px;color:#9b8fb0;margin-bottom:6px;letter-spacing:0.02em;min-height:18px;"></div>
     <div class="login-notice">무료로 시작 · 광고없음 · 내 정보는 나만 봄</div>
   </div>
 </div>
@@ -1027,7 +1028,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.31'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.32'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1070,8 +1071,21 @@ var selectedMidnight = '0';
 // ── AUTH ──────────────────────────────────────────────────────
 var _authHandled = false;
 
+async function loadTotalConsultations() {
+  try {
+    var res = await fetch('https://fortuna-silk.vercel.app/api/stats');
+    if (!res.ok) return;
+    var d = await res.json();
+    var el = document.getElementById('totalConsultations');
+    if (el && d.total_consultations) {
+      el.textContent = '지금까지 ' + d.total_consultations.toLocaleString() + '번의 상담';
+    }
+  } catch(e) {}
+}
+
 async function initAuth() {
   makeBgStars();
+  loadTotalConsultations();
   const kakaoUser = localStorage.getItem('fortuna_kakao_user');
   if (kakaoUser) {
     try {
@@ -3277,8 +3291,9 @@ function updateQuestionBadge() {
   if (!badge) return;
   var n = _questionCountCache !== null ? _questionCountCache : 3;
   var color = n >= 3 ? '#4caf50' : n === 2 ? '#ffc107' : '#f44336';
-  var extra = n === 1 ? ' <span style="font-size:10px;opacity:0.8;">마지막</span>' : '';
-  badge.innerHTML = '<span style="color:' + color + ';">\uD83D\uDD2E ' + n + '</span>' + extra;
+  var name = (userProfile && userProfile.name) ? userProfile.name : '';
+  var nameHtml = name ? '<span style="color:var(--text1);font-weight:600;">' + name + '님</span> ' : '';
+  badge.innerHTML = nameHtml + '<span style="color:' + color + ';">☆' + n + '</span>';
   badge.style.borderColor = color + '40';
 }
 
