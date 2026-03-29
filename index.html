@@ -861,6 +861,12 @@
         <div class="settings-dropdown-item" onclick="confirmLogout();closeSettingsMenu()">
           <span class="sd-icon">🚪</span><span>로그아웃</span>
         </div>
+        <div id="adminStatsMenuItem" style="display:none;">
+          <hr>
+          <div class="settings-dropdown-item" onclick="showAdminStats();closeSettingsMenu()">
+            <span class="sd-icon">📊</span><span>관리자 통계</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1025,10 +1031,21 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- ADMIN STATS MODAL -->
+<div class="modal-overlay" id="adminStatsModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:340px;width:90%;">
+    <div class="modal-title">📊 관리자 통계</div>
+    <div id="adminStatsBody" style="margin-top:12px;display:flex;flex-direction:column;gap:10px;font-size:14px;">
+      <div style="color:var(--text3);text-align:center;padding:16px;">불러오는 중...</div>
+    </div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:16px;" onclick="document.getElementById('adminStatsModal').classList.remove('open')">닫기</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.33'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.34'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1081,6 +1098,30 @@ async function loadTotalConsultations() {
       el.textContent = d.total_consultations.toLocaleString() + '번의 상담';
     }
   } catch(e) {}
+}
+
+async function showAdminStats() {
+  var modal = document.getElementById('adminStatsModal');
+  var body = document.getElementById('adminStatsBody');
+  modal.classList.add('open');
+  body.innerHTML = '<div style="color:var(--text3);text-align:center;padding:16px;">불러오는 중...</div>';
+  try {
+    var res = await fetch('https://fortuna-silk.vercel.app/api/admin-stats?admin_id=' + ADMIN_UUID);
+    if (!res.ok) { body.innerHTML = '<div style="color:#f44336;text-align:center;">조회 실패</div>'; return; }
+    var d = await res.json();
+    var row = function(icon, label, val) {
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:10px;">' +
+        '<span>' + icon + ' ' + label + '</span>' +
+        '<strong style="color:var(--accent);">' + (val || 0).toLocaleString() + '</strong></div>';
+    };
+    body.innerHTML =
+      row('👥', '전체 가입자', d.totalUsers) +
+      row('📅', '오늘 접속자', d.todayUsers) +
+      row('💬', '누적 상담 수', d.totalMessages) +
+      row('🔥', '오늘 상담 수', d.todayMessages);
+  } catch(e) {
+    body.innerHTML = '<div style="color:#f44336;text-align:center;">오류: ' + e.message + '</div>';
+  }
 }
 
 async function initAuth() {
@@ -1206,9 +1247,15 @@ function logoutKakao() {
   showScreen('login');
 }
 
+var ADMIN_UUID = '3d7633bc-3351-4f22-bc10-10cd1bfc5c28';
+
 function applyProfile(profile) {
   userProfile = profile;
   showScreen('chat');
+  if (currentUser && currentUser.id === ADMIN_UUID) {
+    var el = document.getElementById('adminStatsMenuItem');
+    if (el) el.style.display = 'block';
+  }
   if (Notification.permission === 'granted') subscribePush();
   loadChatHistory().then(function() {
     updateChatHeader();
