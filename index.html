@@ -1027,7 +1027,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.30'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.31'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4495,8 +4495,8 @@ function showLimitModal(freeLeft, paidLeft) {
     '<div style="background:var(--surface2);border-radius:20px;padding:32px 24px;max-width:320px;width:90%;text-align:center;">' +
       '<div style="font-size:36px;margin-bottom:12px;">🔮</div>' +
       '<div style="font-size:18px;font-weight:700;margin-bottom:8px;">질문을 다 썼어요</div>' +
-      '<div style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6;">' + subMsg + '<br>1,900원으로 질문 20개를 충전하면<br>바로 계속 물어볼 수 있어요.</div>' +
-      '<button onclick="startPayment()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;">1,900원으로 20개 충전</button>' +
+      '<div style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6;">' + subMsg + '<br>1,900원으로 질문 10개를 충전하면<br>바로 계속 물어볼 수 있어요.</div>' +
+      '<button onclick="startPayment()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;">💳 1,900원으로 10개 충전</button>' +
       '<button onclick="closeLimitModal()" style="width:100%;padding:12px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:12px;font-size:14px;cursor:pointer;">내일 다시 올게요</button>' +
     '</div>';
   document.body.appendChild(overlay);
@@ -4505,8 +4505,8 @@ function showLimitModal(freeLeft, paidLeft) {
 function closeLimitModal() { var o = document.getElementById("limitOverlay"); if(o) o.remove(); }
 
 function startPayment() {
-  // Toss Payments 연동 예정
-  alert('결제 기능 준비 중이에요! 곧 오픈할게요 🙏');
+  closeLimitModal();
+  handlePayCharge();
 }
 
 function getTodayGanji(targetDate = new Date()) {
