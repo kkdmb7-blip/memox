@@ -1088,7 +1088,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.49'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.50'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1471,7 +1471,9 @@ function updateChatHeader() {
   if (!userProfile) return;
   document.getElementById('chatHeaderName').textContent = '포르투나';
   var userNameEl = document.getElementById('chatHeaderUserName');
-  if (userNameEl) userNameEl.textContent = (userProfile.name || '') + '님의 운명 상담';
+  var _hn = userProfile.name || '';
+  if (_hn.length > 5) _hn = _hn.slice(0, 5) + '...';
+  if (userNameEl) userNameEl.textContent = _hn + '님의 운명 상담';
   document.getElementById('chatHeaderSub').textContent = '운명의 여신 · 사주 · 점성술';
 }
 
@@ -3417,7 +3419,8 @@ function updateQuestionBadge() {
   if (!badge) return;
   var n = _questionCountCache !== null ? _questionCountCache : 3;
   var color = n >= 3 ? '#4caf50' : n === 2 ? '#ffc107' : '#f44336';
-  var name = (userProfile && userProfile.name) ? userProfile.name : '';
+  var _rawName = (userProfile && userProfile.name) ? userProfile.name : '';
+  var name = _rawName.length > 5 ? _rawName.slice(0, 5) + '...' : _rawName;
   var nameHtml = name ? '<span style="color:var(--text1);font-weight:600;">' + name + '님</span> ' : '';
   badge.innerHTML = nameHtml + '<span style="color:' + color + ';">☆' + n + '</span>';
   badge.style.borderColor = color + '40';
