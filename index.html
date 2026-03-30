@@ -362,6 +362,13 @@
   .chip:hover { background:rgba(139,92,246,0.2); border-color:var(--accent); color:#fff; }
   .chip:active { transform:scale(0.96); }
 
+  /* 모드 선택 버튼 */
+  .mode-bar { display:flex; gap:6px; padding:6px 14px 8px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
+  .mode-bar::-webkit-scrollbar { display:none; }
+  .mode-btn { padding:5px 13px; border-radius:14px; border:1px solid rgba(139,92,246,0.25); background:rgba(139,92,246,0.06); color:var(--text3); font-size:12px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.15s; }
+  .mode-btn:hover { background:rgba(139,92,246,0.15); color:var(--text); }
+  .mode-btn.active { background:rgba(139,92,246,0.28); border-color:var(--accent); color:#fff; font-weight:700; }
+
   /* 달 위상 뱃지 */
   #moonPhaseDisplay { font-size:10.5px; color:#9b8fb0; margin-top:2px; letter-spacing:0.02em; cursor:default; }
 /* 베딕 퀵메뉴 */
@@ -889,7 +896,15 @@
 
   <div class="chat-messages" id="chatMessages"></div>
 
-  <div class="suggest-chips" id="suggestChips"></div>
+  <div class="suggest-chips" id="suggestChips" style="display:none;"></div>
+
+  <div class="mode-bar" id="modeBar">
+    <button class="mode-btn active" id="modeBtn-default" onclick="selectMode('default')">기본</button>
+    <button class="mode-btn" id="modeBtn-saju" onclick="selectMode('saju')">사주</button>
+    <button class="mode-btn" id="modeBtn-astro" onclick="selectMode('astro')">점성</button>
+    <button class="mode-btn" id="modeBtn-ziwei" onclick="selectMode('ziwei')">자미두수</button>
+    <button class="mode-btn" id="modeBtn-vedic" onclick="selectMode('vedic')">베딕</button>
+  </div>
 
   <div class="chat-input-wrap">
     <div class="chat-input-row">
@@ -1050,7 +1065,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.35'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.36'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3312,6 +3327,16 @@ async function sendMessage() {
   }
 }
 
+// ── 모드 선택 ────────────────────────────────────────────
+var _chatMode = 'default';
+
+function selectMode(mode) {
+  _chatMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(function(btn) { btn.classList.remove('active'); });
+  var el = document.getElementById('modeBtn-' + mode);
+  if (el) el.classList.add('active');
+}
+
 // ── 질문 충전 시스템 ──────────────────────────────────────
 var _questionCountCache = null;
 
@@ -3842,7 +3867,8 @@ for (var i = 1; i <= 6; i++) {
         body: JSON.stringify({
           user_id: currentUser.id,
           messages: claudeMessages,
-          system_prompt: systemPrompt
+          system_prompt: systemPrompt,
+          mode: _chatMode
         }),
         signal: _ctrl.signal
       });
