@@ -1,5 +1,8 @@
 // ── 포르투나 Service Worker ──────────────────────────────────
-const CACHE_NAME = 'fortuna-cache-2.19.40';
+// 등록 URL의 ?v= 쿼리스트링에서 버전을 읽어 캐시명 자동 연동
+// index.html에서 APP_VERSION만 올리면 캐시도 자동 무효화됨
+const _swVersion = new URLSearchParams(self.location.search).get('v') || 'dev';
+const CACHE_NAME = 'fortuna-cache-' + _swVersion;
 // self.registration.scope 기반 상대경로 (GitHub Pages 서브경로 대응)
 const BASE = self.registration.scope;
 const STATIC_ASSETS = [BASE, BASE + 'index.html', BASE + 'manifest.json', BASE + 'icon.svg'];
