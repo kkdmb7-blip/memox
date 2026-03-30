@@ -1088,7 +1088,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.47'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.48'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3870,6 +3870,8 @@ for (var i = 1; i <= 6; i++) {
   + '【공유 카드 지침】\n'
   + '[CARD] 오늘 ' + (profile.name || '당신') + '님에게 전하는 한 마디 (20자 이내, 임팩트 있게)\n\n'
 
+  + '【후속 질문 지침】\n'
+  + '답변 마지막에 사용자의 상황과 관련된 질문 1개를 짧게 해주세요.\n\n'
   + '【맥락 추출 지침】\n'
   + '답변 끝에 반드시 추가:\n'
   + '[CTX]\n'
