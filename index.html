@@ -716,6 +716,13 @@
   </div>
 </div>
 
+<!-- PWA 채팅 화면 하단 고정 배너 -->
+<div id="pwaChatBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;padding:12px 16px;background:linear-gradient(135deg,rgba(30,10,60,0.97),rgba(50,20,80,0.97));border-top:1px solid rgba(139,92,246,0.4);backdrop-filter:blur(8px);">
+  <button onclick="closePwaChatBanner()" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#9b8fb0;font-size:20px;cursor:pointer;line-height:1;">×</button>
+  <div id="pwaChatBannerText" style="font-size:13px;color:#ede6f8;line-height:1.8;padding-right:24px;"></div>
+  <button id="pwaChatInstallBtn" style="display:none;margin-top:10px;width:100%;padding:11px 0;background:linear-gradient(135deg,#7c3aed,#db2777);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">홈 화면에 추가하기</button>
+</div>
+
 <!-- SCREEN: ONBOARDING (사주/점성 입력) -->
 <div class="screen" id="screenOnboard">
   <div class="onboard-header">
@@ -1081,7 +1088,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.45'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.46'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4360,10 +4367,17 @@ document.addEventListener('DOMContentLoaded', function() {
   var _origShowScreen = showScreen;
   showScreen = function(name) {
     _origShowScreen(name);
-    if (name === 'chat') setTimeout(fixChatHeight, 100);
+    if (name === 'chat') {
+      setTimeout(fixChatHeight, 100);
+      setTimeout(showPwaChatBanner, 1500);
+    }
     if (name !== 'login') {
       var _pb = document.getElementById('pwaBanner');
       if (_pb) _pb.style.display = 'none';
+    }
+    if (name !== 'chat') {
+      var _pcb = document.getElementById('pwaChatBanner');
+      if (_pcb) _pcb.style.display = 'none';
     }
   };
 });
@@ -4937,6 +4951,62 @@ function closePwaBanner() {
   var banner = document.getElementById('pwaBanner');
   if (banner) banner.style.display = 'none';
 }
+
+// ── PWA 채팅 화면 하단 고정 배너 (1회만 표시) ────────────────
+var _pwaChatInstallPrompt = null;
+
+function showPwaChatBanner() {
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (window.navigator.standalone === true) return;
+  if (localStorage.getItem('pwa_banner_shown') === '1') return;
+
+  var ua = navigator.userAgent || '';
+  var isKakao = /KAKAOTALK/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua);
+  var isSafari = isIOS && /Safari/i.test(ua) && !/CriOS|FxiOS/i.test(ua);
+
+  var banner = document.getElementById('pwaChatBanner');
+  var textEl = document.getElementById('pwaChatBannerText');
+  var installBtn = document.getElementById('pwaChatInstallBtn');
+  if (!banner || !textEl) return;
+
+  if (isKakao) {
+    textEl.innerHTML = '📲 앱처럼 사용하려면 <strong style="color:#a78bfa">크롬 브라우저</strong>에서 열어주세요.';
+    banner.style.display = 'block';
+    return;
+  }
+  if (isSafari) {
+    textEl.innerHTML = '📲 홈 화면에 추가하면 앱처럼 사용할 수 있어요!<br><span style="color:#9b8fb0;font-size:12px;">하단 공유 버튼(□↑) → <strong style="color:#ede6f8">홈 화면에 추가</strong></span>';
+    banner.style.display = 'block';
+    return;
+  }
+  if (_pwaChatInstallPrompt) {
+    textEl.innerHTML = '📲 홈 화면에 추가하면 앱처럼 빠르게 실행할 수 있어요!';
+    installBtn.style.display = 'block';
+    installBtn.onclick = function() {
+      _pwaChatInstallPrompt.prompt();
+      _pwaChatInstallPrompt.userChoice.then(function(result) {
+        if (result.outcome === 'accepted') closePwaChatBanner();
+        _pwaChatInstallPrompt = null;
+      });
+    };
+    banner.style.display = 'block';
+  }
+}
+
+function closePwaChatBanner() {
+  localStorage.setItem('pwa_banner_shown', '1');
+  var banner = document.getElementById('pwaChatBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _pwaChatInstallPrompt = e;
+});
+window.addEventListener('appinstalled', function() {
+  closePwaChatBanner();
+});
 
 // ── 뒤로가기 로그아웃 방지 ───────────────────────────────────
 // 앱 시작 시 현재 상태를 history에 쌓아둠
