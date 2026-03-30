@@ -363,11 +363,11 @@
   .chip:active { transform:scale(0.96); }
 
   /* 모드 선택 버튼 */
-  .mode-bar { display:flex; gap:6px; padding:7px 12px 9px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; background:rgba(139,92,246,0.06); border-top:1px solid rgba(139,92,246,0.12); }
-  .mode-bar::-webkit-scrollbar { display:none; }
-  .mode-btn { padding:6px 14px; border-radius:20px; border:1px solid rgba(139,92,246,0.3); background:transparent; color:var(--text3); font-size:12.5px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.18s; }
+  .mode-bar { display:flex; align-items:center; gap:5px; padding:7px 10px 9px; overflow-x:visible; background:rgba(139,92,246,0.06); border-top:1px solid rgba(139,92,246,0.12); flex-wrap:wrap; }
+  .mode-btn { padding:5px 11px; border-radius:20px; border:1px solid rgba(139,92,246,0.3); background:transparent; color:var(--text3); font-size:12px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.18s; }
   .mode-btn:hover { background:rgba(139,92,246,0.12); color:var(--text); border-color:rgba(139,92,246,0.5); }
   .mode-btn.active { background:linear-gradient(135deg,#7c3aed,#db2777); border-color:transparent; color:#fff; font-weight:700; transform:translateY(-1px); box-shadow:0 3px 10px rgba(139,92,246,0.4); }
+  .mode-bar-sep { width:1px; height:20px; background:rgba(139,92,246,0.25); flex-shrink:0; margin:0 2px; }
 
   /* 달 위상 뱃지 */
   #moonPhaseDisplay { font-size:10.5px; color:#9b8fb0; margin-top:2px; letter-spacing:0.02em; cursor:default; }
@@ -600,20 +600,22 @@
   .partner-skip { font-size:11px; color:var(--text3); cursor:pointer; text-decoration:underline; margin-left:6px; }
 
   .tarot-btn {
-    padding:6px 14px; border-radius:20px;
-    background:transparent;
-    border:1px solid rgba(201,168,76,0.5);
-    color:#c9a84c; font-size:12.5px; font-weight:700;
+    padding:5px 12px; border-radius:10px;
+    background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.08));
+    border:1px solid rgba(201,168,76,0.55);
+    color:#c9a84c; font-size:12px; font-weight:700;
     cursor:pointer; flex-shrink:0;
-    display:inline-flex; align-items:center; justify-content:center;
+    display:inline-flex; align-items:center; gap:4px; justify-content:center;
     transition:all 0.18s; white-space:nowrap;
     font-family:'Noto Sans KR',sans-serif;
+    box-shadow:0 0 0 0 rgba(201,168,76,0);
   }
   .tarot-btn:hover {
-    background:rgba(201,168,76,0.12);
+    background:linear-gradient(135deg,rgba(201,168,76,0.32),rgba(201,168,76,0.16));
     border-color:#c9a84c;
-    box-shadow:0 3px 10px rgba(201,168,76,0.25);
+    box-shadow:0 0 12px rgba(201,168,76,0.4), 0 2px 8px rgba(201,168,76,0.2);
     transform:translateY(-1px);
+    color:#e8c84a;
   }
   .tarot-btn:active { transform:scale(0.95) !important; }
   .tarot-select-grid {
@@ -906,6 +908,7 @@
     <button class="mode-btn" id="modeBtn-astro" onclick="selectMode('astro')">점성</button>
     <button class="mode-btn" id="modeBtn-ziwei" onclick="selectMode('ziwei')">자미두수</button>
     <button class="mode-btn" id="modeBtn-vedic" onclick="selectMode('vedic')">베딕</button>
+    <span class="mode-bar-sep"></span>
     <button class="tarot-btn" id="tarotOpenBtn" onclick="openTarotModal()">🃏 타로</button>
   </div>
 
@@ -1067,7 +1070,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.39'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.40'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
