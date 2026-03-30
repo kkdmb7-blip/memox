@@ -1088,7 +1088,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.46'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.47'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4891,6 +4891,27 @@ document.addEventListener('visibilitychange', async function() {
 
 initAuth();
 
+// ── PWA iOS 안내 모달 ─────────────────────────────────────────
+function showPwaIosModal() {
+  var existing = document.getElementById('pwaIosModal');
+  if (existing) { existing.style.display = 'flex'; return; }
+  var modal = document.createElement('div');
+  modal.id = 'pwaIosModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:flex-end;justify-content:center;';
+  modal.innerHTML = '<div style="background:#1a0a2e;border:1px solid rgba(139,92,246,0.4);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;position:relative;text-align:center;">'
+    + '<button onclick="document.getElementById(\'pwaIosModal\').style.display=\'none\'" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#9b8fb0;font-size:22px;cursor:pointer;line-height:1;">×</button>'
+    + '<div style="font-size:22px;margin-bottom:8px;">📲</div>'
+    + '<div style="font-size:15px;font-weight:700;color:#ede6f8;margin-bottom:12px;">홈 화면에 추가하는 방법</div>'
+    + '<div style="font-size:13px;color:#c4b5d8;line-height:2;text-align:left;">'
+    + '① Safari 하단 <strong style="color:#fff">공유 버튼(□↑)</strong> 탭<br>'
+    + '② 스크롤해서 <strong style="color:#fff">홈 화면에 추가</strong> 선택<br>'
+    + '③ 오른쪽 상단 <strong style="color:#fff">추가</strong> 탭'
+    + '</div>'
+    + '<div style="margin-top:16px;padding:10px;background:rgba(139,92,246,0.12);border-radius:10px;font-size:12px;color:#9b8fb0;">Safari 브라우저에서만 홈 화면 추가가 가능해요</div>'
+    + '</div>';
+  document.body.appendChild(modal);
+}
+
 // ── PWA 설치 유도 배너 ───────────────────────────────────────
 (function() {
   // 이미 닫은 경우 또는 standalone(설치된 PWA) 모드면 표시 안 함
@@ -4900,6 +4921,7 @@ initAuth();
 
   var ua = navigator.userAgent || '';
   var isKakao = /KAKAOTALK/i.test(ua);
+  var isAndroid = /Android/i.test(ua);
   var isIOS = /iPhone|iPad|iPod/i.test(ua);
   var isSafari = isIOS && /Safari/i.test(ua) && !/CriOS|FxiOS/i.test(ua);
 
@@ -4908,14 +4930,36 @@ initAuth();
   var installBtn = document.getElementById('pwaInstallBtn');
   if (!banner || !textEl) return;
 
+  if (isKakao && isAndroid) {
+    textEl.innerHTML = '📲 앱처럼 사용하려면 <strong style="color:#a78bfa">크롬 브라우저</strong>에서 열어주세요.';
+    installBtn.textContent = '크롬으로 열기';
+    installBtn.style.display = 'block';
+    installBtn.onclick = function() {
+      var url = location.href;
+      var path = url.replace(/^https?:\/\//, '');
+      location.href = 'intent://' + path + '#Intent;scheme=https;package=com.android.chrome;end';
+    };
+    banner.style.display = 'block';
+    return;
+  }
+
   if (isKakao) {
-    textEl.innerHTML = '📲 앱처럼 사용하려면 크롬 브라우저에서 여세요.<br><span style="color:#9b8fb0;font-size:12px;">주소 복사 → Chrome 붙여넣기 → 설치</span>';
+    textEl.innerHTML = '📲 앱처럼 사용하려면 크롬 브라우저에서 열어주세요.';
     banner.style.display = 'block';
     return;
   }
 
   if (isSafari) {
-    textEl.innerHTML = '📲 홈 화면에 추가하면 앱처럼 사용할 수 있어요!<br><span style="color:#9b8fb0;font-size:12px;">하단 공유 버튼(□↑) → <strong style="color:#ede6f8">홈 화면에 추가</strong></span>';
+    textEl.innerHTML = '📲 홈 화면에 추가하면 앱처럼 사용할 수 있어요!';
+    installBtn.textContent = '추가 방법 보기';
+    installBtn.style.display = 'block';
+    installBtn.onclick = showPwaIosModal;
+    banner.style.display = 'block';
+    return;
+  }
+
+  if (isIOS) {
+    textEl.innerHTML = '📲 홈 화면에 추가하려면 <strong style="color:#a78bfa">Safari</strong>에서 열어주세요.';
     banner.style.display = 'block';
     return;
   }
@@ -4926,6 +4970,7 @@ initAuth();
     e.preventDefault();
     _deferredPrompt = e;
     textEl.innerHTML = '📲 홈 화면에 추가하면 앱처럼 빠르게 실행할 수 있어요!';
+    installBtn.textContent = '홈 화면에 추가하기';
     installBtn.style.display = 'block';
     banner.style.display = 'block';
     installBtn.onclick = function() {
@@ -4962,6 +5007,7 @@ function showPwaChatBanner() {
 
   var ua = navigator.userAgent || '';
   var isKakao = /KAKAOTALK/i.test(ua);
+  var isAndroid = /Android/i.test(ua);
   var isIOS = /iPhone|iPad|iPod/i.test(ua);
   var isSafari = isIOS && /Safari/i.test(ua) && !/CriOS|FxiOS/i.test(ua);
 
@@ -4970,18 +5016,39 @@ function showPwaChatBanner() {
   var installBtn = document.getElementById('pwaChatInstallBtn');
   if (!banner || !textEl) return;
 
+  if (isKakao && isAndroid) {
+    textEl.innerHTML = '📲 앱처럼 사용하려면 <strong style="color:#a78bfa">크롬 브라우저</strong>에서 열어주세요.';
+    installBtn.textContent = '크롬으로 열기';
+    installBtn.style.display = 'block';
+    installBtn.onclick = function() {
+      var url = location.href;
+      var path = url.replace(/^https?:\/\//, '');
+      location.href = 'intent://' + path + '#Intent;scheme=https;package=com.android.chrome;end';
+    };
+    banner.style.display = 'block';
+    return;
+  }
   if (isKakao) {
     textEl.innerHTML = '📲 앱처럼 사용하려면 <strong style="color:#a78bfa">크롬 브라우저</strong>에서 열어주세요.';
     banner.style.display = 'block';
     return;
   }
   if (isSafari) {
-    textEl.innerHTML = '📲 홈 화면에 추가하면 앱처럼 사용할 수 있어요!<br><span style="color:#9b8fb0;font-size:12px;">하단 공유 버튼(□↑) → <strong style="color:#ede6f8">홈 화면에 추가</strong></span>';
+    textEl.innerHTML = '📲 홈 화면에 추가하면 앱처럼 사용할 수 있어요!';
+    installBtn.textContent = '추가 방법 보기';
+    installBtn.style.display = 'block';
+    installBtn.onclick = showPwaIosModal;
+    banner.style.display = 'block';
+    return;
+  }
+  if (isIOS) {
+    textEl.innerHTML = '📲 홈 화면에 추가하려면 <strong style="color:#a78bfa">Safari</strong>에서 열어주세요.';
     banner.style.display = 'block';
     return;
   }
   if (_pwaChatInstallPrompt) {
     textEl.innerHTML = '📲 홈 화면에 추가하면 앱처럼 빠르게 실행할 수 있어요!';
+    installBtn.textContent = '홈 화면에 추가하기';
     installBtn.style.display = 'block';
     installBtn.onclick = function() {
       _pwaChatInstallPrompt.prompt();
