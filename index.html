@@ -373,6 +373,7 @@
   .mode-tooltip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:rgba(15,5,35,0.96); }
   .mode-btn:hover .mode-tooltip { opacity:1; }
   .mode-btn.tooltip-show .mode-tooltip { opacity:1; }
+  #modeBtn-default .mode-tooltip::after { display:none; }
 
   /* 달 위상 뱃지 */
   #moonPhaseDisplay { font-size:10.5px; color:#9b8fb0; margin-top:2px; letter-spacing:0.02em; cursor:default; }
@@ -926,7 +927,7 @@
   <div class="suggest-chips" id="suggestChips" style="display:none;"></div>
 
   <div class="mode-bar" id="modeBar">
-    <button class="mode-btn active" id="modeBtn-default" onclick="selectMode('default')">기본<span class="mode-tooltip">사주+점성+자미두수+베딕 통합 분석</span></button>
+    <button class="mode-btn active" id="modeBtn-default" onclick="selectMode('default')">기본<span class="mode-tooltip" style="left:0;transform:none;"><span style="position:absolute;top:100%;left:14px;transform:none;border:5px solid transparent;border-top-color:rgba(15,5,35,0.96);"></span>사주+점성+자미두수+베딕 통합 분석</span></button>
     <button class="mode-btn" id="modeBtn-saju" onclick="selectMode('saju')">사주<span class="mode-tooltip">인생 전체의 큰 흐름과 타고난 기질</span></button>
     <button class="mode-btn" id="modeBtn-astro" onclick="selectMode('astro')">점성<span class="mode-tooltip">우주의 기운으로 보는 성격과 운명</span></button>
     <button class="mode-btn" id="modeBtn-ziwei" onclick="selectMode('ziwei')">자미두수<span class="mode-tooltip">오늘의 상세한 일진과 구체적인 사건</span></button>
@@ -1093,7 +1094,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.55'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.56'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
