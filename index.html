@@ -1093,7 +1093,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.54'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.55'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1213,7 +1213,14 @@ async function initAuth() {
             }
           } catch(e) {}
         }
-        if (!resolved) showScreen('login');
+        if (!resolved) {
+          // API 실패해도 이메일 있으면 임시 ID 생성 후 onboard로
+          var _tmpId = parsed.id || ('kakao_' + btoa(parsed.email).replace(/[^a-zA-Z0-9]/g,'').slice(0,16));
+          currentUser = { id: _tmpId, email: parsed.email, provider: 'kakao' };
+          var _tmpData = { id: _tmpId, email: parsed.email, name: parsed.name || '' };
+          localStorage.setItem('fortuna_kakao_user', JSON.stringify(_tmpData));
+          showScreen('onboard');
+        }
         return;
       }
     } catch(e) {
@@ -1257,6 +1264,8 @@ function fallbackCopy(url, btn) {
 // 로그인 화면 진입 시 인앱브라우저 체크 (카카오톡 인앱 포함)
 function checkInAppBrowser() {
   if (!isInAppBrowser()) return;
+  // 이미 로그인된 경우 스킵 (로그인 완료 후 복귀 시 방해 방지)
+  if (localStorage.getItem('fortuna_kakao_user')) return;
   var ua = navigator.userAgent || '';
   var isKakao = /KAKAOTALK/i.test(ua);
   var isAndroid = /Android/i.test(ua);
