@@ -705,7 +705,7 @@
       카카오로 시작하기
     </button>
 
-    <!-- 인앱 브라우저 감지 시 표시 -->
+    <!-- 인앱 브라우저 감지 시 표시 (iOS) -->
     <div id="inappGuide" style="display:none;margin-top:16px;padding:16px;background:rgba(255,235,0,0.08);border:1px solid rgba(255,235,0,0.25);border-radius:12px;text-align:center;">
       <div style="font-size:13px;color:#ede6f8;line-height:1.8;margin-bottom:12px;">
         카카오톡에서는 로그인이 안 돼요 😅<br>
@@ -716,6 +716,18 @@
         링크 복사하기
       </button>
       <div style="font-size:11px;color:#9b8fb0;margin-top:8px;">복사 후 Safari 주소창에 붙여넣기 → 카카오 로그인</div>
+    </div>
+
+    <!-- 인앱 브라우저 감지 시 표시 (Android 카카오) -->
+    <div id="inappGuideAndroid" style="display:none;margin-top:16px;padding:16px;background:rgba(255,235,0,0.08);border:1px solid rgba(255,235,0,0.25);border-radius:12px;text-align:center;">
+      <div style="font-size:13px;color:#ede6f8;line-height:1.8;margin-bottom:12px;">
+        카카오톡에서는 로그인이 안 돼요 😅<br>
+        아래 버튼을 눌러 크롬에서 열어주세요.
+      </div>
+      <button id="openInChromeBtn" style="background:#FEE500;color:#3C1E1E;border:none;border-radius:10px;padding:11px 0;font-size:14px;font-weight:700;cursor:pointer;width:100%;">
+        크롬으로 열기
+      </button>
+      <div style="font-size:11px;color:#9b8fb0;margin-top:8px;">크롬 → 카카오 로그인 가능</div>
     </div>
 
     <div class="login-notice">무료로 시작 · 광고없음 · 내 정보는 나만 봄</div>
@@ -1094,7 +1106,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.56'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.57'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1271,13 +1283,22 @@ function checkInAppBrowser() {
   var isKakao = /KAKAOTALK/i.test(ua);
   var isAndroid = /Android/i.test(ua);
 
-  // Android 카카오: 자동 리다이렉트 하지 않고 배너에서 버튼으로 처리
-  // (자동 리다이렉트 시 배너가 표시될 틈이 없음)
-  if (isKakao && isAndroid) return;
-
   // ref 파라미터 보존 (외부 브라우저로 넘길 때 포함)
   var _ref = new URLSearchParams(window.location.search).get('ref')
            || localStorage.getItem('fortuna_pending_ref') || '';
+
+  // Android 카카오: 배너 표시 + 크롬으로 열기 버튼
+  if (isKakao && isAndroid) {
+    var _baseUrl = 'https://kkdmb7-blip.github.io/memox/';
+    var _fullUrl = _baseUrl + (_ref ? '?ref=' + encodeURIComponent(_ref) : '');
+    var _path = 'kkdmb7-blip.github.io/memox/' + (_ref ? '?ref=' + encodeURIComponent(_ref) : '');
+    var _intentUrl = 'intent://' + _path + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(_fullUrl) + ';end';
+    var chromeBtn = document.getElementById('openInChromeBtn');
+    if (chromeBtn) chromeBtn.onclick = function() { location.href = _intentUrl; };
+    document.getElementById('inappGuideAndroid').style.display = 'block';
+    document.getElementById('kakaoLoginBtn').style.display = 'none';
+    return;
+  }
   var baseUrl = 'https://kkdmb7-blip.github.io/memox/';
   var fullUrl = baseUrl + (_ref ? '?ref=' + encodeURIComponent(_ref) : '');
 
