@@ -1436,6 +1436,9 @@ async function refetchAspects(profile) {
     }).join(', ');
     userProfile.astro_data.aspects_summary = summary;
     var updated = Object.assign({}, userProfile);
+    delete updated.daily_count;
+    delete updated.daily_reset_at;
+    delete updated.paid_count;
     await saveProfile(updated);
     console.log('aspects_summary 백그라운드 업데이트 완료:', summary.slice(0, 80));
   } catch(e) {
