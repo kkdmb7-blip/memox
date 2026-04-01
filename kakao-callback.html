@@ -34,6 +34,8 @@ async function handleLogin() {
       body: JSON.stringify({ code, redirect_uri: "https://kkdmb7-blip.github.io/memox/kakao-callback.html" })
     });
     const tokenData = await tokenRes.json();
+    // [DEBUG] 토큰 교환 결과 로그 (원인 파악용, 확인 후 제거)
+    console.log('[kakao-token] status:', tokenRes.status, 'data:', JSON.stringify(tokenData));
     const access_token = tokenData.access_token;
     if (!access_token) throw new Error("토큰 없음");
 
