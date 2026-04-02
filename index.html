@@ -1036,7 +1036,7 @@
   <div class="charge-modal" style="position:relative;">
     <button class="charge-close-btn" onclick="closeChargeModal()">✕</button>
     <div class="charge-modal-title">오늘 질문을 다 쓰셨어요 🌙</div>
-    <div class="charge-modal-sub">충전하거나 내일 자정을 기다려주세요</div>
+    <div class="charge-modal-sub">지금 충전하면 바로 이어서 물어볼 수 있어요</div>
     <button class="charge-btn charge-btn-invite" onclick="handleInviteCharge()">
       <span>👥 친구 초대하고 +3개 무료</span><span>→</span>
     </button>
@@ -1046,7 +1046,7 @@
     <button class="charge-btn charge-btn-sub" onclick="handleSubCharge()">
       <span>✨ 무제한 구독</span><span style="font-size:13px;">9,900원/월</span>
     </button>
-    <div class="charge-modal-footer">내일 자정에 3개 자동 충전돼요</div>
+    <div class="charge-modal-footer"></div>
     <hr class="charge-modal-divider">
     <div class="charge-modal-extra-label">더 깊이 알고 싶다면</div>
     <a class="charge-btn-link" href="https://fortuna-silk.vercel.app" target="_blank" onclick="closeChargeModal()">
@@ -4614,7 +4614,7 @@ function updateQuotaDisplay(freeLeft, paidLeft) {
   } else {
     el.style.color = left <= 1 ? '#ff4d4d' : left <= 2 ? '#f5c842' : 'var(--accent)';
     if (left === 0) {
-      el.innerHTML = '오늘 질문을 다 쓰셨어요. 자정에 다시 만나요 🌙' +
+      el.innerHTML = '질문권이 없어요. 지금 충전하면 바로 계속할 수 있어요' +
         '<button onclick="requestNotification()" style="margin-left:8px;padding:3px 10px;background:var(--accent2);color:#fff;border:none;border-radius:12px;font-size:11px;cursor:pointer;">내일 알림 받기</button>';
     } else {
       el.innerHTML = '오늘 무료 ' + left + '/3개' + (left === 1 ? ' <span style="color:#ff4d4d">마지막 질문입니다 🔮</span>' : '');
