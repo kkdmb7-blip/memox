@@ -4280,6 +4280,12 @@ function appendMessage(role, content, animate, created_at) {
     kakaoBtn.innerHTML = '카카오 공유';
     kakaoBtn.setAttribute('data-content', encodeURIComponent(content));
     kakaoBtn.setAttribute('data-card', encodeURIComponent(cardLine2 || ''));
+    // 오늘 이미 보상 받은 경우 ✓ 표시
+    (function() {
+      var todayKey = 'share_reward_' + new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+      if (localStorage.getItem(todayKey)) kakaoBtn.innerHTML = '카카오 공유 ✓';
+    })();
+
     kakaoBtn.addEventListener('click', function() {
       var text = decodeURIComponent(kakaoBtn.getAttribute('data-content'));
       var card = decodeURIComponent(kakaoBtn.getAttribute('data-card') || '');
@@ -4320,6 +4326,36 @@ function appendMessage(role, content, animate, created_at) {
             }]
           });
         }
+        // 공유 후 보상 처리
+        var todayKST = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+        var rewardKey = 'share_reward_' + todayKST;
+        if (localStorage.getItem(rewardKey)) {
+          toast('오늘은 이미 공유 보상을 받았어요 ✓');
+          return;
+        }
+        var cnt = 3;
+        toast('공유 확인 중... ' + cnt + '초');
+        var toastTimer = setInterval(function() {
+          cnt--;
+          if (cnt > 0) { toast('공유 확인 중... ' + cnt + '초'); }
+          else {
+            clearInterval(toastTimer);
+            if (!currentUser) return;
+            sb.from('chat_users').select('paid_count').eq('id', currentUser.id).single().then(function(r) {
+              var cur = (r.data && r.data.paid_count) || 0;
+              sb.from('chat_users').update({ paid_count: cur + 1 }).eq('id', currentUser.id).then(function() {
+                localStorage.setItem(rewardKey, '1');
+                _questionCountCache = null;
+                loadQuestionCount().then(function() { updateQuestionBadge(); });
+                toast('공유 감사해요! 질문권 1개 충전됐어요 🔮');
+                // 현재 화면의 모든 카카오 공유 버튼에 ✓ 표시
+                document.querySelectorAll('.kakao-share-btn').forEach(function(b) {
+                  if (b.innerHTML.indexOf('✓') === -1) b.innerHTML = b.innerHTML + ' ✓';
+                });
+              });
+            });
+          }
+        }, 1000);
       } else {
         toast('카카오 공유를 불러오는 중이에요. 잠시 후 다시 시도해주세요.');
       }
