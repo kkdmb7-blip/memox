@@ -202,6 +202,8 @@
   .charge-btn-invite { background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.35); color:var(--accent); }
   .charge-btn-pay { background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.35); color:#a5b4fc; }
   .charge-btn-sub { background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.35); color:#6ee7b7; }
+  .charge-btn-share { background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.35); color:#7dd3fc; }
+  .charge-btn-share:disabled { opacity:0.4; cursor:not-allowed; }
   .charge-modal-footer { font-size:11px; color:var(--text3); text-align:center; }
   .charge-close-btn { position:absolute; top:16px; right:20px; background:none; border:none; color:var(--text3); font-size:20px; cursor:pointer; }
   #chatHeaderUserName { display:none; }
@@ -1037,6 +1039,9 @@
     <button class="charge-close-btn" onclick="closeChargeModal()">✕</button>
     <div class="charge-modal-title">오늘 질문을 다 쓰셨어요 🌙</div>
     <div class="charge-modal-sub">지금 충전하면 바로 이어서 물어볼 수 있어요</div>
+    <button class="charge-btn charge-btn-share" id="shareChargeBtn" onclick="handleShareCharge()">
+      <span>📤 공유하고 +1개 무료</span><span style="font-size:13px;">하루 1회</span>
+    </button>
     <button class="charge-btn charge-btn-invite" onclick="handleInviteCharge()">
       <span>👥 친구 초대하고 +3개 무료</span><span>→</span>
     </button>
@@ -3638,6 +3643,78 @@ async function handleReferralOnLoad() {
     window.history.replaceState({}, '', url);
   } catch(e) { console.warn('referral \uCC98\uB9AC \uC2E4\uD328', e.message); }
 }
+// ── 공유 충전 ──────────────────────────────────────────────
+async function handleShareCharge() {
+  if (!currentUser) return;
+
+  var todayKST = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+  var storageKey = 'fortuna_share_date_' + currentUser.id;
+  var btn = document.getElementById('shareChargeBtn');
+
+  // 오늘 이미 공유한 경우
+  if (localStorage.getItem(storageKey) === todayKST) {
+    if (btn) { btn.disabled = true; btn.querySelector('span').textContent = '오늘 이미 공유했어요'; }
+    toast('오늘은 이미 공유했어요. 내일 다시 받을 수 있어요 🌙');
+    return;
+  }
+
+  if (!navigator.share) {
+    toast('이 브라우저는 공유 기능을 지원하지 않아요.');
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  var originalHTML = btn ? btn.innerHTML : '';
+
+  // 카운트다운 표시
+  var count = 3;
+  if (btn) btn.innerHTML = '<span>공유 확인 중...</span><span>' + count + '</span>';
+  var timer = setInterval(function() {
+    count--;
+    if (btn && count > 0) btn.innerHTML = '<span>공유 확인 중...</span><span>' + count + '</span>';
+    if (count <= 0) clearInterval(timer);
+  }, 1000);
+
+  try {
+    await navigator.share({
+      title: '포르투나 - AI 운세 상담',
+      text: '사주·점성·베딕 통합 AI 운세! 무료로 체험해보세요 🔮',
+      url: 'https://kkdmb7-blip.github.io/memox/'
+    });
+    clearInterval(timer);
+
+    // paid_count +1
+    var { data: userData } = await sb.from('chat_users').select('paid_count').eq('id', currentUser.id).single();
+    await sb.from('chat_users').update({ paid_count: ((userData && userData.paid_count) || 0) + 1 }).eq('id', currentUser.id);
+
+    localStorage.setItem(storageKey, todayKST);
+    _questionCountCache = null;
+    await loadQuestionCount();
+    updateQuestionBadge();
+    closeChargeModal();
+    toast('공유해줘서 고마워요! 질문권 1개가 충전됐어요 🔮');
+  } catch(e) {
+    clearInterval(timer);
+    // 사용자가 공유 취소한 경우(AbortError) 복원
+    if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+  }
+}
+
+// chargeModal 열릴 때 공유 버튼 상태 초기화
+var _origShowChargeModal = showChargeModal;
+showChargeModal = function() {
+  _origShowChargeModal.apply(this, arguments);
+  var todayKST = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+  var btn = document.getElementById('shareChargeBtn');
+  if (!btn) return;
+  if (currentUser && localStorage.getItem('fortuna_share_date_' + currentUser.id) === todayKST) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>📤 오늘 공유 완료</span><span style="font-size:13px;">✓</span>';
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = '<span>📤 공유하고 +1개 무료</span><span style="font-size:13px;">하루 1회</span>';
+  }
+};
 // ── 질문 충전 시스템 끝 ────────────────────────────────────
 
 async function callClaude(userMsg, apiKey) {
