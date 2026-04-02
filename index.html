@@ -1345,12 +1345,14 @@ async function doLogout() {
   localStorage.removeItem('fortuna_kakao_user');
   await sb.auth.signOut();
   currentUser = null; userProfile = null; chatHistory = [];
+  window._vedicCache = null; window._vedicFetched = false;
   showScreen('login');
 }
 
 function logoutKakao() {
   localStorage.removeItem('fortuna_kakao_user');
   currentUser = null; userProfile = null; chatHistory = [];
+  window._vedicCache = null; window._vedicFetched = false;
   showScreen('login');
 }
 
@@ -1358,6 +1360,7 @@ var ADMIN_UUID = '3d7633bc-3351-4f22-bc10-10cd1bfc5c28';
 
 function applyProfile(profile) {
   userProfile = profile;
+  window._vedicCache = null; window._vedicFetched = false;
   showScreen('chat');
   if (currentUser && currentUser.id === ADMIN_UUID) {
     var el = document.getElementById('adminStatsMenuItem');
