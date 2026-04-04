@@ -350,6 +350,39 @@
     color:#d4af37; font-size:14px; margin-top:16px;
   }
 
+  /* 결과 공유 카드 모달 */
+  #resultShareModal {
+    display:none; position:fixed; inset:0; z-index:10000;
+    background:rgba(0,0,0,0.85); backdrop-filter:blur(6px);
+    align-items:center; justify-content:center; flex-direction:column;
+    padding:20px; box-sizing:border-box;
+  }
+  #resultShareModal.open { display:flex; }
+  #resultShareModal .rsc-close {
+    position:absolute; top:16px; right:16px;
+    background:rgba(255,255,255,0.1); border:none; color:#fff;
+    width:36px; height:36px; border-radius:50%; font-size:18px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  #resultShareModal .rsc-preview {
+    width:min(260px, 68vw); aspect-ratio:9/16;
+    border-radius:16px; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.7);
+    background:#0a0a0f;
+  }
+  #resultShareModal .rsc-preview img { width:100%; height:100%; object-fit:cover; display:block; }
+  #resultShareModal .rsc-loading { color:#c9a84c; font-size:13px; margin-top:14px; }
+  #resultShareModal .rsc-actions {
+    display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; justify-content:center;
+  }
+  #resultShareModal .rsc-btn {
+    padding:11px 18px; border-radius:22px; font-size:13px; font-weight:600;
+    cursor:pointer; border:none; transition:all 0.2s;
+  }
+  #resultShareModal .rsc-btn-kakao { background:#fee500; color:#3c1e1e; }
+  #resultShareModal .rsc-btn-dl { background:linear-gradient(135deg,#c9a84c,#e8d080); color:#1a1a2e; }
+  #resultShareModal .rsc-btn-link { background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.2); }
+  #resultShareModal .rsc-btn-close { background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.5); font-size:12px; }
+
   /* 추천 질문 */
   .suggest-chips { display:flex; flex-wrap:nowrap; gap:8px; padding:0 16px 12px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
   .suggest-chips::-webkit-scrollbar { display:none; }
@@ -1106,7 +1139,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.61'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.62'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4329,8 +4362,16 @@ function appendMessage(role, content, animate, created_at) {
       }
     });
 
+    var resultShareBtn = document.createElement('button');
+    resultShareBtn.className = 'bubble-icon-btn';
+    resultShareBtn.innerHTML = '🔗 결과 공유하기';
+    (function(capturedContent) {
+      resultShareBtn.addEventListener('click', function() { openResultShareCard(capturedContent); });
+    })(content);
+
     btnRow.appendChild(copyBtn2);
     btnRow.appendChild(kakaoBtn);
+    btnRow.appendChild(resultShareBtn);
   }
 
   container.appendChild(div);
@@ -4502,6 +4543,144 @@ function closeCardModal() {
   document.removeEventListener('keydown', _cardEscHandler);
 }
 
+// ── 결과 공유 카드 ─────────────────────────────────────────────
+var _rscCanvas = null;
+var _rscContent = '';
+
+function openResultShareCard(rawContent) {
+  _rscCanvas = null;
+  _rscContent = rawContent;
+
+  // 핵심 한줄 요약 추출
+  var lines = rawContent.split(/\n/).map(function(l){ return l.replace(/[*#`_~>]/g,'').trim(); }).filter(Boolean);
+  var summary = lines[0] || '오늘의 운세';
+  if (summary.length > 70) summary = summary.slice(0, 68) + '…';
+
+  // 카드 DOM 생성 (오프스크린)
+  var card = document.createElement('div');
+  card.id = '_rscCardEl';
+  card.style.cssText = [
+    'position:fixed','left:-9999px','top:-9999px',
+    'width:540px','height:960px',
+    'background:linear-gradient(160deg,#0a0a0f 0%,#1a1a2e 60%,#0f1f3d 100%)',
+    'display:flex','flex-direction:column',
+    'align-items:center','justify-content:space-between',
+    'padding:80px 56px','box-sizing:border-box',
+    'font-family:\'Noto Sans KR\',sans-serif','overflow:hidden'
+  ].join(';');
+
+  // 정적 별 배경
+  var starsHtml = '';
+  var starPositions = [
+    [8,12],[15,35],[25,8],[42,20],[60,5],[75,15],[88,30],[5,55],[18,70],
+    [30,85],[50,60],[65,80],[80,50],[92,68],[38,45],[55,30],[70,55],[22,95],
+    [85,88],[10,42],[48,75],[33,22],[78,38],[62,92],[12,78]
+  ];
+  starPositions.forEach(function(p) {
+    var size = (Math.abs(p[0]*7+p[1]*3)%3)+1;
+    var opacity = 0.3 + (Math.abs(p[0]+p[1])%5)*0.12;
+    starsHtml += '<div style="position:absolute;left:'+p[0]+'%;top:'+p[1]+'%;width:'+size+'px;height:'+size+'px;border-radius:50%;background:#fff;opacity:'+opacity+';"></div>';
+  });
+
+  card.innerHTML =
+    starsHtml +
+    '<div style="position:relative;z-index:1;text-align:center;">' +
+      '<div style="font-size:13px;letter-spacing:0.35em;color:#c9a84c;font-weight:700;margin-bottom:10px;">● FORTUNA</div>' +
+      '<div style="width:40px;height:1px;background:linear-gradient(90deg,transparent,#c9a84c,transparent);margin:0 auto;"></div>' +
+    '</div>' +
+    '<div style="position:relative;z-index:1;text-align:center;padding:0 8px;">' +
+      '<div style="font-size:11px;color:rgba(201,168,76,0.7);letter-spacing:0.2em;margin-bottom:24px;">AI 운세 답변</div>' +
+      '<div style="font-size:21px;color:#ede6f8;line-height:1.8;font-weight:500;word-break:keep-all;">' +
+        '\u201c' + summary + '\u201d' +
+      '</div>' +
+    '</div>' +
+    '<div style="position:relative;z-index:1;text-align:center;">' +
+      '<div style="width:40px;height:1px;background:linear-gradient(90deg,transparent,#c9a84c,transparent);margin:0 auto 16px;"></div>' +
+      '<div style="font-size:12px;color:rgba(255,255,255,0.45);letter-spacing:0.08em;">picolab.kr에서 무료로 확인하세요</div>' +
+    '</div>';
+
+  document.body.appendChild(card);
+
+  var modal = document.getElementById('resultShareModal');
+  var preview = document.getElementById('rscPreview');
+  var loading = document.getElementById('rscLoading');
+  var actions = document.getElementById('rscActions');
+  preview.innerHTML = '';
+  loading.style.display = 'block';
+  actions.style.display = 'none';
+  modal.classList.add('open');
+
+  document.addEventListener('keydown', _rscEscHandler);
+
+  html2canvas(card, { scale: 2, useCORS: true, backgroundColor: null, width: 540, height: 960 }).then(function(canvas) {
+    var el = document.getElementById('_rscCardEl');
+    if (el) document.body.removeChild(el);
+    _rscCanvas = canvas;
+    var img = document.createElement('img');
+    img.src = canvas.toDataURL('image/png');
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    preview.innerHTML = '';
+    preview.appendChild(img);
+    loading.style.display = 'none';
+    actions.style.display = 'flex';
+  }).catch(function() {
+    var el = document.getElementById('_rscCardEl');
+    if (el) document.body.removeChild(el);
+    loading.textContent = '카드 생성에 실패했어요 😢';
+  });
+}
+
+function closeResultShareModal() {
+  document.getElementById('resultShareModal').classList.remove('open');
+  document.removeEventListener('keydown', _rscEscHandler);
+}
+
+function _rscEscHandler(e) { if (e.key === 'Escape') closeResultShareModal(); }
+
+function downloadResultCard() {
+  if (!_rscCanvas) return;
+  var today = new Date();
+  _rscCanvas.toBlob(function(blob) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.download = 'fortuna_' + today.getFullYear() + (today.getMonth()+1) + today.getDate() + '.png';
+    a.href = url;
+    a.click();
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    toast('📸 카드가 저장됐어요!');
+  }, 'image/png');
+}
+
+function shareResultCardKakao() {
+  var lines = _rscContent.split(/\n/).map(function(l){ return l.replace(/[*#`_~]/g,'').trim(); }).filter(Boolean);
+  var summary = (lines[0] || '오늘의 운세').slice(0, 80);
+  var pageUrl = 'https://kkdmb7-blip.github.io/memox?utm_source=share&utm_medium=kakao';
+  try {
+    if (window.Kakao && window.Kakao.isInitialized && window.Kakao.isInitialized()) {
+      Kakao.Share.sendDefault({
+        objectType: 'text',
+        text: '🔮 포르투나가 나한테 한 말\n\n"' + summary + '"\n\n나도 운세 확인해봐 👇',
+        link: { mobileWebUrl: pageUrl, webUrl: pageUrl },
+        buttons: [{ title: '무료로 확인하기 🔮', link: { mobileWebUrl: pageUrl, webUrl: pageUrl } }]
+      });
+    } else {
+      navigator.clipboard && navigator.clipboard.writeText('🔮 포르투나 운세\n\n"' + summary + '"\n\n' + pageUrl)
+        .then(function() { toast('📋 클립보드에 복사됐어요! 카카오톡에 붙여넣어 주세요'); });
+    }
+  } catch(e) { toast('카카오 공유를 열 수 없어요'); }
+  // 공유 로그 기록 (비동기, 실패 무시)
+  if (currentUser) sb.from('share_log').insert({ user_id: currentUser.id, type: 'result_card', created_at: Date.now() }).catch(function(){});
+  closeResultShareModal();
+}
+
+function copyResultLink() {
+  var pageUrl = 'https://kkdmb7-blip.github.io/memox?utm_source=share&utm_medium=link';
+  navigator.clipboard && navigator.clipboard.writeText(pageUrl)
+    .then(function() { toast('🔗 링크가 복사됐어요!'); })
+    .catch(function() { toast('복사에 실패했어요'); });
+  if (currentUser) sb.from('share_log').insert({ user_id: currentUser.id, type: 'result_link', created_at: Date.now() }).catch(function(){});
+}
+
 function _cardEscHandler(e) {
   if (e.key === 'Escape') closeCardModal();
 }
@@ -4513,6 +4692,12 @@ document.addEventListener('DOMContentLoaded', function() {
   if (modal) {
     modal.addEventListener('click', function(e) {
       if (e.target === modal) closeCardModal();
+    });
+  }
+  var rscModal = document.getElementById('resultShareModal');
+  if (rscModal) {
+    rscModal.addEventListener('click', function(e) {
+      if (e.target === rscModal) closeResultShareModal();
     });
   }
 
@@ -5318,6 +5503,19 @@ if ('serviceWorker' in navigator) {
       <button class="np-allow" onclick="allowNotification()">알림 허용하기</button>
       <button class="np-deny" onclick="closeNotifPrompt()">괜찮아요</button>
     </div>
+  </div>
+</div>
+
+<!-- 결과 공유 카드 모달 -->
+<div id="resultShareModal" role="dialog" aria-modal="true">
+  <button class="rsc-close" onclick="closeResultShareModal()" aria-label="닫기">✕</button>
+  <div class="rsc-preview" id="rscPreview"></div>
+  <p class="rsc-loading" id="rscLoading">카드 생성 중... ✨</p>
+  <div class="rsc-actions" id="rscActions" style="display:none;">
+    <button class="rsc-btn rsc-btn-kakao" onclick="shareResultCardKakao()">카카오톡 공유</button>
+    <button class="rsc-btn rsc-btn-dl" onclick="downloadResultCard()">이미지 저장</button>
+    <button class="rsc-btn rsc-btn-link" onclick="copyResultLink()">🔗 링크 복사</button>
+    <button class="rsc-btn rsc-btn-close" onclick="closeResultShareModal()">닫기</button>
   </div>
 </div>
 
