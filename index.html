@@ -1139,7 +1139,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.62'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.63'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1426,6 +1426,26 @@ function applyProfile(profile) {
     if (new URLSearchParams(location.search).get('mode') === 'tarot') {
       history.replaceState(null, '', location.pathname);
       setTimeout(openTarotModal, 300);
+    }
+    var _gp = new URLSearchParams(location.search);
+    if (_gp.get('mode') === 'gunghap') {
+      history.replaceState(null, '', location.pathname);
+      var _gMyY = _gp.get('my_year'), _gMyM = _gp.get('my_month'), _gMyD = _gp.get('my_day');
+      var _gPnm = _gp.get('partner_name'), _gPY = _gp.get('partner_year'), _gPM = _gp.get('partner_month'), _gPD = _gp.get('partner_day');
+      setTimeout(function() {
+        // 내 생년월일이 있고 프로필 없으면 자동 설정
+        if (_gMyY && _gMyM && _gMyD && userProfile && !userProfile.birth_year) {
+          userProfile.birth_year = parseInt(_gMyY);
+          userProfile.birth_month = parseInt(_gMyM);
+          userProfile.birth_day = parseInt(_gMyD);
+        }
+        // 파트너 모달 열기
+        openPartnerModal('궁합 보기');
+        if (_gPnm) { var pnEl = document.getElementById('partnerName'); if (pnEl) pnEl.value = _gPnm; }
+        if (_gPY) { var pyEl2 = document.getElementById('partnerYear'); if (pyEl2) pyEl2.value = _gPY; }
+        if (_gPM) { var pmEl2 = document.getElementById('partnerMonth'); if (pmEl2) pmEl2.value = _gPM; }
+        if (_gPD) { var pdEl2 = document.getElementById('partnerDay'); if (pdEl2) pdEl2.value = _gPD; }
+      }, 600);
     }
     loadDailyCard();
   }).catch(function() {
@@ -2279,6 +2299,137 @@ function scheduleStreakReminder(streak) {
   }, delay);
 }
 
+
+// ── 궁합 카드 생성 ────────────────────────────────────────────────────
+function openGunghapCardModal() {
+  var myName = (userProfile && userProfile.name) || '나';
+  var partnerName = (window._partnerSaju && window._partnerSaju.name) || '상대방';
+
+  var canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 380;
+  var ctx = canvas.getContext('2d');
+
+  // 배경 다크 핑크 그라디언트
+  var grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  grad.addColorStop(0, '#1a0818');
+  grad.addColorStop(0.5, '#2e1025');
+  grad.addColorStop(1, '#1a0818');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 테두리
+  ctx.strokeStyle = 'rgba(255,130,170,0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
+
+  // 장식 원
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, canvas.height / 2, 130, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,100,150,0.08)';
+  ctx.lineWidth = 40;
+  ctx.stroke();
+
+  // FORTUNA 로고
+  ctx.fillStyle = '#d4af37';
+  ctx.font = 'bold 26px serif';
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = '4px';
+  ctx.fillText('F O R T U N A', canvas.width / 2, 72);
+
+  // 부제
+  ctx.fillStyle = 'rgba(255,170,200,0.6)';
+  ctx.font = '13px sans-serif';
+  ctx.letterSpacing = '0px';
+  ctx.fillText('AI 운명 분석', canvas.width / 2, 98);
+
+  // 구분선
+  ctx.strokeStyle = 'rgba(255,130,170,0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(80, 116); ctx.lineTo(canvas.width - 80, 116);
+  ctx.stroke();
+
+  // 하트
+  ctx.fillStyle = '#ff6699';
+  ctx.font = '36px serif';
+  ctx.fillText('\u2665', canvas.width / 2, 188);
+
+  // 이름
+  ctx.fillStyle = '#f5e0ec';
+  ctx.font = 'bold 34px sans-serif';
+  ctx.fillText(myName + '  &  ' + partnerName, canvas.width / 2, 248);
+
+  // 구분선2
+  ctx.strokeStyle = 'rgba(255,130,170,0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(80, 272); ctx.lineTo(canvas.width - 80, 272);
+  ctx.stroke();
+
+  // 하단 텍스트
+  ctx.fillStyle = 'rgba(255,200,220,0.75)';
+  ctx.font = '15px sans-serif';
+  ctx.fillText('궁합 결과는 picolab.kr에서', canvas.width / 2, 310);
+
+  ctx.fillStyle = 'rgba(255,150,180,0.4)';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('사주 · 점성술 · 자미두수 3중 교차 분석', canvas.width / 2, 336);
+
+  // 모달 표시
+  var imgDataUrl = canvas.toDataURL('image/png');
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:10002;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:linear-gradient(160deg,#1a0818,#2e1025);border:1px solid rgba(255,130,170,0.4);border-radius:24px;padding:28px;text-align:center;width:min(500px,calc(100vw-40px));box-shadow:0 8px 48px rgba(255,100,150,0.2);';
+  var img = document.createElement('img');
+  img.src = imgDataUrl;
+  img.style.cssText = 'width:100%;border-radius:12px;margin-bottom:20px;display:block;';
+  box.appendChild(img);
+
+  var btnWrap = document.createElement('div');
+  btnWrap.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap;';
+
+  var dlBtn = document.createElement('button');
+  dlBtn.innerHTML = '⬇️ 이미지 저장';
+  dlBtn.style.cssText = 'padding:11px 22px;background:rgba(255,100,150,0.2);border:1px solid rgba(255,100,150,0.5);border-radius:14px;color:#ff8ab0;font-size:14px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;';
+  dlBtn.addEventListener('click', function() {
+    var a = document.createElement('a');
+    a.href = imgDataUrl;
+    a.download = '\uAD81\uD569_' + myName + '_' + partnerName + '.png';
+    a.click();
+  });
+
+  var kakaoGBtn = document.createElement('button');
+  kakaoGBtn.innerHTML = '카카오 공유';
+  kakaoGBtn.style.cssText = 'padding:11px 22px;background:rgba(254,229,0,0.15);border:1px solid rgba(254,229,0,0.4);border-radius:14px;color:#FEE500;font-size:14px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;';
+  kakaoGBtn.addEventListener('click', function() {
+    var shareText = '\uD83D\uDC95 ' + myName + ' & ' + partnerName + ' \uAD81\uD569 \uBD84\uC11D\n\n5,000\uB144 \uB3D9\uC591\uC758 \uC9C0\uD61C\uB85C \uBCF4\uB294 \uC6B0\uB9AC\uC758 \uC778\uC5F0\n\uC0AC\uC8FC \B7 \uC810\uC131\uC220 \B7 \uC790\uBBF8\uB450\uC218 3\uC911 \uAD50\uCC28 \uBD84\uC11D\n\n\uB098\uB3C4 \uAD81\uD569 \uBD10\uBCF4\uAE30 \uD44C';
+    if (window.Kakao && window.Kakao.isInitialized()) {
+      try {
+        (window.Kakao.Link || window.Kakao.Share).sendDefault({
+          objectType: 'text',
+          text: '\uD83D\uDC95 ' + myName + ' & ' + partnerName + ' \uAD81\uD569 \uBD84\uC11D\n\n5,000\uB144 \uB3D9\uC591\uC758 \uC9C0\uD61C\uB85C \uBCF4\uB294 \uC6B0\uB9AC\uC758 \uC778\uC5F0\n\uC0AC\uC8FC\B7\uC810\uC131\uC220\B7\uC790\uBBF8\uB450\uC218 3\uC911 \uAD50\uCC28 \uBD84\uC11D\n\n\uB098\uB3C4 \uAD81\uD569 \uBD10\uBCF4\uAE30 \uD44C',
+          link: { mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/', webUrl: 'https://kkdmb7-blip.github.io/memox/' },
+          buttons: [{ title: '\uAD81\uD569 \uBD10\uBCF4\uAE30', link: { mobileWebUrl: 'https://kkdmb7-blip.github.io/memox/', webUrl: 'https://kkdmb7-blip.github.io/memox/' } }]
+        });
+      } catch(e) { toast('\uCE74\uCE74\uC624 \uACF5\uC720\uB97C \uBD88\uB7EC\uC624\uB294 \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC5B4\uC694.'); }
+    } else { toast('\uCE74\uCE74\uC624 \uACF5\uC720\uB97C \uBD88\uB7EC\uC624\uB294 \uC911\uC774\uC5D0\uC694. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.'); }
+  });
+
+  var closeGBtn = document.createElement('button');
+  closeGBtn.innerHTML = '\u2715 \uB2EB\uAE30';
+  closeGBtn.style.cssText = 'padding:11px 22px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:14px;color:#aaa;font-size:14px;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;';
+  closeGBtn.addEventListener('click', function() { overlay.remove(); });
+
+  btnWrap.appendChild(dlBtn);
+  btnWrap.appendChild(kakaoGBtn);
+  btnWrap.appendChild(closeGBtn);
+  box.appendChild(btnWrap);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
 
 // ── 감정 트래킹 & 관심사 프로파일 & 적중 기록 ─────────────────────────
 var _currentEmotion = null;
@@ -4372,6 +4523,15 @@ function appendMessage(role, content, animate, created_at) {
     btnRow.appendChild(copyBtn2);
     btnRow.appendChild(kakaoBtn);
     btnRow.appendChild(resultShareBtn);
+
+    if (window._partnerSaju) {
+      var gunghapCardBtn = document.createElement('button');
+      gunghapCardBtn.className = 'bubble-icon-btn';
+      gunghapCardBtn.style.cssText = 'background:rgba(255,100,150,0.12);border-color:rgba(255,100,150,0.35);color:#ff8ab0;';
+      gunghapCardBtn.innerHTML = '💕 궁합 카드 만들기';
+      gunghapCardBtn.addEventListener('click', function() { openGunghapCardModal(); });
+      btnRow.appendChild(gunghapCardBtn);
+    }
   }
 
   container.appendChild(div);
