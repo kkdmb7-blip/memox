@@ -1390,6 +1390,10 @@ function applyProfile(profile) {
       history.replaceState(null, '', '/');
       localStorage.removeItem('fortuna_daily_dismissed');
     }
+    if (new URLSearchParams(location.search).get('mode') === 'tarot') {
+      history.replaceState(null, '', location.pathname);
+      setTimeout(openTarotModal, 300);
+    }
     loadDailyCard();
   }).catch(function() {
     showScreen('chat');
