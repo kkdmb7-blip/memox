@@ -1043,8 +1043,8 @@
     <button class="charge-btn charge-btn-pay" onclick="handlePayCharge()">
       <span>💳 10개 충전</span><span style="font-size:13px;">1,900원</span>
     </button>
-    <button class="charge-btn charge-btn-sub" onclick="handleSubCharge()">
-      <span>✨ 무제한 구독</span><span style="font-size:13px;">9,900원/월</span>
+    <button class="charge-btn charge-btn-sub" onclick="handleSubCharge()" id="btnSubCharge">
+      <span>✨ 무제한 구독</span><span id="subPriceLabel" style="font-size:13px;">9,900원/월</span>
     </button>
     <div class="charge-modal-footer"></div>
     <hr class="charge-modal-divider">
@@ -1106,7 +1106,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.59'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.60'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3565,16 +3565,46 @@ async function handlePayCharge() {
   });
 }
 
+// ── A/B 가격 테스트 ──────────────────────────────────────
+function getAbPriceGroup() {
+  var stored = localStorage.getItem('ab_price_test');
+  if (stored) return JSON.parse(stored);
+  var group = Math.random() < 0.5 ? 'A' : 'B';
+  var price = group === 'A' ? 9900 : 14900;
+  var data = { group: group, price: price };
+  localStorage.setItem('ab_price_test', JSON.stringify(data));
+  return data;
+}
+
+function initAbPriceUI() {
+  var ab = getAbPriceGroup();
+  var label = document.getElementById('subPriceLabel');
+  if (label) label.textContent = ab.price.toLocaleString() + '원/월';
+}
+
+async function logAbTest(userId, ab) {
+  try {
+    await sb.from('ab_test_log').insert({
+      user_id: userId,
+      group: ab.group,
+      price: ab.price,
+      timestamp: Date.now()
+    });
+  } catch(e) { console.warn('ab_test_log 기록 실패', e); }
+}
+
 async function handleSubCharge() {
   if (!currentUser) return;
   if (typeof IMP === 'undefined') { alert('결제 모듈을 불러오는 중이에요. 잠시 후 다시 시도해주세요.'); return; }
+  var ab = getAbPriceGroup();
+  await logAbTest(currentUser.id, ab);
   IMP.init('imp63718155');
   IMP.request_pay({
     pg: 'html5_inicis.MOI3302087',
     pay_method: 'card',
     merchant_uid: 'SUB-' + Date.now(),
-    name: '포르투나 무제한 구독 (월 9,900원)',
-    amount: 9900,
+    name: '포르투나 무제한 구독 (월 ' + ab.price.toLocaleString() + '원)',
+    amount: ab.price,
     buyer_name: (userProfile && userProfile.name) || '',
     buyer_email: (currentUser && currentUser.email) || '',
   }, async function(rsp) {
@@ -4460,6 +4490,7 @@ function _cardEscHandler(e) {
 
 // 모달 배경 클릭 시 닫기
 document.addEventListener('DOMContentLoaded', function() {
+  initAbPriceUI();
   var modal = document.getElementById('cardModal');
   if (modal) {
     modal.addEventListener('click', function(e) {
