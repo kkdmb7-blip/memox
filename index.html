@@ -4513,16 +4513,8 @@ function appendMessage(role, content, animate, created_at) {
       }
     });
 
-    var resultShareBtn = document.createElement('button');
-    resultShareBtn.className = 'bubble-icon-btn';
-    resultShareBtn.innerHTML = '🔗 결과 공유하기';
-    (function(capturedContent) {
-      resultShareBtn.addEventListener('click', function() { openResultShareCard(capturedContent); });
-    })(content);
-
     btnRow.appendChild(copyBtn2);
     btnRow.appendChild(kakaoBtn);
-    btnRow.appendChild(resultShareBtn);
 
     if (window._partnerSaju) {
       var gunghapCardBtn = document.createElement('button');
