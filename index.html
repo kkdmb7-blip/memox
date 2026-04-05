@@ -3823,7 +3823,12 @@ async function sendMessage() {
 
   var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || 'fortuna';
   var _orbLeft = await getOrbBalance();
-  if (_orbLeft < 20) { showOrbEmptyModal(); return; }
+  var _payWithOrb = _orbLeft >= 20;
+  if (!_payWithOrb) {
+    // Orb 없으면 기존 무료 quota 사용 (기존 사용자 호환)
+    var _qLeft = await getQuestionCount();
+    if (_qLeft <= 0) { showOrbEmptyModal(); return; }
+  }
 
   input.value = '';
   autoResize(input);
@@ -3840,7 +3845,7 @@ async function sendMessage() {
     var reply = await callClaude(text, apiKey);
     chatHistory.push({ role: 'assistant', content: reply, created_at: new Date().toISOString() });
     await saveMessage('assistant', reply);
-    await useOrb(20);
+    if (_payWithOrb) await useOrb(20);
   } catch(e) {
     hideTyping();
     console.error('Gemini 오류:', e);
