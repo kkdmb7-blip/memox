@@ -24,6 +24,7 @@
 - **function 선언 호이스팅 무한재귀**: `var orig = fn; function fn() { orig() }` 패턴 절대 사용 금지 (호이스팅으로 무한재귀 발생)
 - **display:none → display:flex**: flex 컨테이너를 show할 때 block이 아닌 flex로 설정
 - **공유 버튼 미노출**: 결과 렌더링 함수 끝에 shareBtn display:flex 설정하는 코드 포함됐는지 확인
+- **코드 삽입 위치 오류**: 함수 내부에 코드를 추가할 때 닫는 `}` 위치 반드시 확인. 함수 밖에 삽입되면 실행 안 됨 (ziwei render() 버그 사례)
 
 ## 기능별 핵심 구조
 ### 채팅 AI 프롬프트 (sendMessage)
