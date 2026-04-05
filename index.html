@@ -1179,7 +1179,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.66'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.67'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3614,8 +3614,9 @@ function openGunghapResultModal(pName, pY, pM, pD, pHour, pGender) {
   var bt = (profile.birth_time && profile.birth_time !== 'unknown') ? profile.birth_time.split(':') : ['12','0'];
   if (!bd[0]) { alert('내 프로필 생년월일이 없습니다.'); return; }
   var mySaju = calcPartnerSaju(parseInt(bd[0]), parseInt(bd[1]), parseInt(bd[2]), parseInt(bt[0]));
+  mySaju.gender = profile.gender === 'M' ? '남성' : '여성';
   var pSaju  = calcPartnerSaju(pY, pM, pD, pHour);
-  pSaju.name = pName; pSaju.gender = pGender;
+  pSaju.name = pName; pSaju.gender = pGender === 'M' ? '남성' : pGender === 'F' ? '여성' : '';
   window._partnerSaju = pSaju;
 
   var sc = calcGunghapScore(mySaju, pSaju);
@@ -3669,10 +3670,10 @@ async function requestGunghapAI() {
   var d = _ghResData;
   var fp1=d.mySaju.fivePct||{}, fp2=d.pSaju.fivePct||{};
   var prompt = '【AI 궁합 정밀 분석】\n'
-    +d.myName+': 사주 년주 '+d.mySaju.pillars.year+' 월주 '+d.mySaju.pillars.month+' 일주 '+d.mySaju.pillars.day+' 시주 '+d.mySaju.pillars.hour
+    +d.myName+'('+d.mySaju.gender+'): 사주 년주 '+d.mySaju.pillars.year+' 월주 '+d.mySaju.pillars.month+' 일주 '+d.mySaju.pillars.day+' 시주 '+d.mySaju.pillars.hour
     +' / 띠 '+d.mySaju.zodiac+' / 일간 '+d.mySaju.dayElement+' / '+d.mySaju.strength
     +' / 오행 목'+fp1.목+'% 화'+fp1.화+'% 토'+fp1.토+'% 금'+fp1.금+'% 수'+fp1.수+'%\n'
-    +d.pName+': 사주 년주 '+d.pSaju.pillars.year+' 월주 '+d.pSaju.pillars.month+' 일주 '+d.pSaju.pillars.day+' 시주 '+d.pSaju.pillars.hour
+    +d.pName+(d.pSaju.gender?'('+d.pSaju.gender+')':'')+': 사주 년주 '+d.pSaju.pillars.year+' 월주 '+d.pSaju.pillars.month+' 일주 '+d.pSaju.pillars.day+' 시주 '+d.pSaju.pillars.hour
     +' / 띠 '+d.pSaju.zodiac+' / 일간 '+d.pSaju.dayElement+' / '+d.pSaju.strength
     +' / 오행 목'+fp2.목+'% 화'+fp2.화+'% 토'+fp2.토+'% 금'+fp2.금+'% 수'+fp2.수+'%\n'
     +'규칙 기반 점수: 종합 '+d.sc.total+'점 (오행 '+d.sc.oScore+'/40, 띠 '+d.sc.zScore+'/30, 계절 '+d.sc.sScore+'/30)\n\n'
