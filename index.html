@@ -1179,7 +1179,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.19.65'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.19.66'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4218,7 +4218,7 @@ async function callClaude(userMsg, apiKey) {
   var _nowKST = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
   var dateStr = _nowKST.getUTCFullYear() + '년 ' + (_nowKST.getUTCMonth()+1) + '월 ' + _nowKST.getUTCDate() + '일';
   var todayGanji = getTodayGanji();
-  var monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1);
+  var monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1, _nowKST.getUTCDate());
   var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 var pastGanji = '';
 for (var i = 60; i >= 1; i--) { var _pd = new Date(new Date().getTime() - i * 86400000); var _pdKST = new Date(_pd.getTime() + 9 * 60 * 60 * 1000); var _pdDay = _weekDays[_pdKST.getUTCDay()]; pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _pdDay + '): ' + getTodayGanji(_pd) + '일\n'; }
@@ -4228,12 +4228,12 @@ for (var i = 1; i <= 60; i++) { var _fd = new Date(new Date().getTime() + i * 86
 for (var i = 1; i <= 6; i++) {
   var fm = new Date(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + i, 1);
   var fy = fm.getFullYear(); var fmo = fm.getMonth() + 1;
-  futureMonthGanji += fy + '년 ' + fmo + '월: ' + getMonthGanji(fy, fmo) + '월\n';
+  futureMonthGanji += fy + '년 ' + fmo + '월: ' + getMonthGanji(fy, fmo, 15) + '월\n';
 }
   // ── 모드별 데이터 블록 조립 ──────────────────────────────
   var _sajuDataBlock =
     '【사주 핵심 정보】\n' +
-    '사주 기둥: ' + (saju.saju_pillars || saju.pillars || JSON.stringify(saju)) + '\n' +
+    '사주 기둥: ' + (function(p){ if(!p) return JSON.stringify(saju); if(typeof p==='object') return '년주 '+(p.year||'')+' / 월주 '+(p.month||'')+' / 일주 '+(p.day||'')+' / 시주 '+(p.hour||''); return String(p); })(saju.saju_pillars || saju.pillars) + '\n' +
     '띠: ' + (saju.saju_zodiac || saju.zodiac || '미상') + '\n' +
     '신강/신약: ' + (saju.saju_strength || saju.strength || '미상') + '\n' +
     '격국: ' + (saju.saju_geokguk || saju.geokguk || '미상') + '\n' +
@@ -5424,16 +5424,27 @@ function getTodayGanji(targetDate = new Date()) {
 
   return heavenly[idx % 10] + earthly[idx % 12];
 }
-// 월건 계산 (getTodayGanji와 동일한 기준일 방식)
-// 기준: 2024년 2월 = 병인(丙寅) = 60갑자 index 2
-function getMonthGanji(year, month) {
+// 월건 계산 — 절기(節氣) 반영
+// 기준: 2024년 2월(입춘 이후) = 병인(丙寅) = 60갑자 index 2
+// 각 월 절기 시작일(근사치): 1=소한(5), 2=입춘(4), 3=경칩(6), 4=청명(5),
+//   5=입하(6), 6=망종(6), 7=소서(7), 8=입추(8), 9=백로(8), 10=한로(8), 11=입동(7), 12=대설(7)
+function getMonthGanji(year, month, day) {
   const heavenly = ['갑','을','병','정','무','기','경','신','임','계'];
   const earthly  = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+
+  const SOLAR_TERM_DAY = [0, 5, 4, 6, 5, 6, 6, 7, 8, 8, 8, 7, 7]; // index=월
 
   const baseIndex = 2; // 병인(丙寅)
   const baseYear = 2024, baseMonth = 2;
 
-  const diffMonths = (year - baseYear) * 12 + (month - baseMonth);
+  // day가 절기일 이전이면 전월 기준
+  var adjYear = year, adjMonth = month;
+  if (day !== undefined && day < SOLAR_TERM_DAY[month]) {
+    adjMonth = month - 1;
+    if (adjMonth === 0) { adjMonth = 12; adjYear = year - 1; }
+  }
+
+  const diffMonths = (adjYear - baseYear) * 12 + (adjMonth - baseMonth);
   const idx = ((baseIndex + diffMonths) % 60 + 60) % 60;
 
   return heavenly[idx % 10] + earthly[idx % 12];
