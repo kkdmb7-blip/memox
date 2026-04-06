@@ -932,7 +932,7 @@
         <div id="moonPhaseDisplay"></div>
     </div>
     <div id="totalConsultations" style="font-size:11px;color:#9b8fb0;letter-spacing:0.01em;flex-shrink:0;"></div>
-    <a id="orbBadge" href="charge.html" title="오르브 잔액 · 클릭해서 충전">💎 <span id="orbBadgeNum">...</span></a>
+    <a id="orbBadge" href="charge.html" title="Orb 잔액 · 클릭해서 충전">💎 <span id="orbBadgeNum">...</span></a>
     <div id="questionBadge" onclick="showChargeModal()" title="남은 질문 수"></div>
     <div class="chat-header-actions" style="position:relative;">
       <button id="settingsBtn" class="settings-menu-btn" onclick="toggleSettingsMenu(event)" title="설정">☰</button>
@@ -1119,8 +1119,8 @@
 <div id="orbEmptyModal" class="orb-empty-overlay" onclick="if(event.target===this)closeOrbEmptyModal()">
   <div class="orb-empty-sheet">
     <div class="orb-empty-icon">💎</div>
-    <div class="orb-empty-title">오르브가 부족해요</div>
-    <div class="orb-empty-sub" id="orbEmptySub">AI 채팅 1회에 20 오르브가 필요해요.<br>지금 충전하고 바로 이어가세요.</div>
+    <div class="orb-empty-title">Orb가 부족해요</div>
+    <div class="orb-empty-sub" id="orbEmptySub">AI 채팅 1회에 20 Orb가 필요해요.<br>지금 충전하고 바로 이어가세요.</div>
     <button class="orb-empty-btn orb-empty-btn-primary" onclick="location.href='charge.html'">💎 충전하기</button>
     <button class="orb-empty-btn orb-empty-btn-cancel" onclick="closeOrbEmptyModal()">닫기</button>
   </div>
@@ -1201,7 +1201,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.20.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.20.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2225,7 +2225,7 @@ async function submitOnboard() {
           user_id: currentUser.id,
           type: 'signup_bonus',
           amount: 60,
-          description: '가입 축하 오르브',
+          description: '가입 축하 Orb',
           balance_after: 60,
           created_at: _now,
         });
@@ -4340,7 +4340,7 @@ async function handleReferralOnLoad() {
     try { sessionStorage.removeItem('fortuna_pending_ref'); } catch(e) {}
     if (res.ok) {
       localStorage.setItem(alreadyKey, '1');
-      toast('🎉 친구 초대 완료! 나와 친구 모두 50 오르브를 받았어요!');
+      toast('🎉 친구 초대 완료! 나와 친구 모두 50 Orb를 받았어요!');
     }
     var url = window.location.href.replace(/[?&]ref=[^&]+/, '').replace(/[?&]$/, '');
     window.history.replaceState({}, '', url);
@@ -4388,7 +4388,7 @@ function updateOrbBadge() {
   var badge = document.getElementById('orbBadgeNum');
   if (!badge) return;
   var n = _orbBalance !== null ? _orbBalance : '...';
-  badge.textContent = n + ' 오르브';
+  badge.textContent = n + ' Orb';
   var el = document.getElementById('orbBadge');
   if (el && typeof n === 'number') {
     el.style.borderColor = n < 20 ? 'rgba(255,80,80,0.5)' : n < 100 ? 'rgba(255,200,80,0.4)' : 'rgba(80,160,255,0.25)';
@@ -4399,7 +4399,7 @@ function updateOrbBadge() {
 function showOrbEmptyModal() {
   var sub = document.getElementById('orbEmptySub');
   if (sub) {
-    sub.innerHTML = 'AI 채팅 1회에 20 오르브가 필요해요.<br>' +
+    sub.innerHTML = 'AI 채팅 1회에 20 Orb가 필요해요.<br>' +
       (_isFirstCharge ? '지금 충전하면 <strong style="color:#7ac4ff;">첫 충전 1+1 🎁</strong> 혜택이 있어요!' : '지금 충전하고 바로 이어가세요.');
   }
   var modal = document.getElementById('orbEmptyModal');
