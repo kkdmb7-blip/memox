@@ -1201,7 +1201,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.20.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.20.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1677,6 +1677,7 @@ function applyProfile(profile) {
     if (el) el.style.display = 'block';
   }
   if (Notification.permission === 'granted') subscribePush();
+  subscribeOrbRealtime();
   loadChatHistory().then(function() {
     updateChatHeader();
     loadQuestionCount().then(updateQuestionBadge);
@@ -5924,6 +5925,54 @@ async function setPersona(key) {
   toast('상담사가 바뀌었어요! 대화를 새로 시작합니다 ✨');
 }
 
+// ── Supabase Realtime Orb 실시간 동기화 ──────────────────────────
+function subscribeOrbRealtime() {
+  if (!currentUser || !currentUser.id) return;
+  // 기존 채널 제거
+  if (window._orbRealtimeChannel) {
+    try { sb.removeChannel(window._orbRealtimeChannel); } catch(e) {}
+    window._orbRealtimeChannel = null;
+  }
+  window._orbRealtimeChannel = sb.channel('orb-sync-' + currentUser.id)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'orb_balance',
+      filter: 'user_id=eq.' + currentUser.id
+    }, function(payload) {
+      if (payload.new && typeof payload.new.balance === 'number') {
+        _orbBalance = payload.new.balance;
+        updateOrbBadge();
+      }
+    })
+    .subscribe();
+}
+
+// 카카오 유저 프로필 서버 재동기화
+async function _syncKakaoProfile() {
+  if (!currentUser || currentUser.provider !== 'kakao') return;
+  try {
+    var _ku = JSON.parse(localStorage.getItem('fortuna_kakao_user') || 'null');
+    if (!_ku || !_ku.email) return;
+    var r = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: _ku.email, name: _ku.name || '' })
+    });
+    if (!r.ok) return;
+    var profile = await r.json();
+    if (!profile || profile.error) return;
+    // localStorage 캐시 갱신
+    _ku.profile = profile;
+    localStorage.setItem('fortuna_kakao_user', JSON.stringify(_ku));
+    // 메모리 userProfile 갱신 (birth_date 등 핵심 필드만)
+    if (userProfile && profile.birth_date) {
+      Object.assign(userProfile, profile);
+      updateChatHeader();
+    }
+  } catch(e) {}
+}
+
 // 백그라운드 복귀 감지 (갤럭시 홈버튼 후 재진입 대응)
 document.addEventListener('visibilitychange', async function() {
   if (document.hidden) return;
@@ -5941,12 +5990,14 @@ document.addEventListener('visibilitychange', async function() {
   }
   window._typingStart = null;
 
-  // 세션 갱신
   if (!currentUser) return;
 
-  // 카카오 유저는 Supabase 세션 없음 - 스킵
+  // Orb 잔액 항상 서버에서 최신값으로 갱신 (기기간 동기화)
+  loadOrbBalance();
+
+  // 카카오 유저는 Supabase 세션 없음 - 프로필 동기화 후 종료
   if (currentUser.provider === 'kakao') {
-    console.log('카카오 유저 세션 갱신 스킵');
+    _syncKakaoProfile();
     return;
   }
 
@@ -5960,7 +6011,6 @@ document.addEventListener('visibilitychange', async function() {
       return;
     }
     await sb.auth.refreshSession();
-    console.log('세션 갱신 완료');
   } catch(e) {
     console.warn('세션 갱신 실패:', e);
     if (sendBtn) sendBtn.disabled = false;
