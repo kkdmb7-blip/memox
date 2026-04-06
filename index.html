@@ -1992,6 +1992,30 @@ async function submitOnboard() {
 
     await saveProfile(profile);
     userProfile = profile;
+
+    // 신규 가입자 60 Orb 지급 (orb_balance 행이 없을 때만)
+    try {
+      var _existing = await sb.from('orb_balance').select('user_id').eq('user_id', currentUser.id).maybeSingle();
+      if (!_existing.data) {
+        var _now = new Date().toISOString();
+        await sb.from('orb_balance').insert({
+          user_id: currentUser.id,
+          balance: 60,
+          is_first_charge: true,
+          legacy_user: false,
+          updated_at: _now,
+        });
+        await sb.from('orb_transactions').insert({
+          user_id: currentUser.id,
+          type: 'signup_bonus',
+          amount: 60,
+          description: '가입 축하 Orb',
+          balance_after: 60,
+          created_at: _now,
+        });
+      }
+    } catch(_e) { console.warn('가입 Orb 지급 실패', _e); }
+
     await loadChatHistory();
     showScreen('chat');
     updateChatHeader();
