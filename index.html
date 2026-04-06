@@ -1201,7 +1201,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.20.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.20.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4570,6 +4570,7 @@ async function callClaude(userMsg, apiKey) {
   var dateStr = _nowKST.getUTCFullYear() + '년 ' + (_nowKST.getUTCMonth()+1) + '월 ' + _nowKST.getUTCDate() + '일';
   var todayGanji = getTodayGanji();
   var monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1, _nowKST.getUTCDate());
+  var yearGanji = getYearGanji();
   var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 var pastGanji = '';
 for (var i = 60; i >= 1; i--) { var _pd = new Date(new Date().getTime() - i * 86400000); var _pdKST = new Date(_pd.getTime() + 9 * 60 * 60 * 1000); var _pdDay = _weekDays[_pdKST.getUTCDay()]; pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _pdDay + '): ' + getTodayGanji(_pd) + '일\n'; }
@@ -4671,7 +4672,7 @@ for (var i = 1; i <= 6; i++) {
     ? '【모드: 베딕 전용】\n오직 베딕점성술만으로 깊이 해석하세요. 사주·점성술·자미두수는 절대 언급 금지.\n\n'
     : '【질문 유형별 시스템 조합】\n질문 키워드로 아래 2가지 시스템만 선택:\n단기("오늘","지금","이번 주","요즘","당장") → 서양점성술 + 베딕\n중기("올해","이번 달","상반기","하반기") → 자미두수 + 사주\n장기("대운","평생","몇 년","앞으로","미래") → 사주대운 + 자미두수대한\n성격("왜 나는","내 성격","타고난") → 사주일간 + 베딕라그나\n타이밍("언제","몇 월","어느 시기") → 베딕다샤 + 자미두수대한\n복합/기타 → 가장 관련 있는 2가지 자유 선택\n\n';
 
-  var systemPrompt = personaPrompt + outputControl + '\n\n【절대 규칙 - 반드시 준수】\n' + '오늘 날짜: ' + dateStr + '\n' + '오늘 일진: ' + todayGanji + '일\n' + '이번 달 월건: ' + monthGanji + '월\n' + '⚠️ 위 일진/월건은 시스템이 직접 계산한 정확한 값이다.\n' + '절대 스스로 계산하거나 추측하지 말 것.\n' + '반드시 위 값만 사용할 것.\n\n' +
+  var systemPrompt = personaPrompt + outputControl + '\n\n【절대 규칙 - 반드시 준수】\n' + '오늘 날짜: ' + dateStr + '\n' + '올해 년건: ' + yearGanji + '년\n' + '이번 달 월건: ' + monthGanji + '월\n' + '오늘 일진: ' + todayGanji + '일\n' + '⚠️ 위 년건/월건/일진은 시스템이 직접 계산한 정확한 값이다.\n' + '절대 스스로 계산하거나 추측하지 말 것.\n' + '반드시 위 값만 사용할 것.\n\n' +
 '【향후 6개월 월건 - 월운 질문 시 반드시 이 표를 참고하라】\n' + futureMonthGanji + '\n' +
 '【과거 60일 일진】\n' + pastGanji + '\n' +
 '【향후 60일 일진 - 내일부터 시작, 오늘(' + dateStr + ')은 위 일진 참고】\n' + futureGanji + '\n' +
@@ -5790,6 +5791,22 @@ function getTodayGanji(targetDate = new Date()) {
 
   return heavenly[idx % 10] + earthly[idx % 12];
 }
+// 년건 계산 — 입춘(2월 4일경) 기준
+// 기준: 2024년 = 갑진년(甲辰) = 60갑자 index 40
+function getYearGanji(date) {
+  date = date || new Date();
+  const heavenly = ['갑','을','병','정','무','기','경','신','임','계'];
+  const earthly  = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  var year = kst.getUTCFullYear();
+  var month = kst.getUTCMonth() + 1;
+  var day = kst.getUTCDate();
+  // 입춘(2월 4일) 이전이면 전년도 기준
+  var adjYear = (month < 2 || (month === 2 && day < 4)) ? year - 1 : year;
+  const idx = (((adjYear - 2024) % 60) + 40 + 60) % 60;
+  return heavenly[idx % 10] + earthly[idx % 12];
+}
+
 // 월건 계산 — 절기(節氣) 반영
 // 기준: 2024년 2월(입춘 이후) = 병인(丙寅) = 60갑자 index 2
 // 각 월 절기 시작일(근사치): 1=소한(5), 2=입춘(4), 3=경칩(6), 4=청명(5),
