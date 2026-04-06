@@ -4086,7 +4086,7 @@ async function sendMessage() {
     var reply = await callClaude(text, apiKey);
     chatHistory.push({ role: 'assistant', content: reply, created_at: new Date().toISOString() });
     await saveMessage('assistant', reply);
-    if (_payWithOrb && !_isAdmin) await useOrb(20);
+    if (_payWithOrb) await useOrb(20);
   } catch(e) {
     hideTyping();
     console.error('Gemini 오류:', e);
