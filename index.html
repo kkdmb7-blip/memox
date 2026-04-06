@@ -4062,9 +4062,11 @@ async function sendMessage() {
   window._typingStart = Date.now();
 
   var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || 'fortuna';
-  var _orbLeft = await getOrbBalance();
-  var _payWithOrb = _orbLeft >= 20;
-  if (!_payWithOrb) {
+  // 관리자는 무제한
+  var _isAdmin = currentUser && currentUser.id === ADMIN_UUID;
+  var _orbLeft = _isAdmin ? 9999 : await getOrbBalance();
+  var _payWithOrb = _isAdmin ? false : (_orbLeft >= 20);
+  if (!_isAdmin && !_payWithOrb) {
     // Orb 없으면 기존 무료 quota 사용 (기존 사용자 호환)
     var _qLeft = await getQuestionCount();
     if (_qLeft <= 0) { showOrbEmptyModal(); return; }
