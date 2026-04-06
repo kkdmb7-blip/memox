@@ -4065,9 +4065,8 @@ async function sendMessage() {
   // 관리자는 무제한
   var _isAdmin = currentUser && currentUser.id === ADMIN_UUID;
   var _orbLeft = _isAdmin ? 9999 : await getOrbBalance();
-  var _payWithOrb = _isAdmin ? false : (_orbLeft >= 20);
-  if (!_isAdmin && !_payWithOrb) {
-    // Orb 없으면 기존 무료 quota 사용 (기존 사용자 호환)
+  var _payWithOrb = _isAdmin ? true : (_orbLeft >= 20);
+  if (!_payWithOrb) {
     var _qLeft = await getQuestionCount();
     if (_qLeft <= 0) { showOrbEmptyModal(); return; }
   }
@@ -4087,7 +4086,7 @@ async function sendMessage() {
     var reply = await callClaude(text, apiKey);
     chatHistory.push({ role: 'assistant', content: reply, created_at: new Date().toISOString() });
     await saveMessage('assistant', reply);
-    if (_payWithOrb) await useOrb(20);
+    if (_payWithOrb && !_isAdmin) await useOrb(20);
   } catch(e) {
     hideTyping();
     console.error('Gemini 오류:', e);
