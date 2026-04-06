@@ -193,7 +193,7 @@
     margin-top:2px; letter-spacing:0.02em;
   }
   .chat-header-actions { display:flex; gap:4px; flex-shrink:0; }
-  #questionBadge { display:none; align-items:center; gap:3px; font-size:12px; font-weight:700; padding:3px 8px; border-radius:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); cursor:pointer; flex-shrink:0; }
+
   #orbBadge { display:flex; align-items:center; gap:4px; font-size:12px; font-weight:700; padding:4px 10px; border-radius:12px; background:rgba(80,160,255,0.1); border:1px solid rgba(80,160,255,0.25); cursor:pointer; flex-shrink:0; color:#7ac4ff; text-decoration:none; transition:border-color 0.2s; }
   #orbBadge:hover { border-color:rgba(80,160,255,0.5); }
   .orb-empty-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9500; display:none; align-items:flex-end; justify-content:center; }
@@ -862,51 +862,23 @@
       <label class="form-label">출생지역</label>
 <select class="form-input" id="inputCity">
 <option value="">지역 선택</option>
-<option value="거제">거제</option>
-<option value="경주">경주</option>
-<option value="고양">고양</option>
-<option value="광명">광명</option>
-<option value="광주">광주</option>
-<option value="구미">구미</option>
-<option value="군산">군산</option>
-<option value="김포">김포</option>
-<option value="김해">김해</option>
-<option value="남양주">남양주</option>
-<option value="대구">대구</option>
-<option value="대전">대전</option>
-<option value="목포">목포</option>
-<option value="부산">부산</option>
-<option value="서귀포">서귀포</option>
 <option value="서울">서울</option>
-<option value="성남">성남</option>
-<option value="세종">세종</option>
-<option value="속초">속초</option>
-<option value="수원">수원</option>
-<option value="순천">순천</option>
-<option value="시흥">시흥</option>
-<option value="안산">안산</option>
-<option value="안양">안양</option>
-<option value="양산">양산</option>
-<option value="여수">여수</option>
-<option value="용인">용인</option>
-<option value="울산">울산</option>
-<option value="원주">원주</option>
-<option value="의정부">의정부</option>
-<option value="익산">익산</option>
+<option value="부산">부산</option>
+<option value="대구">대구</option>
 <option value="인천">인천</option>
-<option value="전주">전주</option>
+<option value="광주">광주</option>
+<option value="대전">대전</option>
+<option value="울산">울산</option>
+<option value="세종">세종</option>
+<option value="경기">경기</option>
+<option value="강원">강원</option>
+<option value="충북">충북</option>
+<option value="충남">충남</option>
+<option value="전북">전북</option>
+<option value="전남">전남</option>
+<option value="경북">경북</option>
+<option value="경남">경남</option>
 <option value="제주">제주</option>
-<option value="진주">진주</option>
-<option value="창원">창원</option>
-<option value="천안">천안</option>
-<option value="청주">청주</option>
-<option value="춘천">춘천</option>
-<option value="통영">통영</option>
-<option value="파주">파주</option>
-<option value="평택">평택</option>
-<option value="포항">포항</option>
-<option value="하남">하남</option>
-<option value="화성">화성</option>
 <option value="해외">해외</option>
 </select>
     </div>
@@ -924,7 +896,6 @@
     <div class="chat-header-info">
       <div style="font-size:11px;color:var(--text3);margin-bottom:1px;" id="chatHeaderUserName"></div>
       <div class="chat-header-name" id="chatHeaderName" style="font-size:16px;font-weight:800;letter-spacing:-0.3px;">포르투나</div>
-      <div class="chat-header-sub" id="quotaDisplay" style="font-size:11px;color:var(--accent);"></div>
       <div class="chat-header-sub" id="chatHeaderSub">사주 · 점성술 기반 AI</div>
    <button id="hitsBtn" onclick="loadHitsScreen()" style="background:none;border:none;color:#9b8fb0;font-size:11px;cursor:pointer;padding:2px 6px;border:1px solid #2a1f3d;border-radius:4px;margin-right:6px;">🎯 적중 일지</button>
            <div id="streakBadge"></div>
@@ -933,7 +904,7 @@
     </div>
     <div id="totalConsultations" style="font-size:11px;color:#9b8fb0;letter-spacing:0.01em;flex-shrink:0;"></div>
     <a id="orbBadge" href="charge.html" title="Orb 잔액 · 클릭해서 충전">💎 <span id="orbBadgeNum">...</span></a>
-    <div id="questionBadge" onclick="showChargeModal()" title="남은 질문 수"></div>
+
     <div class="chat-header-actions" style="position:relative;">
       <button id="settingsBtn" class="settings-menu-btn" onclick="toggleSettingsMenu(event)" title="설정">☰</button>
       <div id="settingsDropdown" class="settings-dropdown">
@@ -1201,7 +1172,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.20.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.20.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1680,7 +1651,6 @@ function applyProfile(profile) {
   subscribeOrbRealtime();
   loadChatHistory().then(function() {
     updateChatHeader();
-    loadQuestionCount().then(updateQuestionBadge);
     loadOrbBalance();
     handleReferralOnLoad();
     updateStreak();
@@ -2259,12 +2229,10 @@ async function fetchSaju(birth, birthTime, city, gender, cal, midnight) {
     var cityMap = {
       '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시',
       '인천': '인천광역시', '광주': '광주광역시', '대전': '대전광역시',
-      '울산': '울산광역시', '세종': '세종특별자치시', '수원': '수원시',
-      '성남': '성남시', '고양': '고양시', '용인': '용인시',
-      '청주': '청주시', '전주': '전주시', '천안': '천안시',
-      '안산': '안산시', '안양': '안양시', '남양주': '남양주시',
-      '화성': '화성시', '창원': '창원시', '포항': '포항시',
-      '강릉': '강릉시', '제주': '제주시', '해외': 'overseas'
+      '울산': '울산광역시', '세종': '세종특별자치시',
+      '경기': '수원시', '강원': '춘천시', '충북': '청주시',
+      '충남': '홍성군', '전북': '전주시', '전남': '무안군',
+      '경북': '안동시', '경남': '창원시', '제주': '제주시', '해외': 'overseas'
     };
     var cityNorm = cityMap[city] || city;
     var body = {
@@ -2423,7 +2391,13 @@ function getCityCoords(city) {
     '제주시':{lat:33.4996,lon:126.5312},'진주시':{lat:35.1799,lon:128.1076},'창원시':{lat:35.2280,lon:128.6811},
     '천안시':{lat:36.8151,lon:127.1139},'청주시':{lat:36.6424,lon:127.4890},'춘천시':{lat:37.8813,lon:127.7298},
     '통영시':{lat:34.8544,lon:128.4332},'평택시':{lat:36.9921,lon:127.1128},'포항시':{lat:36.0190,lon:129.3435},
-    '하남시':{lat:37.5396,lon:127.2147},'화성시':{lat:37.1997,lon:126.8311},'해외':{lat:37.5665,lon:126.9780}
+    '하남시':{lat:37.5396,lon:127.2147},'화성시':{lat:37.1997,lon:126.8311},'해외':{lat:37.5665,lon:126.9780},
+    '서울':{lat:37.5665,lon:126.9780},'부산':{lat:35.1796,lon:129.0756},'대구':{lat:35.8714,lon:128.6014},
+    '인천':{lat:37.4563,lon:126.7052},'광주':{lat:35.1595,lon:126.8526},'대전':{lat:36.3504,lon:127.3845},
+    '울산':{lat:35.5384,lon:129.3114},'세종':{lat:36.4801,lon:127.2890},
+    '경기':{lat:37.2636,lon:127.0286},'강원':{lat:37.8813,lon:127.7298},'충북':{lat:36.6424,lon:127.4890},
+    '충남':{lat:36.6012,lon:126.6498},'전북':{lat:35.8242,lon:127.1480},'전남':{lat:34.8161,lon:126.4629},
+    '경북':{lat:36.5760,lon:128.5055},'경남':{lat:35.2280,lon:128.6811},'제주':{lat:33.4996,lon:126.5312}
   };
   return coords[city] || {lat:37.5665, lon:126.9780};
 }
@@ -3039,8 +3013,6 @@ function makeFallback(card){
 function tarotGoSelect() {
   var q = document.getElementById('tarotQuestion').value.trim();
   if (!q) return;
-  var _qLeft = _questionCountCache !== null ? _questionCountCache : 3;
-  if (_qLeft <= 0) { showChargeModal(); return; }
   var shuffled = TAROT_CARDS.slice().sort(function(){ return Math.random()-0.5; });
   var grid = document.getElementById('tarotSelectGrid');
   grid.innerHTML = '';
@@ -3225,20 +3197,10 @@ async function interpretTarotWithAI(cards, reversals) {
     resultArea.style.opacity = '1';
     if (!res.ok) {
       var errData = await res.json().catch(function(){ return {}; });
-      if (errData.error === 'limit_exceeded') {
-        resultArea.textContent = '오늘 사용량을 모두 소진했어요. 내일 다시 시도해주세요.';
-        showLimitModal && showLimitModal(errData.free_left, errData.paid_left);
-        return;
-      }
       throw new Error('API ' + res.status + ': ' + (errData.error || res.statusText));
     }
     var data = await res.json();
     var reply = data.reply || '';
-    if (data.free_left !== undefined && currentUser) {
-      var _srvTotal = (data.free_left || 0) + (data.paid_left || 0);
-      _questionCountCache = _srvTotal;
-    }
-    updateQuestionBadge();
     console.log('[타로 해석 응답]', reply.slice(0, 100));
     resultArea.style.opacity = '0';
     setTimeout(function() { resultArea.innerHTML = renderMarkdown(reply) || '해석을 불러오지 못했어요.'; resultArea.style.opacity = '1'; }, 300);
@@ -3952,13 +3914,9 @@ async function requestGunghapAI() {
     });
     if (!res.ok) {
       var err = await res.json().catch(function(){return{};});
-      if (err.error==='limit_exceeded') { aiDiv.textContent='오늘 사용량을 모두 소진했어요. 내일 다시 시도해주세요.'; return; }
       throw new Error(err.error||res.status);
     }
     var data = await res.json();
-    if (data.free_left!==undefined && currentUser) {
-      var _t=(data.free_left||0)+(data.paid_left||0); _questionCountCache=_t; updateQuestionBadge();
-    }
     var reply = (data.reply||'').replace(/\*\*(.+?)\*\*/g,'<strong style="color:#ff8ab0;">$1</strong>');
     aiDiv.innerHTML = '<div style="border-top:1px solid rgba(255,130,170,0.2);padding-top:14px;margin-top:4px;">'+reply+'</div>';
   } catch(e) {
@@ -4142,53 +4100,7 @@ function selectMode(mode) {
   }, { passive: true });
 })();
 
-// ── 질문 충전 시스템 ──────────────────────────────────────
-var _questionCountCache = null;
-
-async function loadQuestionCount() {
-  if (!currentUser) return 3;
-  try {
-    var res = await fetch('https://fortuna-silk.vercel.app/api/quota?user_id=' + encodeURIComponent(currentUser.id));
-    if (res.ok) {
-      var d = await res.json();
-      _questionCountCache = d.total;
-      updateQuotaDisplay(d.free_left, d.paid_left);
-      return d.total;
-    }
-  } catch(e) { console.warn('quota 조회 실패', e.message); }
-  return _questionCountCache !== null ? _questionCountCache : 3;
-}
-
-async function getQuestionCount() {
-  if (_questionCountCache !== null) return _questionCountCache;
-  return await loadQuestionCount();
-}
-
-async function useQuestion() {
-  if (_questionCountCache !== null) _questionCountCache = Math.max(0, _questionCountCache - 1);
-}
-
-function updateQuestionBadge() {
-  var badge = document.getElementById('questionBadge');
-  if (!badge) return;
-  var n = _questionCountCache !== null ? _questionCountCache : 3;
-  var color = n >= 3 ? '#4caf50' : n === 2 ? '#ffc107' : '#f44336';
-  var _rawName = (userProfile && userProfile.name) ? userProfile.name : '';
-  var name = _rawName.length > 5 ? _rawName.slice(0, 5) + '...' : _rawName;
-  var nameHtml = name ? '<span style="color:var(--text1);font-weight:600;">' + name + '님</span> ' : '';
-  badge.innerHTML = nameHtml + '<span style="color:' + color + ';">☆' + n + '</span>';
-  badge.style.borderColor = color + '40';
-}
-
 function showChargeModal() {
-  var left = _questionCountCache !== null ? _questionCountCache : 0;
-  var title;
-  if (left >= 3) title = '오늘 🔮 3번 질문할 수 있어요';
-  else if (left === 2) title = '오늘 🔮 2번 질문 남았어요';
-  else if (left === 1) title = '⚠️ 마지막 질문이에요! 신중하게 써보세요';
-  else title = '오늘 질문을 다 쓰셨어요 🌙';
-  var titleEl = document.querySelector('#chargeModal .charge-modal-title');
-  if (titleEl) titleEl.textContent = title;
   document.getElementById('chargeModal').style.display = 'flex';
 }
 
@@ -4233,9 +4145,6 @@ async function handlePayCharge() {
           type: 'purchase',
           created_at: Date.now()
         });
-        _questionCountCache = null;
-        await loadQuestionCount();
-        updateQuestionBadge();
         closeChargeModal();
         alert('10\uAC1C \uCDA9\uC804\uB429\uB2C8\uB2E4! \uD83D\uDD2E');
       } catch(e) {
@@ -4299,9 +4208,6 @@ async function handleSubCharge() {
           type: 'subscription',
           created_at: Date.now()
         });
-        _questionCountCache = null;
-        await loadQuestionCount();
-        updateQuestionBadge();
         closeChargeModal();
         alert('무제한 구독이 시작됐어요! ✨');
       } catch(e) {
@@ -4844,22 +4750,9 @@ for (var i = 1; i <= 6; i++) {
   }
   if (!res.ok) {
     var errData = await res.json();
-    if (errData.error === 'limit_exceeded') {
-      // 한도 초과 → 결제 유도
-      hideTyping(); isTyping = false;
-      showLimitModal(errData.free_left, errData.paid_left);
-      return '';
-    }
     throw new Error(errData.error || 'API 오류');
   }
   var resData = await res.json();
-  // 남은 횟수 업데이트
-  updateQuotaDisplay(resData.free_left, resData.paid_left);
-  if (resData.free_left !== undefined && currentUser) {
-    var _srvTotal = (resData.free_left || 0) + (resData.paid_left || 0);
-    _questionCountCache = _srvTotal;
-    updateQuestionBadge();
-  }
 
   // 스트리밍 말풍선 생성
   var container = document.getElementById('chatMessages');
@@ -5072,8 +4965,6 @@ function appendMessage(role, content, animate, created_at) {
               var cur = (r.data && r.data.paid_count) || 0;
               sb.from('chat_users').update({ paid_count: cur + 1 }).eq('id', currentUser.id).then(function() {
                 localStorage.setItem(rewardKey, '1');
-                _questionCountCache = null;
-                loadQuestionCount().then(function() { updateQuestionBadge(); });
                 toast('공유 감사해요! 질문권 1개 충전됐어요 🔮');
                 // 현재 화면의 모든 카카오 공유 버튼에 ✓ 표시
                 document.querySelectorAll('.kakao-share-btn').forEach(function(b) {
@@ -5599,25 +5490,6 @@ function makeBgStars() {
 
 
 // ── HELPERS ───────────────────────────────────────────────────
-function updateQuotaDisplay(freeLeft, paidLeft) {
-  var el = document.getElementById('quotaDisplay');
-  if (!el) return;
-  var left = paidLeft > 0 ? paidLeft : freeLeft;
-  if (paidLeft > 0) {
-    el.style.color = left <= 1 ? '#ff4d4d' : left <= 2 ? '#f5c842' : 'var(--accent)';
-    el.innerHTML = left === 0
-      ? '오늘 질문을 다 쓰셨어요 🌙'
-      : '남은 질문 ' + left + '개' + (left === 1 ? ' <span style="color:#ff4d4d">마지막 질문입니다 🔮</span>' : '');
-  } else {
-    el.style.color = left <= 1 ? '#ff4d4d' : left <= 2 ? '#f5c842' : 'var(--accent)';
-    if (left === 0) {
-      el.innerHTML = '질문권이 없어요. 지금 충전하면 바로 계속할 수 있어요' +
-        '<button onclick="requestNotification()" style="margin-left:8px;padding:3px 10px;background:var(--accent2);color:#fff;border:none;border-radius:12px;font-size:11px;cursor:pointer;">내일 알림 받기</button>';
-    } else {
-      el.innerHTML = '오늘 무료 ' + left + '/3개' + (left === 1 ? ' <span style="color:#ff4d4d">마지막 질문입니다 🔮</span>' : '');
-    }
-  }
-}
 
 function dismissDailyCard() {
   var today = getKSTDate();
@@ -5740,30 +5612,6 @@ function scheduleFortunaNotification() {
   }, delay);
 }
 
-function showLimitModal(freeLeft, paidLeft) {
-  var overlay = document.createElement('div');
-  overlay.id = 'limitOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  var subMsg = (paidLeft > 0)
-    ? '충전한 질문 ' + paidLeft + '개를 다 사용했어요.'
-    : '오늘 무료 질문 3개를 다 사용했어요.';
-  overlay.innerHTML =
-    '<div style="background:var(--surface2);border-radius:20px;padding:32px 24px;max-width:320px;width:90%;text-align:center;">' +
-      '<div style="font-size:36px;margin-bottom:12px;">🔮</div>' +
-      '<div style="font-size:18px;font-weight:700;margin-bottom:8px;">질문을 다 썼어요</div>' +
-      '<div style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6;">' + subMsg + '<br>1,900원으로 질문 10개를 충전하면<br>바로 계속 물어볼 수 있어요.</div>' +
-      '<button onclick="startPayment()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;">💳 1,900원으로 10개 충전</button>' +
-      '<button onclick="closeLimitModal()" style="width:100%;padding:12px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:12px;font-size:14px;cursor:pointer;">내일 다시 올게요</button>' +
-    '</div>';
-  document.body.appendChild(overlay);
-}
-
-function closeLimitModal() { var o = document.getElementById("limitOverlay"); if(o) o.remove(); }
-
-function startPayment() {
-  closeLimitModal();
-  handlePayCharge();
-}
 
 function getTodayGanji(targetDate = new Date()) {
   const heavenly = ['갑','을','병','정','무','기','경','신','임','계'];
