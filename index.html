@@ -1211,7 +1211,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.22.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.22.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3976,7 +3976,7 @@ async function requestGunghapAI() {
   var gA = d.mySaju.gender || '', gB = d.pSaju.gender || '';
   var CHAT_URL = 'https://fortuna-silk.vercel.app/api/chat';
 
-  function boldPink(s) { return (s||'').replace(/\*\*(.+?)\*\*/g,'<strong style="color:#ff8ab0;">$1</strong>'); }
+  function boldPink(s) { return (s||'').replace(/^#{1,4}\s+.+$/gm,'').replace(/\*\*(.+?)\*\*/g,'<strong style="color:#ff8ab0;">$1</strong>').trim(); }
   function showChunk(id, title, html) {
     var el = document.getElementById(id);
     if (el) el.innerHTML = '<h4 style="font-size:14px;font-weight:700;color:#ff8ab0;margin:0 0 8px;">'+title+'</h4><div style="font-size:13px;line-height:1.8;color:#e8e0f0;animation:ghFadeIn .4s ease;">'+html+'</div>';
@@ -4005,7 +4005,7 @@ async function requestGunghapAI() {
   try {
     var r1 = await fetch(CHAT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ user_id:user.id, orb_override:80,
-        system_prompt: '사주명리 궁합 전문가. 연애 궁합만 분석. 헤더(##,###)와 표 금지. **볼드**는 핵심 키워드에만 3~5개.',
+        system_prompt: '사주명리 궁합 전문가. 연애 궁합만 분석해. 절대 규칙: #헤더, ##헤더, ###헤더 사용 금지. 표(|--|) 금지. 일진/날짜 언급 금지. **볼드**는 핵심 단어에만 3~5개. 자연스러운 문장으로만 써.',
         messages: [{ role:'user', content: '【연애 궁합 분석】\n'
           +d.myName+'('+gA+'): 일주 '+iljuA+', 일간 '+d.mySaju.dayElement+', '+d.mySaju.strength+'\n'
           +d.pName+'('+gB+'): 일주 '+iljuB+', 일간 '+d.pSaju.dayElement+', '+d.pSaju.strength+'\n'
@@ -4034,7 +4034,7 @@ async function requestGunghapAI() {
   try {
     var r2 = await fetch(CHAT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ user_id:user.id, skip_orb:true,
-        system_prompt: '사주명리 궁합 전문가. 현재 시기 궁합만 분석. 헤더(##,###)와 표 금지. **볼드**는 핵심 키워드에만 3~5개.',
+        system_prompt: '사주명리 궁합 전문가. 현재 시기 궁합만 분석해. 절대 규칙: #헤더, ##헤더, ###헤더 사용 금지. 표(|--|) 금지. 일진/날짜 언급 금지. **볼드**는 핵심 단어에만 3~5개. 자연스러운 문장으로만 써.',
         messages: [{ role:'user', content: '【현재 시기 궁합 분석】\n'
           +d.myName+': 일주 '+iljuA+', '+myAge+'\n'
           +d.pName+': 일주 '+iljuB+', '+pAge+'\n\n'
@@ -4059,7 +4059,7 @@ async function requestGunghapAI() {
 
     var r3 = await fetch(CHAT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ user_id:user.id, skip_orb:true,
-        system_prompt: '사주명리 궁합 전문가. 보완법과 실천 조언만. 헤더(##,###)와 표 금지. **볼드**는 핵심 키워드에만 3~5개.',
+        system_prompt: '사주명리 궁합 전문가. 보완법과 실천 조언만 써. 절대 규칙: #헤더, ##헤더, ###헤더 사용 금지. 표(|--|) 금지. 일진/날짜 언급 금지. **볼드**는 핵심 단어에만 3~5개. 자연스러운 문장으로만 써.',
         messages: [{ role:'user', content: '【서로를 위한 조언】\n'
           +d.myName+': 용신 '+myYS+', 일주 '+iljuA+'\n'
           +d.pName+': 용신 '+pYS+', 일주 '+iljuB+'\n\n'
