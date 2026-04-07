@@ -1213,7 +1213,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.24.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.25.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4125,6 +4125,30 @@ async function requestGunghapAI() {
     if (r3.ok) { var d3 = await r3.json(); console.log('[궁합AI] 3단계 완료'); showChunk('chunk-3', '🌟 서로를 위한 조언', boldPink(d3.reply)); }
     else { console.error('[궁합AI] 3단계 HTTP 에러:', r3.status); showError('chunk-3','🌟 서로를 위한 조언'); }
   } catch(e) { console.error('[궁합AI] 3단계 실패:', e); showError('chunk-3','🌟 서로를 위한 조언'); }
+
+  // ── 자동 저장 ──
+  try {
+    var ch1 = document.getElementById('chunk-1'), ch2 = document.getElementById('chunk-2'), ch3 = document.getElementById('chunk-3');
+    await fetch(WORKER_URL + '/analysis-history', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        user_id: user.id, type: 'gunghap',
+        title: d.myName + ' ❤ ' + d.pName + ' 궁합',
+        result: {
+          personA: { name:d.myName, ilju:iljuA, ohaeng:d.mySaju.dayElement, strength:d.mySaju.strength, yongsin:myYS },
+          personB: { name:d.pName, ilju:iljuB, ohaeng:d.pSaju.dayElement, strength:d.pSaju.strength, yongsin:pYS },
+          score: d.sc.total,
+          step1: ch1 ? ch1.querySelector('div:last-child')?.innerHTML||'' : '',
+          step2: ch2 ? ch2.querySelector('div:last-child')?.innerHTML||'' : '',
+          step3: ch3 ? ch3.querySelector('div:last-child')?.innerHTML||'' : ''
+        }
+      })
+    });
+    var savedMsg = document.createElement('div');
+    savedMsg.style.cssText = 'text-align:center;padding:10px;font-size:12px;color:rgba(255,255,255,0.35);margin-top:8px;';
+    savedMsg.textContent = '✅ 자동 저장됨 · 지난 분석에서 다시 볼 수 있어요';
+    aiDiv.appendChild(savedMsg);
+  } catch(e) { console.warn('히스토리 저장 실패:', e); }
 
   btn.disabled=false; btn.textContent='AI 분석 시작';
 }
