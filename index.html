@@ -1079,7 +1079,7 @@
     </div>
 
     <!-- AI 결과 -->
-    <div id="ghAiResult" style="font-size:13px;line-height:1.8;color:#e8e0f0;display:none;"></div>
+    <div id="ghAiResult" style="color:#e8e0f0;display:none;"></div>
 
     <!-- 공유 버튼 -->
     <div style="margin-top:14px;">
@@ -1213,7 +1213,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.22.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.22.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4004,6 +4004,7 @@ async function requestGunghapAI() {
   } catch(e) {}
 
   // ── 1단계: 연애 궁합 (80 Orb 차감) ──
+  console.log('[궁합AI] 1단계 시작, ctx:', Object.keys(ctx));
   try {
     var r1 = await fetch(CHAT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ user_id:user.id, orb_override:80,
@@ -4025,13 +4026,16 @@ async function requestGunghapAI() {
       throw new Error(e1.error||r1.status);
     }
     var d1 = await r1.json();
+    console.log('[궁합AI] 1단계 완료, reply 길이:', (d1.reply||'').length);
     showChunk('chunk-1', '💕 연애 궁합', boldPink(d1.reply));
   } catch(e) {
+    console.error('[궁합AI] 1단계 실패:', e);
     showError('chunk-1','💕 연애 궁합'); showError('chunk-2','⏰ 지금 이 시기'); showError('chunk-3','🌟 서로를 위한 조언');
     btn.disabled=false; btn.textContent='AI 분석 시작'; return;
   }
 
   // ── 2단계: 현재 시기 궁합 (skip_orb) ──
+  console.log('[궁합AI] 2단계 시작');
   showSpinner('chunk-2');
   try {
     var r2 = await fetch(CHAT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
@@ -4047,11 +4051,12 @@ async function requestGunghapAI() {
           +'지금 이 시기에 두 사람이 만난 의미와 타이밍을 분석해줘. 250자 내외.' }]
       })
     });
-    if (r2.ok) { var d2 = await r2.json(); showChunk('chunk-2', '⏰ 지금 이 시기', boldPink(d2.reply)); }
-    else showError('chunk-2','⏰ 지금 이 시기');
-  } catch(e) { showError('chunk-2','⏰ 지금 이 시기'); }
+    if (r2.ok) { var d2 = await r2.json(); console.log('[궁합AI] 2단계 완료'); showChunk('chunk-2', '⏰ 지금 이 시기', boldPink(d2.reply)); }
+    else { console.error('[궁합AI] 2단계 HTTP 에러:', r2.status); showError('chunk-2','⏰ 지금 이 시기'); }
+  } catch(e) { console.error('[궁합AI] 2단계 실패:', e); showError('chunk-2','⏰ 지금 이 시기'); }
 
   // ── 3단계: 실천 조언 (skip_orb) ──
+  console.log('[궁합AI] 3단계 시작');
   showSpinner('chunk-3');
   try {
     var aFamous = ctx.a_famous ? (ctx.a_famous.유명인||[]).join(', ')+' — '+(ctx.a_famous.공통특성||'') : '정보 없음';
@@ -4072,9 +4077,9 @@ async function requestGunghapAI() {
           +'두 사람이 서로를 보완하고 함께 성장하는 실천 방법을 알려줘. 250자 내외.' }]
       })
     });
-    if (r3.ok) { var d3 = await r3.json(); showChunk('chunk-3', '🌟 서로를 위한 조언', boldPink(d3.reply)); }
-    else showError('chunk-3','🌟 서로를 위한 조언');
-  } catch(e) { showError('chunk-3','🌟 서로를 위한 조언'); }
+    if (r3.ok) { var d3 = await r3.json(); console.log('[궁합AI] 3단계 완료'); showChunk('chunk-3', '🌟 서로를 위한 조언', boldPink(d3.reply)); }
+    else { console.error('[궁합AI] 3단계 HTTP 에러:', r3.status); showError('chunk-3','🌟 서로를 위한 조언'); }
+  } catch(e) { console.error('[궁합AI] 3단계 실패:', e); showError('chunk-3','🌟 서로를 위한 조언'); }
 
   btn.disabled=false; btn.textContent='AI 분석 시작';
 }
