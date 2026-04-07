@@ -1200,7 +1200,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.20.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.20.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4044,14 +4044,8 @@ async function sendMessage() {
   window._typingStart = Date.now();
 
   var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || 'fortuna';
-  // 관리자는 무제한
-  var _isAdmin = currentUser && currentUser.id === ADMIN_UUID;
-  var _orbLeft = _isAdmin ? 9999 : await getOrbBalance();
-  var _payWithOrb = _isAdmin ? true : (_orbLeft >= 20);
-  if (!_payWithOrb) {
-    var _qLeft = await getQuestionCount();
-    if (_qLeft <= 0) { showOrbEmptyModal(); return; }
-  }
+  var _orbLeft = await getOrbBalance();
+  if (_orbLeft < 20) { showOrbEmptyModal(); return; }
 
   input.value = '';
   autoResize(input);
@@ -4068,7 +4062,6 @@ async function sendMessage() {
     var reply = await callClaude(text, apiKey);
     chatHistory.push({ role: 'assistant', content: reply, created_at: new Date().toISOString() });
     await saveMessage('assistant', reply);
-    if (_payWithOrb) await useOrb(20);
   } catch(e) {
     hideTyping();
     console.error('Gemini 오류:', e);
@@ -4774,6 +4767,13 @@ for (var i = 1; i <= 6; i++) {
   }
   if (!res.ok) {
     var errData = await res.json();
+    if (errData.error === 'orb_insufficient') {
+      hideTyping(); isTyping = false;
+      _orbBalance = errData.orb_balance || 0;
+      updateOrbBadge();
+      showOrbEmptyModal();
+      return '';
+    }
     throw new Error(errData.error || 'API 오류');
   }
   var resData = await res.json();
@@ -4794,6 +4794,11 @@ for (var i = 1; i <= 6; i++) {
   scrollToBottom();
 
   var bubble = document.getElementById(bubbleId);
+  // Orb 잔액 동기화
+  if (resData.orb_balance !== undefined) {
+    _orbBalance = resData.orb_balance;
+    updateOrbBadge();
+  }
   // Worker에서 받은 응답 바로 표시
   hideTyping();
   var replyText = resData.reply || '';
