@@ -1213,7 +1213,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.25.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.26.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3872,7 +3872,7 @@ function calcGunghapScore(mySaju, pSaju) {
   return { total:total, oScore:oScore, oLabel:oLabel, zScore:zScore, zLabel:zLabel, sScore:sScore, sLabel:sLabel, comment:comment };
 }
 
-function openGunghapResultModal(pName, pY, pM, pD, pHour, pGender) {
+async function openGunghapResultModal(pName, pY, pM, pD, pHour, pGender) {
   var profile = userProfile || {};
   var bd = (profile.birth_date || '').split('-');
   var bt = (profile.birth_time && profile.birth_time !== 'unknown') ? profile.birth_time.split(':') : ['12','0'];
@@ -3882,6 +3882,17 @@ function openGunghapResultModal(pName, pY, pM, pD, pHour, pGender) {
   var pSaju  = calcPartnerSaju(pY, pM, pD, pHour);
   pSaju.name = pName; pSaju.gender = pGender === 'M' ? '남성' : pGender === 'F' ? '여성' : '';
   window._partnerSaju = pSaju;
+
+  // ── 서버에서 정확한 용신 가져오기 ──
+  var EL_KOR = {fire:'화',water:'수',wood:'목',metal:'금',earth:'토'};
+  try {
+    var [srvA, srvB] = await Promise.all([
+      fetch(WORKER_URL+'/saju-test?year='+bd[0]+'&month='+parseInt(bd[1])+'&day='+parseInt(bd[2])+'&hour='+parseInt(bt[0])+'&minute=0&gender=male').then(function(r){return r.json()}).catch(function(){return{}}),
+      fetch(WORKER_URL+'/saju-test?year='+pY+'&month='+pM+'&day='+pD+'&hour='+(pHour||12)+'&minute=0&gender=male').then(function(r){return r.json()}).catch(function(){return{}})
+    ]);
+    if (srvA.yongshin) mySaju._yongsin = EL_KOR[srvA.yongshin.primary] || srvA.yongshin.primary;
+    if (srvB.yongshin) pSaju._yongsin  = EL_KOR[srvB.yongshin.primary] || srvB.yongshin.primary;
+  } catch(e) { console.warn('서버 용신 조회 실패:', e); }
 
   var sc = calcGunghapScore(mySaju, pSaju);
   var myName = profile.name || '나';
@@ -3973,25 +3984,11 @@ async function requestGunghapAI() {
   var iljuA = d.mySaju.pillars.day, iljuB = d.pSaju.pillars.day;
   var gA = d.mySaju.gender || '', gB = d.pSaju.gender || '';
   var CHAT_URL = 'https://fortuna-silk.vercel.app/api/chat';
-  var EL_KOR = {fire:'화',water:'수',wood:'목',metal:'금',earth:'토'};
 
-  // ── 서버에서 정확한 용신 가져오기 ──
-  var myYS = '', pYS = '';
-  try {
-    var profile = userProfile || {};
-    var bd = (profile.birth_date || '').split('-');
-    var bt = (profile.birth_time && profile.birth_time !== 'unknown') ? profile.birth_time.split(':') : ['12','0'];
-    var myPf = userProfile || {};
-    var myBd = (myPf.birth_date || '').split('-');
-    var myBt = (myPf.birth_time && myPf.birth_time !== 'unknown') ? myPf.birth_time.split(':') : ['12','0'];
-    var [sajuA, sajuB] = await Promise.all([
-      fetch(WORKER_URL+'/saju-test?year='+(myBd[0]||1990)+'&month='+parseInt(myBd[1]||1)+'&day='+parseInt(myBd[2]||1)+'&hour='+parseInt(myBt[0]||12)+'&minute=0&gender=male').then(function(r){return r.json()}).catch(function(){return{}}),
-      fetch(WORKER_URL+'/saju-test?year='+(d.pYear||1990)+'&month='+(d.pMonth||1)+'&day='+(d.pDay||1)+'&hour='+(d.pHour||12)+'&minute=0&gender=male').then(function(r){return r.json()}).catch(function(){return{}})
-    ]);
-    if (sajuA.yongshin && sajuA.yongshin.primary) myYS = EL_KOR[sajuA.yongshin.primary] || sajuA.yongshin.primary;
-    if (sajuB.yongshin && sajuB.yongshin.primary) pYS = EL_KOR[sajuB.yongshin.primary] || sajuB.yongshin.primary;
-  } catch(e) {}
-  // 폴백
+  // ── 용신: openGunghapResultModal에서 이미 서버 조회 완료 ──
+  var myYS = d.mySaju._yongsin || '';
+  var pYS  = d.pSaju._yongsin  || '';
+  // 폴백 (서버 조회 실패한 경우만)
   if (!myYS) { var SM={목:'화',화:'토',토:'금',금:'수',수:'목'},PM={목:'수',화:'목',토:'화',금:'토',수:'금'}; myYS = d.mySaju.strength==='신강'?SM[d.mySaju.dayElement]:PM[d.mySaju.dayElement]; }
   if (!pYS)  { var SM2={목:'화',화:'토',토:'금',금:'수',수:'목'},PM2={목:'수',화:'목',토:'화',금:'토',수:'금'}; pYS = d.pSaju.strength==='신강'?SM2[d.pSaju.dayElement]:PM2[d.pSaju.dayElement]; }
 
