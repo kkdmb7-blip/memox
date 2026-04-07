@@ -720,6 +720,15 @@
     pointer-events:none;
   }
 
+  /* ── 궁합 AI 청크 ── */
+  .ai-chunk { padding:12px 0; border-bottom:1px solid rgba(255,130,170,0.12); }
+  .ai-chunk:last-child { border-bottom:none; }
+  .ai-chunk-spinner { display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.35);font-size:12px;padding:8px 0; }
+  .ai-chunk-spinner::before { content:'';display:inline-block;width:16px;height:16px;border:2px solid rgba(255,130,170,0.15);border-top-color:#ff8ab0;border-radius:50%;animation:ghSpin .7s linear infinite; }
+  .ai-chunk-spinner::after { content:'분석 중...'; }
+  @keyframes ghSpin { to { transform:rotate(360deg); } }
+  @keyframes ghFadeIn { from { opacity:0;transform:translateY(6px); } to { opacity:1;transform:translateY(0); } }
+
 </style>
 <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
 </head>
@@ -1202,7 +1211,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.21.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.22.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3944,91 +3953,128 @@ function closeGunghapResultModal() {
 async function requestGunghapAI() {
   if (!_ghResData) return;
   var user = currentUser || window._fortunaUser;
-  if (!user) {
-    alert('AI 분석은 카카오 로그인 후 이용 가능합니다.');
-    return;
-  }
+  if (!user) { alert('AI 분석은 카카오 로그인 후 이용 가능합니다.'); return; }
+
   var btn = document.getElementById('ghAiBtn');
   btn.disabled = true; btn.textContent = '분석 중...';
   var aiDiv = document.getElementById('ghAiResult');
   aiDiv.style.display = 'block';
-  aiDiv.innerHTML = '<span style="color:rgba(255,255,255,0.4);">✦ AI가 깊이 분석하고 있어요...</span>';
+  aiDiv.innerHTML =
+    '<div class="ai-chunk" id="chunk-1"><div class="ai-chunk-spinner"></div></div>' +
+    '<div class="ai-chunk" id="chunk-2"></div>' +
+    '<div class="ai-chunk" id="chunk-3"></div>';
 
   var d = _ghResData;
-  var fp1=d.mySaju.fivePct||{}, fp2=d.pSaju.fivePct||{};
-
-  // ── 용신 추정 (신강→식상, 신약→인성) ──
   var SAENG_MAP = {목:'화',화:'토',토:'금',금:'수',수:'목'};
   var PARENT_MAP = {목:'수',화:'목',토:'화',금:'토',수:'금'};
   var myYS = d.mySaju.strength === '신강' ? SAENG_MAP[d.mySaju.dayElement] : PARENT_MAP[d.mySaju.dayElement];
   var pYS  = d.pSaju.strength  === '신강' ? SAENG_MAP[d.pSaju.dayElement]  : PARENT_MAP[d.pSaju.dayElement];
-
-  // ── 연령대 계산 ──
   var thisYear = new Date().getFullYear();
-  function ageBracket(birthYear) {
-    var age = thisYear - birthYear;
-    if (age < 35) return '20대';
-    if (age < 55) return '40대';
-    return '60대';
-  }
-  var myAge = ageBracket(d.myYear || 1990);
-  var pAge  = ageBracket(d.pYear  || 1990);
+  function ageBracket(y) { var a = thisYear - (y||1990); return a < 35 ? '20대' : a < 55 ? '40대' : '60대'; }
+  var myAge = ageBracket(d.myYear), pAge = ageBracket(d.pYear);
+  var iljuA = d.mySaju.pillars.day, iljuB = d.pSaju.pillars.day;
+  var gA = d.mySaju.gender || '', gB = d.pSaju.gender || '';
+  var CHAT_URL = 'https://fortuna-silk.vercel.app/api/chat';
 
-  // ── fortuna-worker 지식DB 조회 ──
-  var contextBlock = '';
+  function boldPink(s) { return (s||'').replace(/\*\*(.+?)\*\*/g,'<strong style="color:#ff8ab0;">$1</strong>'); }
+  function showChunk(id, title, html) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = '<h4 style="font-size:14px;font-weight:700;color:#ff8ab0;margin:0 0 8px;">'+title+'</h4><div style="font-size:13px;line-height:1.8;color:#e8e0f0;animation:ghFadeIn .4s ease;">'+html+'</div>';
+  }
+  function showSpinner(id) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = '<div class="ai-chunk-spinner"></div>';
+  }
+  function showError(id, title) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = '<h4 style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.3);margin:0 0 4px;">'+title+'</h4><div style="font-size:12px;color:rgba(255,255,255,0.25);">분석 실패</div>';
+  }
+
+  // ── 0. gunghap-context 조회 ──
+  var ctx = {};
   try {
     var ctxUrl = WORKER_URL + '/gunghap-context?'
-      + 'ilju_a=' + encodeURIComponent(d.mySaju.pillars.day)
-      + '&ilju_b=' + encodeURIComponent(d.pSaju.pillars.day)
-      + '&age_a=' + encodeURIComponent(myAge)
-      + '&age_b=' + encodeURIComponent(pAge)
-      + '&yongsin_a=' + encodeURIComponent(myYS || '')
-      + '&yongsin_b=' + encodeURIComponent(pYS || '');
+      + 'ilju_a=' + encodeURIComponent(iljuA) + '&ilju_b=' + encodeURIComponent(iljuB)
+      + '&age_a=' + encodeURIComponent(myAge) + '&age_b=' + encodeURIComponent(pAge)
+      + '&yongsin_a=' + encodeURIComponent(myYS||'') + '&yongsin_b=' + encodeURIComponent(pYS||'');
     var ctxRes = await fetch(ctxUrl);
-    if (ctxRes.ok) {
-      var ctx = await ctxRes.json();
-      contextBlock = '\n\n【사주 지식DB 참조 데이터】\n';
-      if (ctx.a_yeonae) contextBlock += '▸ ' + d.myName + ' 연애운: ' + ctx.a_yeonae + '\n';
-      if (ctx.b_yeonae) contextBlock += '▸ ' + d.pName + ' 연애운: ' + ctx.b_yeonae + '\n';
-      if (ctx.a_gongreak) contextBlock += '▸ ' + d.myName + ' 연인 공략법: ' + ctx.a_gongreak + '\n';
-      if (ctx.b_gongreak) contextBlock += '▸ ' + d.pName + ' 연인 공략법: ' + ctx.b_gongreak + '\n';
-      if (ctx.a_age) contextBlock += '▸ ' + d.myName + ' ' + myAge + ' 조언: ' + ctx.a_age + '\n';
-      if (ctx.b_age) contextBlock += '▸ ' + d.pName + ' ' + pAge + ' 조언: ' + ctx.b_age + '\n';
-      if (ctx.a_yongsin) contextBlock += '▸ ' + d.myName + ' 용신(' + myYS + ') 실천: 색상 ' + (ctx.a_yongsin.색상||'') + ' / 방위 ' + (ctx.a_yongsin.방위||'') + '\n';
-      if (ctx.b_yongsin) contextBlock += '▸ ' + d.pName + ' 용신(' + pYS + ') 실천: 색상 ' + (ctx.b_yongsin.색상||'') + ' / 방위 ' + (ctx.b_yongsin.방위||'') + '\n';
-    }
-  } catch(e) { console.warn('gunghap-context 조회 실패:', e); }
+    if (ctxRes.ok) ctx = await ctxRes.json();
+  } catch(e) {}
 
-  var prompt = '【AI 궁합 정밀 분석】\n'
-    +d.myName+'('+d.mySaju.gender+'): 사주 년주 '+d.mySaju.pillars.year+' 월주 '+d.mySaju.pillars.month+' 일주 '+d.mySaju.pillars.day+' 시주 '+d.mySaju.pillars.hour
-    +' / 띠 '+d.mySaju.zodiac+' / 일간 '+d.mySaju.dayElement+' / '+d.mySaju.strength+' / 용신 '+myYS
-    +' / 오행 목'+fp1.목+'% 화'+fp1.화+'% 토'+fp1.토+'% 금'+fp1.금+'% 수'+fp1.수+'%\n'
-    +d.pName+(d.pSaju.gender?'('+d.pSaju.gender+')':'')+': 사주 년주 '+d.pSaju.pillars.year+' 월주 '+d.pSaju.pillars.month+' 일주 '+d.pSaju.pillars.day+' 시주 '+d.pSaju.pillars.hour
-    +' / 띠 '+d.pSaju.zodiac+' / 일간 '+d.pSaju.dayElement+' / '+d.pSaju.strength+' / 용신 '+pYS
-    +' / 오행 목'+fp2.목+'% 화'+fp2.화+'% 토'+fp2.토+'% 금'+fp2.금+'% 수'+fp2.수+'%\n'
-    +'규칙 기반 점수: 종합 '+d.sc.total+'점 (오행 '+d.sc.oScore+'/40, 띠 '+d.sc.zScore+'/30, 계절 '+d.sc.sScore+'/30)'
-    +contextBlock+'\n\n'
-    +'위 사주 데이터와 지식DB 참조 데이터를 모두 활용하여 두 사람의 궁합을 깊이 분석해주세요. 성격 조화, 연애 스타일, 갈등 요소, 용신 기반 실천 조언, 서로 보완하는 방법을 구체적으로 알려주세요.';
-  var systemMsg = '당신은 사주명리학 전문가입니다. 두 사람의 궁합을 따뜻하고 구체적으로 설명합니다. 【사주 지식DB 참조 데이터】가 있으면 반드시 분석에 활용하세요. 헤더(##,###)와 표는 사용하지 않습니다. **볼드**는 핵심 키워드에만 사용하세요.';
-
+  // ── 1단계: 연애 궁합 (80 Orb 차감) ──
   try {
-    var res = await fetch('https://fortuna-silk.vercel.app/api/chat', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ user_id:user.id, messages:[{role:'user',content:prompt}], system_prompt:systemMsg, orb_override:80 })
+    var r1 = await fetch(CHAT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ user_id:user.id, orb_override:80,
+        system_prompt: '사주명리 궁합 전문가. 연애 궁합만 분석. 헤더(##,###)와 표 금지. **볼드**는 핵심 키워드에만 3~5개.',
+        messages: [{ role:'user', content: '【연애 궁합 분석】\n'
+          +d.myName+'('+gA+'): 일주 '+iljuA+', 일간 '+d.mySaju.dayElement+', '+d.mySaju.strength+'\n'
+          +d.pName+'('+gB+'): 일주 '+iljuB+', 일간 '+d.pSaju.dayElement+', '+d.pSaju.strength+'\n'
+          +'규칙 기반 점수: '+d.sc.total+'점\n\n'
+          +'▸ '+d.myName+' 연애 스타일: '+(ctx.a_yeonae||'정보 없음')+'\n'
+          +'▸ '+d.pName+' 연애 스타일: '+(ctx.b_yeonae||'정보 없음')+'\n'
+          +'▸ '+d.myName+'이 상대에게 다가가는 법: '+(ctx.a_gongreak||'정보 없음')+'\n'
+          +'▸ '+d.pName+'이 상대에게 다가가는 법: '+(ctx.b_gongreak||'정보 없음')+'\n\n'
+          +'위 정보로 두 사람의 연애/감정 궁합을 분석해줘. 250자 내외.' }]
+      })
     });
-    if (!res.ok) {
-      var err = await res.json().catch(function(){return{};});
-      if (err.error === 'orb_insufficient') { aiDiv.textContent = 'Orb가 부족해요. 충전 후 다시 시도해주세요.'; btn.disabled=false; btn.textContent='AI 분석 시작'; return; }
-      throw new Error(err.error||res.status);
+    if (!r1.ok) {
+      var e1 = await r1.json().catch(function(){return{};});
+      if (e1.error === 'orb_insufficient') { aiDiv.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.5);">Orb가 부족해요. 충전 후 다시 시도해주세요.</div>'; btn.disabled=false; btn.textContent='AI 분석 시작'; return; }
+      throw new Error(e1.error||r1.status);
     }
-    var data = await res.json();
-    var reply = (data.reply||'').replace(/\*\*(.+?)\*\*/g,'<strong style="color:#ff8ab0;">$1</strong>');
-    aiDiv.innerHTML = '<div style="border-top:1px solid rgba(255,130,170,0.2);padding-top:14px;margin-top:4px;">'+reply+'</div>';
+    var d1 = await r1.json();
+    showChunk('chunk-1', '💕 연애 궁합', boldPink(d1.reply));
   } catch(e) {
-    aiDiv.textContent = '오류: '+e.message;
-  } finally {
-    btn.disabled=false; btn.textContent='AI 분석 시작';
+    showError('chunk-1','💕 연애 궁합'); showError('chunk-2','⏰ 지금 이 시기'); showError('chunk-3','🌟 서로를 위한 조언');
+    btn.disabled=false; btn.textContent='AI 분석 시작'; return;
   }
+
+  // ── 2단계: 현재 시기 궁합 (skip_orb) ──
+  showSpinner('chunk-2');
+  try {
+    var r2 = await fetch(CHAT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ user_id:user.id, skip_orb:true,
+        system_prompt: '사주명리 궁합 전문가. 현재 시기 궁합만 분석. 헤더(##,###)와 표 금지. **볼드**는 핵심 키워드에만 3~5개.',
+        messages: [{ role:'user', content: '【현재 시기 궁합 분석】\n'
+          +d.myName+': 일주 '+iljuA+', '+myAge+'\n'
+          +d.pName+': 일주 '+iljuB+', '+pAge+'\n\n'
+          +'▸ '+d.myName+'의 '+myAge+' 시기: '+(ctx.a_age_advice||'정보 없음')+'\n'
+          +'▸ '+d.pName+'의 '+pAge+' 시기: '+(ctx.b_age_advice||'정보 없음')+'\n'
+          +'▸ '+d.myName+'의 대운 흐름: '+(ctx.a_daeun||'정보 없음')+'\n'
+          +'▸ '+d.pName+'의 대운 흐름: '+(ctx.b_daeun||'정보 없음')+'\n\n'
+          +'지금 이 시기에 두 사람이 만난 의미와 타이밍을 분석해줘. 250자 내외.' }]
+      })
+    });
+    if (r2.ok) { var d2 = await r2.json(); showChunk('chunk-2', '⏰ 지금 이 시기', boldPink(d2.reply)); }
+    else showError('chunk-2','⏰ 지금 이 시기');
+  } catch(e) { showError('chunk-2','⏰ 지금 이 시기'); }
+
+  // ── 3단계: 실천 조언 (skip_orb) ──
+  showSpinner('chunk-3');
+  try {
+    var aFamous = ctx.a_famous ? (ctx.a_famous.유명인||[]).join(', ')+' — '+(ctx.a_famous.공통특성||'') : '정보 없음';
+    var bFamous = ctx.b_famous ? (ctx.b_famous.유명인||[]).join(', ')+' — '+(ctx.b_famous.공통특성||'') : '정보 없음';
+    var aYongsinStr = ctx.a_yongsin ? '색상 '+(ctx.a_yongsin.색상||'')+', 방위 '+(ctx.a_yongsin.방위||'')+', 음식 '+(ctx.a_yongsin.음식||'') : '정보 없음';
+    var bYongsinStr = ctx.b_yongsin ? '색상 '+(ctx.b_yongsin.색상||'')+', 방위 '+(ctx.b_yongsin.방위||'')+', 음식 '+(ctx.b_yongsin.음식||'') : '정보 없음';
+
+    var r3 = await fetch(CHAT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ user_id:user.id, skip_orb:true,
+        system_prompt: '사주명리 궁합 전문가. 보완법과 실천 조언만. 헤더(##,###)와 표 금지. **볼드**는 핵심 키워드에만 3~5개.',
+        messages: [{ role:'user', content: '【서로를 위한 조언】\n'
+          +d.myName+': 용신 '+myYS+', 일주 '+iljuA+'\n'
+          +d.pName+': 용신 '+pYS+', 일주 '+iljuB+'\n\n'
+          +'▸ '+d.myName+'이 채워야 할 기운('+myYS+'): '+aYongsinStr+'\n'
+          +'▸ '+d.pName+'이 채워야 할 기운('+pYS+'): '+bYongsinStr+'\n'
+          +'▸ '+d.myName+'과 같은 일주 유명인: '+aFamous+'\n'
+          +'▸ '+d.pName+'과 같은 일주 유명인: '+bFamous+'\n\n'
+          +'두 사람이 서로를 보완하고 함께 성장하는 실천 방법을 알려줘. 250자 내외.' }]
+      })
+    });
+    if (r3.ok) { var d3 = await r3.json(); showChunk('chunk-3', '🌟 서로를 위한 조언', boldPink(d3.reply)); }
+    else showError('chunk-3','🌟 서로를 위한 조언');
+  } catch(e) { showError('chunk-3','🌟 서로를 위한 조언'); }
+
+  btn.disabled=false; btn.textContent='AI 분석 시작';
 }
 
 function shareGunghapScore() {
