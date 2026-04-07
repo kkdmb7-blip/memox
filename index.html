@@ -1213,7 +1213,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.24.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.24.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4088,24 +4088,38 @@ async function requestGunghapAI() {
 
   // ── 3단계: 실천 조언 (skip_orb) ──
   console.log('[궁합AI] 3단계 시작');
+  console.log('a_famous 전체:', JSON.stringify(ctx.a_famous));
+  console.log('b_famous 전체:', JSON.stringify(ctx.b_famous));
   showSpinner('chunk-3');
   try {
-    var aFamous = ctx.a_famous ? (ctx.a_famous.유명인||[]).join(', ')+' — '+(ctx.a_famous.공통특성||'') : '정보 없음';
-    var bFamous = ctx.b_famous ? (ctx.b_famous.유명인||[]).join(', ')+' — '+(ctx.b_famous.공통특성||'') : '정보 없음';
+    var ohaengA = d.mySaju.dayElement, ohaengB = d.pSaju.dayElement;
+    var aFamousList = ctx.a_famous && ctx.a_famous.유명인 ? ctx.a_famous.유명인.join(', ') : '정보 없음';
+    var bFamousList = ctx.b_famous && ctx.b_famous.유명인 ? ctx.b_famous.유명인.join(', ') : '정보 없음';
+    var aFamousTrait = ctx.a_famous && ctx.a_famous.공통특성 ? ctx.a_famous.공통특성 : '';
+    var bFamousTrait = ctx.b_famous && ctx.b_famous.공통특성 ? ctx.b_famous.공통특성 : '';
     var aYongsinStr = ctx.a_yongsin ? '색상 '+(ctx.a_yongsin.색상||'')+', 방위 '+(ctx.a_yongsin.방위||'')+', 음식 '+(ctx.a_yongsin.음식||'')+', 직업 '+(ctx.a_yongsin.직업||'') : '정보 없음';
     var bYongsinStr = ctx.b_yongsin ? '색상 '+(ctx.b_yongsin.색상||'')+', 방위 '+(ctx.b_yongsin.방위||'')+', 음식 '+(ctx.b_yongsin.음식||'')+', 직업 '+(ctx.b_yongsin.직업||'') : '정보 없음';
 
     var r3 = await fetch(CHAT_URL, { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ user_id:user.id, skip_orb:true,
-        system_prompt: '사주명리 궁합 전문가. 보완법과 실천 조언만 써. 절대 규칙: #헤더, ##헤더, ###헤더 사용 금지. 표(|--|) 금지. 일진/날짜 언급 금지. **볼드**는 핵심 단어에만 3~5개. 자연스러운 문장으로만 써.',
+        system_prompt: '사주명리 궁합 전문가. 보완법과 실천 조언만 써. 절대 규칙: #헤더, ##헤더, ###헤더 사용 금지. 표(|--|) 금지. 일진/날짜 언급 금지. **볼드**는 핵심 단어에만 3~5개. 자연스러운 문장으로만 써. 주의: 일간 오행과 용신은 다른 것임. 일간은 본래 타고난 오행이고, 용신은 부족해서 채워야 할 오행임.',
         messages: [{ role:'user', content: '【서로를 위한 조언】\n'
-          +d.myName+': 용신 '+myYS+', 일주 '+iljuA+'\n'
-          +d.pName+': 용신 '+pYS+', 일주 '+iljuB+'\n\n'
-          +'▸ '+d.myName+'이 채워야 할 기운('+myYS+'): '+aYongsinStr+'\n'
-          +'▸ '+d.pName+'이 채워야 할 기운('+pYS+'): '+bYongsinStr+'\n'
-          +'▸ '+d.myName+'과 같은 일주 유명인: '+aFamous+'\n'
-          +'▸ '+d.pName+'과 같은 일주 유명인: '+bFamous+'\n\n'
-          +'두 사람이 서로를 보완하고 함께 성장하는 실천 방법을 구체적으로 알려줘. 유명인 사례도 언급해줘. 400~500자.' }]
+          +d.myName+' 일간: '+ilganA+' (본래 오행: '+ohaengA+')\n'
+          +d.myName+' 용신(부족해서 채워야 할 기운): '+myYS+'\n'
+          +'용신 실천법: '+aYongsinStr+'\n\n'
+          +d.pName+' 일간: '+ilganB+' (본래 오행: '+ohaengB+')\n'
+          +d.pName+' 용신(부족해서 채워야 할 기운): '+pYS+'\n'
+          +'용신 실천법: '+bYongsinStr+'\n\n'
+          +d.myName+'과 같은 일주('+iljuA+') 유명인: '+aFamousList+'\n'
+          +'공통특성: '+aFamousTrait+'\n\n'
+          +d.pName+'과 같은 일주('+iljuB+') 유명인: '+bFamousList+'\n'
+          +'공통특성: '+bFamousTrait+'\n\n'
+          +'위 정보를 바탕으로:\n'
+          +'1. 두 사람의 본래 오행('+ohaengA+' vs '+ohaengB+')의 상생/상극 관계 설명\n'
+          +'2. 각자 부족한 용신('+myYS+', '+pYS+')을 서로가 어떻게 채워줄 수 있는지\n'
+          +'3. 같은 일주 유명인 사례로 가능성 보여주기\n'
+          +'4. 구체적인 실천 조언 (색상, 방위, 음식 등)\n'
+          +'400~500자로 구체적으로.' }]
       })
     });
     if (r3.ok) { var d3 = await r3.json(); console.log('[궁합AI] 3단계 완료'); showChunk('chunk-3', '🌟 서로를 위한 조언', boldPink(d3.reply)); }
