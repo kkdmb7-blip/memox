@@ -1209,7 +1209,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.27.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.27.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5041,6 +5041,7 @@ for (var i = 1; i <= 6; i++) {
     p2 += '- 자연 현상이나 일상 비유를 사용하세요\n';
     p2 += '- "반드시" "확실히" 같은 확정적 예언 금지\n';
 
+    console.log('[Phase2] 적천수 프레임 적용됨:', p2.substring(0, 100));
     systemPrompt += p2;
   }
   // === Phase 2 끝 ===
