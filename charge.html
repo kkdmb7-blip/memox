@@ -181,6 +181,7 @@ var sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 var currentUserId = null;
 var currentBalance = 0;
+var currentTotalCharged = 0;
 var isFirstCharge = true;
 
 // 충전 팩 정의
@@ -280,9 +281,11 @@ async function loadBalance() {
     var res = await sb.from('orb_balance').select('balance,is_first_charge,total_charged').eq('user_id', currentUserId).maybeSingle();
     if (res.data) {
       currentBalance = res.data.balance || 0;
-      isFirstCharge = res.data.is_first_charge !== false || (res.data.total_charged || 0) === 0;
+      currentTotalCharged = res.data.total_charged || 0;
+      isFirstCharge = res.data.is_first_charge !== false;
     } else {
       currentBalance = 0;
+      currentTotalCharged = 0;
       isFirstCharge = true;
     }
   } catch(e) { console.warn('잔액 로드 실패', e.message); }
@@ -372,23 +375,17 @@ async function chargeOrb(pack, totalOrb, impUid, merchantUid) {
   var newBalance = currentBalance + totalOrb;
 
   // orb_balance upsert
+  var newTotalCharged = currentTotalCharged + totalOrb;
   var upsertData = {
     user_id: currentUserId,
     balance: newBalance,
-    total_charged: (currentBalance + totalOrb), // rough estimate; server should handle properly
+    total_charged: newTotalCharged,
+    is_first_charge: false,
     updated_at: new Date().toISOString(),
   };
-  if (isFirstCharge) {
-    upsertData.is_first_charge = false;
-  }
 
   var r1 = await sb.from('orb_balance').upsert(upsertData);
   if (r1.error) throw new Error(r1.error.message);
-
-  // total_charged 증가 (별도 increment - upsert 이후)
-  try {
-    await sb.rpc('increment_total_charged', { p_user_id: currentUserId, p_amount: totalOrb });
-  } catch(e) { /* RPC 없으면 스킵 */ }
 
   // orb_transactions 기록
   var r2 = await sb.from('orb_transactions').insert({
@@ -401,6 +398,7 @@ async function chargeOrb(pack, totalOrb, impUid, merchantUid) {
   if (r2.error) throw new Error(r2.error.message);
 
   currentBalance = newBalance;
+  currentTotalCharged = newTotalCharged;
   isFirstCharge = false;
   document.getElementById('currentBalance').textContent = currentBalance + ' Orb';
   renderPacks();
