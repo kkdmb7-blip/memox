@@ -1209,7 +1209,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.28.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.28.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5056,6 +5056,7 @@ for (var i = 1; i <= 6; i++) {
 
   // === Phase 2: 해석 프레임 (테스트 유저 전용) ===
   var PHASE2_TEST_USER = '3d7633bc-3351-4f22-bc10-10cd1bfc5c28';
+  console.log('[Phase2 debug]', 'currentUser:', currentUser && currentUser.id, 'MATCH:', currentUser && currentUser.id === PHASE2_TEST_USER, 'saju:', typeof saju, 'five_count:', saju && saju.saju_five_count, 'pattern:', saju && saju.saju_pattern);
   if (currentUser && currentUser.id === PHASE2_TEST_USER && saju) {
     var fc = saju.saju_five_count || {};
     var pattern = saju.saju_pattern || {};
