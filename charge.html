@@ -181,6 +181,8 @@ var sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 var currentUserId = null;
 var currentBalance = 0;
+var currentFreeBalance = 0;
+var currentPaidBalance = 0;
 var currentTotalCharged = 0;
 var isFirstCharge = true;
 
@@ -278,12 +280,16 @@ async function loadUser() {
 
 async function loadBalance() {
   try {
-    var res = await sb.from('orb_balance').select('balance,is_first_charge,total_charged').eq('user_id', currentUserId).maybeSingle();
+    var res = await sb.from('orb_balance').select('balance,free_balance,paid_balance,is_first_charge,total_charged').eq('user_id', currentUserId).maybeSingle();
     if (res.data) {
-      currentBalance = res.data.balance || 0;
+      currentFreeBalance = res.data.free_balance || 0;
+      currentPaidBalance = res.data.paid_balance || 0;
+      currentBalance = res.data.balance || (currentFreeBalance + currentPaidBalance);
       currentTotalCharged = res.data.total_charged || 0;
       isFirstCharge = res.data.is_first_charge !== false;
     } else {
+      currentFreeBalance = 0;
+      currentPaidBalance = 0;
       currentBalance = 0;
       currentTotalCharged = 0;
       isFirstCharge = true;
@@ -374,11 +380,14 @@ function doPay(pack) {
 async function chargeOrb(pack, totalOrb, impUid, merchantUid) {
   var newBalance = currentBalance + totalOrb;
 
-  // orb_balance upsert
+  // orb_balance upsert (결제 → paid_balance)
   var newTotalCharged = currentTotalCharged + totalOrb;
+  var newPaidBalance = currentPaidBalance + totalOrb;
   var upsertData = {
     user_id: currentUserId,
     balance: newBalance,
+    free_balance: currentFreeBalance,
+    paid_balance: newPaidBalance,
     total_charged: newTotalCharged,
     is_first_charge: false,
     updated_at: new Date().toISOString(),
@@ -398,6 +407,7 @@ async function chargeOrb(pack, totalOrb, impUid, merchantUid) {
   if (r2.error) throw new Error(r2.error.message);
 
   currentBalance = newBalance;
+  currentPaidBalance = newPaidBalance;
   currentTotalCharged = newTotalCharged;
   isFirstCharge = false;
   document.getElementById('currentBalance').textContent = currentBalance + ' Orb';

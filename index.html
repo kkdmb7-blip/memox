@@ -1213,7 +1213,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.27.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.27.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1237,6 +1237,8 @@ var currentUser = null;
 var userProfile = null;
 var chatHistory = [];
 var _orbBalance = null;
+var _orbFreeBalance = 0;
+var _orbPaidBalance = 0;
 var _isFirstCharge = true;
 var currentSessionId = localStorage.getItem('memox_session_id');
 if (!currentSessionId) {
@@ -4476,12 +4478,15 @@ async function handleReferralOnLoad() {
 async function loadOrbBalance() {
   if (!currentUser) return;
   try {
-    var res = await sb.from('orb_balance').select('balance,is_first_charge').eq('user_id', currentUser.id).maybeSingle();
+    var res = await sb.from('orb_balance').select('balance,free_balance,paid_balance,is_first_charge').eq('user_id', currentUser.id).maybeSingle();
     if (res.data) {
-      _orbBalance = res.data.balance || 0;
+      _orbFreeBalance = res.data.free_balance || 0;
+      _orbPaidBalance = res.data.paid_balance || 0;
+      _orbBalance = res.data.balance || (_orbFreeBalance + _orbPaidBalance);
       _isFirstCharge = res.data.is_first_charge !== false;
     } else {
-      // 처음 접근 시 row 없음 → 0으로 초기화
+      _orbFreeBalance = 0;
+      _orbPaidBalance = 0;
       _orbBalance = 0;
       _isFirstCharge = true;
     }
@@ -4498,13 +4503,15 @@ async function getOrbBalance() {
 async function useOrb(amount) {
   if (!currentUser) return;
   amount = amount || 20;
-  var prev = _orbBalance || 0;
-  _orbBalance = Math.max(0, prev - amount);
+  var freeUsed = Math.min(_orbFreeBalance, amount);
+  var paidUsed = amount - freeUsed;
+  _orbFreeBalance = Math.max(0, _orbFreeBalance - freeUsed);
+  _orbPaidBalance = Math.max(0, _orbPaidBalance - paidUsed);
+  _orbBalance = _orbFreeBalance + _orbPaidBalance;
   updateOrbBadge();
   try {
-    var after = _orbBalance;
-    await sb.from('orb_balance').upsert({ user_id: currentUser.id, balance: after, updated_at: new Date().toISOString() });
-    await sb.from('orb_transactions').insert({ user_id: currentUser.id, type: 'use', amount: amount, description: 'AI 채팅', balance_after: after });
+    await sb.from('orb_balance').upsert({ user_id: currentUser.id, balance: _orbBalance, free_balance: _orbFreeBalance, paid_balance: _orbPaidBalance, updated_at: new Date().toISOString() });
+    await sb.from('orb_transactions').insert({ user_id: currentUser.id, type: 'use', amount: amount, description: 'AI 채팅', balance_after: _orbBalance });
   } catch(e) { console.warn('Orb 차감 저장 실패', e.message); }
 }
 
