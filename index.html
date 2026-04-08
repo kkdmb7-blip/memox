@@ -1209,7 +1209,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.28.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.28.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4561,6 +4561,36 @@ async function loadOrbBalance() {
       _orbBalance = res.data.balance || (_orbFreeBalance + _orbPaidBalance);
       _isFirstCharge = res.data.is_first_charge !== false;
     } else {
+      // orb_balance가 없음 — ID 불일치 가능성 체크
+      if (currentUser.email) {
+        try {
+          var _rvr = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentUser.email })
+          });
+          var _rvd = await _rvr.json();
+          if (_rvd && _rvd.id && _rvd.id !== currentUser.id) {
+            console.warn('[Orb] ID 불일치 감지:', currentUser.id, '→', _rvd.id);
+            currentUser.id = _rvd.id;
+            // localStorage 캐시도 갱신
+            try {
+              var _ku = JSON.parse(localStorage.getItem('fortuna_kakao_user') || 'null');
+              if (_ku) { _ku.id = _rvd.id; localStorage.setItem('fortuna_kakao_user', JSON.stringify(_ku)); }
+            } catch(e2) {}
+            // 새 ID로 다시 조회
+            var res2 = await sb.from('orb_balance').select('balance,free_balance,paid_balance,is_first_charge').eq('user_id', currentUser.id).maybeSingle();
+            if (res2.data) {
+              _orbFreeBalance = res2.data.free_balance || 0;
+              _orbPaidBalance = res2.data.paid_balance || 0;
+              _orbBalance = res2.data.balance || (_orbFreeBalance + _orbPaidBalance);
+              _isFirstCharge = res2.data.is_first_charge !== false;
+              updateOrbBadge();
+              return;
+            }
+          }
+        } catch(e3) {}
+      }
       _orbFreeBalance = 0;
       _orbPaidBalance = 0;
       _orbBalance = 0;
@@ -6146,6 +6176,11 @@ async function _syncKakaoProfile() {
     if (!r.ok) return;
     var profile = await r.json();
     if (!profile || profile.error) return;
+    // ID 변경 감지 및 갱신 (프로필 초기화 후 재가입 대응)
+    if (profile.id && profile.id !== _ku.id) {
+      _ku.id = profile.id;
+      if (currentUser) currentUser.id = profile.id;
+    }
     // localStorage 캐시 갱신
     _ku.profile = profile;
     localStorage.setItem('fortuna_kakao_user', JSON.stringify(_ku));
