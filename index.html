@@ -1213,7 +1213,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.27.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.27.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5191,11 +5191,16 @@ function appendMessage(role, content, animate, created_at) {
           else {
             clearInterval(toastTimer);
             if (!currentUser) return;
-            sb.from('chat_users').select('paid_count').eq('id', currentUser.id).single().then(function(r) {
-              var cur = (r.data && r.data.paid_count) || 0;
-              sb.from('chat_users').update({ paid_count: cur + 1 }).eq('id', currentUser.id).then(function() {
+            sb.from('orb_balance').select('balance').eq('user_id', currentUser.id).maybeSingle().then(function(r) {
+              var cur = (r.data && r.data.balance) || 0;
+              var after = cur + 20;
+              var now = new Date().toISOString();
+              sb.from('orb_balance').upsert({ user_id: currentUser.id, balance: after, updated_at: now }).then(function() {
+                sb.from('orb_transactions').insert({ user_id: currentUser.id, type: 'share_reward', amount: 20, description: '카카오 공유 보상', balance_after: after, created_at: now });
+                _orbBalance = after;
+                updateOrbBadge();
                 localStorage.setItem(rewardKey, '1');
-                toast('공유 감사해요! 질문권 1개 충전됐어요 🔮');
+                toast('공유 감사해요! 오르브 20개가 충전됐어요 🔮');
                 // 현재 화면의 모든 카카오 공유 버튼에 ✓ 표시
                 document.querySelectorAll('.kakao-share-btn').forEach(function(b) {
                   if (b.innerHTML.indexOf('✓') === -1) b.innerHTML = b.innerHTML + ' ✓';
