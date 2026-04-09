@@ -961,7 +961,7 @@
           <span class="sd-icon">🚪</span><span>로그아웃</span>
         </div>
         <hr>
-        <div class="settings-dropdown-item" onclick="window.open('http://pf.kakao.com/_krjxjn/chat','_blank');closeSettingsMenu()">
+        <div class="settings-dropdown-item" onclick="openSupportCenter();closeSettingsMenu()">
           <span class="sd-icon">🎧</span><span>고객센터</span>
         </div>
         <div id="adminStatsMenuItem" style="display:none;">
@@ -1207,10 +1207,35 @@
   </div>
 </div>
 
+
+<div class="modal-overlay" id="supportModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:380px;width:92%;max-height:80vh;overflow-y:auto;">
+    <div class="modal-title">🎧 고객센터</div>
+    <div id="supportBody" style="margin-top:12px;">
+      <div id="supportForm">
+        <select id="supportCategory" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;margin-bottom:10px;font-family:inherit;">
+          <option value="충전/결제">💳 충전/결제 문의</option>
+          <option value="오류/버그">🐛 오류/버그 신고</option>
+          <option value="건의">💡 건의사항</option>
+          <option value="기타">📝 기타</option>
+        </select>
+        <textarea id="supportMessage" placeholder="문의 내용을 입력해주세요..." style="width:100%;min-height:120px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;resize:vertical;font-family:inherit;box-sizing:border-box;" maxlength="1000"></textarea>
+        <div style="font-size:11px;color:var(--text3);text-align:right;margin-top:4px;"><span id="supportCharCount">0</span>/1000</div>
+        <button id="supportSubmitBtn" onclick="submitSupport()" style="width:100%;padding:13px;margin-top:10px;border:none;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">문의 보내기</button>
+      </div>
+      <div id="supportMyTickets" style="margin-top:16px;"></div>
+    </div>
+    <div id="supportAdminSection" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;">📋 전체 문의 (관리자)</div>
+      <div id="supportAdminList"></div>
+    </div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:16px;" onclick="document.getElementById('supportModal').classList.remove('open')">닫기</button>
+  </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.28.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.28.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1269,6 +1294,118 @@ async function loadTotalConsultations() {
   } catch(e) {}
 }
 
+
+// ── 고객센터 ──────────────────────────────────────────────────
+var SUPPORT_API = 'https://fortuna-silk.vercel.app/api/support';
+
+function openSupportCenter() {
+  var modal = document.getElementById('supportModal');
+  modal.classList.add('open');
+  document.getElementById('supportMessage').value = '';
+  document.getElementById('supportCharCount').textContent = '0';
+  document.getElementById('supportSubmitBtn').disabled = false;
+  document.getElementById('supportSubmitBtn').textContent = '문의 보내기';
+  loadMyTickets();
+  if (currentUser && currentUser.id === ADMIN_UUID) {
+    document.getElementById('supportAdminSection').style.display = 'block';
+    loadAdminTickets();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var ta = document.getElementById('supportMessage');
+  if (ta) ta.addEventListener('input', function() {
+    document.getElementById('supportCharCount').textContent = this.value.length;
+  });
+});
+
+async function submitSupport() {
+  var msg = document.getElementById('supportMessage').value.trim();
+  if (!msg) return alert('문의 내용을 입력해주세요');
+  if (!currentUser) return alert('로그인이 필요합니다');
+  var btn = document.getElementById('supportSubmitBtn');
+  btn.disabled = true; btn.textContent = '보내는 중...';
+  try {
+    var res = await fetch(SUPPORT_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        user_name: (userProfile && userProfile.name) || '',
+        user_email: currentUser.email || '',
+        category: document.getElementById('supportCategory').value,
+        message: msg
+      })
+    });
+    if (res.ok) {
+      btn.textContent = '✅ 접수 완료!';
+      document.getElementById('supportMessage').value = '';
+      document.getElementById('supportCharCount').textContent = '0';
+      setTimeout(function() { btn.disabled = false; btn.textContent = '문의 보내기'; }, 2000);
+      loadMyTickets();
+    } else {
+      btn.textContent = '전송 실패'; btn.disabled = false;
+    }
+  } catch(e) { btn.textContent = '오류 발생'; btn.disabled = false; }
+}
+
+async function loadMyTickets() {
+  if (!currentUser) return;
+  var el = document.getElementById('supportMyTickets');
+  try {
+    var res = await fetch(SUPPORT_API + '?user_id=' + currentUser.id);
+    var d = await res.json();
+    if (!d.tickets || d.tickets.length === 0) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div style="font-size:13px;font-weight:700;margin-bottom:8px;">내 문의 내역</div>' +
+      d.tickets.map(function(t) {
+        var statusLabel = t.status === 'open' ? '⏳ 대기중' : '✅ 답변완료';
+        var date = new Date(t.created_at).toLocaleDateString('ko-KR');
+        var reply = t.admin_reply ? '<div style="margin-top:6px;padding:8px 10px;background:rgba(122,196,255,0.1);border-radius:8px;font-size:12px;color:#7ac4ff;">💬 ' + t.admin_reply + '</div>' : '';
+        return '<div style="padding:10px 12px;background:var(--surface2);border-radius:10px;margin-bottom:8px;">' +
+          '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);"><span>' + t.category + ' · ' + date + '</span><span>' + statusLabel + '</span></div>' +
+          '<div style="font-size:13px;margin-top:4px;line-height:1.5;">' + t.message.slice(0,100) + '</div>' +
+          reply + '</div>';
+      }).join('');
+  } catch(e) { el.innerHTML = ''; }
+}
+
+async function loadAdminTickets() {
+  var el = document.getElementById('supportAdminList');
+  el.innerHTML = '<div style="color:var(--text3);font-size:12px;">불러오는 중...</div>';
+  try {
+    var res = await fetch(SUPPORT_API + '?admin_id=' + ADMIN_UUID);
+    var d = await res.json();
+    if (!d.tickets || d.tickets.length === 0) { el.innerHTML = '<div style="color:var(--text3);font-size:12px;">문의가 없습니다</div>'; return; }
+    el.innerHTML = d.tickets.map(function(t) {
+      var statusLabel = t.status === 'open' ? '🔴 대기' : '🟢 완료';
+      var date = new Date(t.created_at).toLocaleDateString('ko-KR');
+      var borderColor = t.status === 'open' ? '#f44336' : '#4caf50';
+      return '<div style="padding:10px 12px;background:var(--surface2);border-radius:10px;margin-bottom:8px;border-left:3px solid ' + borderColor + ';">' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);"><span>' + (t.user_name||'익명') + ' · ' + t.category + '</span><span>' + statusLabel + ' ' + date + '</span></div>' +
+        '<div style="font-size:13px;margin-top:4px;line-height:1.5;">' + t.message + '</div>' +
+        (t.admin_reply ? '<div style="margin-top:6px;font-size:12px;color:#7ac4ff;">💬 '+t.admin_reply+'</div>' : '') +
+        '<div style="margin-top:8px;display:flex;gap:6px;">' +
+        '<input type="text" placeholder="답변 입력..." id="reply_'+t.id+'" style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:inherit;"/>' +
+        '<button onclick="replyTicket(\''+t.id+'\')" style="padding:6px 12px;border:none;border-radius:8px;background:#7c3aed;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;">답변</button>' +
+        '</div></div>';
+    }).join('');
+  } catch(e) { el.innerHTML = '<div style="color:#f44336;font-size:12px;">오류</div>'; }
+}
+
+async function replyTicket(ticketId) {
+  var input = document.getElementById('reply_' + ticketId);
+  var reply = input ? input.value.trim() : '';
+  if (!reply) return;
+  try {
+    await fetch(SUPPORT_API, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ admin_id: ADMIN_UUID, ticket_id: ticketId, admin_reply: reply, status: 'resolved' })
+    });
+    loadAdminTickets();
+  } catch(e) {}
+}
+
 async function showAdminStats() {
   var modal = document.getElementById('adminStatsModal');
   var body = document.getElementById('adminStatsBody');
@@ -1299,6 +1436,8 @@ async function initAuth() {
   loadTotalConsultations();
   const kakaoUser = localStorage.getItem('fortuna_kakao_user');
   if (kakaoUser) {
+    // 캐시 있으면 로그인 화면 즉시 숨김 (API 대기 중 깜빡임 방지)
+    document.getElementById('screenLogin').classList.remove('active');
     try {
       const parsed = JSON.parse(kakaoUser);
       if (parsed.name) {
