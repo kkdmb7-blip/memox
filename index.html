@@ -1235,7 +1235,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.30.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.30.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5390,6 +5390,15 @@ for (var i = 1; i <= 6; i++) {
       p2 += '- 사주 근거는 문장 속에 자연스럽게 녹이세요.\n';
       p2 += '- 격국 이름(양인격, 정관격 등)을 직접 언급하지 마세요.\n';
       p2 += '- 부정적 질문("포기하고 싶지 않아요?" "힘들지 않아요?")은 금지. 대신 긍정형으로 물어보세요("어디까지 진행됐어요?" "어떤 부분이 재미있어요?")\n';
+      p2 += '\n## 응답 스타일 다양화 (매번 다른 패턴으로)\n';
+      p2 += '- 매번 같은 구조로 답하지 마세요. 아래 패턴을 번갈아 사용하세요:\n';
+      p2 += '  A. 공감형: 감정 인정 → 사주 근거를 비유로 → 구체적 조언\n';
+      p2 += '  B. 직구형: 결론 먼저 → 이유 → 행동 제안\n';
+      p2 += '  C. 질문형: 핵심 질문으로 되돌리기 → 사용자가 스스로 답을 찾게 유도\n';
+      p2 += '  D. 이야기형: 비유나 예시로 시작 → 사용자 상황에 연결\n';
+      p2 += '- 직전 응답과 같은 패턴을 연속 사용하지 마세요.\n';
+      p2 += '- 답변 길이는 5~8문장이 적당합니다.\n';
+      p2 += '- 마지막에 질문을 넣되, 매번 넣지는 마세요. 3번 중 2번 정도.\n';
     }
 
     if (_chatMode === 'saju') {
