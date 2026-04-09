@@ -1235,7 +1235,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.29.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.30.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1892,6 +1892,7 @@ function applyProfile(profile) {
       }, 600);
     }
     loadDailyCard();
+    loadQimenDaily();
     // [SMART] 백그라운드 prefetch (TEST 사용자만)
     setTimeout(function() { _smartPrefetch(profile); }, 1500);
   }).catch(function() {
@@ -3535,6 +3536,64 @@ async function callDailyFortune() {
     // 1회 재시도
     try { return await tryFetch(); } catch(e2) { return null; }
   }
+}
+
+
+// ── 기문둔갑 일운 ──────────────────────────────────────────────
+async function loadQimenDaily() {
+  if (!currentUser) return;
+  var now = new Date(Date.now() + 9 * 3600000);
+  var y = now.getUTCFullYear(), m = now.getUTCMonth() + 1, d = now.getUTCDate();
+
+  var existing = document.getElementById('qimenDailyWrap');
+  if (existing) existing.remove();
+
+  try {
+    var res = await fetch('https://fortuna.kkdmb7.workers.dev/qimen?year=' + y + '&month=' + m + '&day=' + d + '&hour=12&minute=0&type=ilga');
+    if (!res.ok) return;
+    var data = await res.json();
+    var door = data.직사문;
+    if (!door) return;
+
+    var DOOR_KW = {
+      '生':'계약·서명·창업 최적','開':'왕성한 활동·투자·확장',
+      '休':'안정·화해·양생 유리','景':'문서·공부·창작 유리',
+      '傷':'이동·충돌 주의','杜':'막힘·정체 조심',
+      '驚':'긴장·놀람 주의','死':'중요 결정 보류 권장'
+    };
+    var DOOR_GRADE = {'生':'대길','開':'대길','休':'길','景':'길','傷':'흉','杜':'흉','驚':'흉','死':'대흉'};
+    var DOOR_ICON = {'生':'🌱','開':'🚀','休':'☕','景':'📖','傷':'⚡','杜':'🔒','驚':'😮','死':'🛑'};
+    var GRADE_COLOR = {'대길':'#4ade80','길':'#7ac4ff','흉':'#f59e42','대흉':'#e05c6a','평':'#9b8fb0'};
+
+    var grade = DOOR_GRADE[door] || '평';
+    var keyword = DOOR_KW[door] || '평온한 하루';
+    var icon = DOOR_ICON[door] || '🔮';
+    var color = GRADE_COLOR[grade] || '#9b8fb0';
+    var doorName = {'生':'생문','開':'개문','休':'휴문','景':'경문','傷':'상문','杜':'두문','驚':'경문','死':'사문'};
+
+    var wrap = document.createElement('div');
+    wrap.id = 'qimenDailyWrap';
+    wrap.style.cssText = 'flex-shrink:0;margin:0 12px 8px;padding:14px 16px;border-radius:16px;background:linear-gradient(160deg,#1a1a2e,#16213e);border:1px solid rgba(167,139,250,0.2);cursor:pointer;';
+    wrap.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<div style="font-size:24px;">' + icon + '</div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-size:10px;color:rgba(167,139,250,0.6);letter-spacing:0.05em;margin-bottom:2px;">기문둔갑 오늘의 일운</div>' +
+          '<div style="font-size:14px;font-weight:700;color:#ede6f8;">' + keyword + '</div>' +
+        '</div>' +
+        '<div style="padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;color:' + color + ';background:rgba(0,0,0,0.3);border:1px solid ' + color + '30;">' + grade + '</div>' +
+      '</div>' +
+      '<div style="margin-top:8px;font-size:11px;color:#9b8fb0;line-height:1.6;">직사문: ' + (doorName[door]||door) + '門 (' + door + ') — 일가 포국 기준</div>';
+
+    wrap.onclick = function() {
+      var msg = '오늘 기문둔갑 일운이 ' + (doorName[door]||door) + '문(' + grade + ')인데, 나한테 어떤 의미인지 자세히 알려줘';
+      var input = document.getElementById('chatInput');
+      if (input) { input.value = msg; input.focus(); }
+    };
+
+    var chatMessages = document.getElementById('chatMessages');
+    chatMessages.parentNode.insertBefore(wrap, chatMessages);
+  } catch(e) { console.warn('기문둔갑 일운 로드 실패', e.message); }
 }
 
 async function loadDailyCard() {
@@ -6601,6 +6660,7 @@ if ('serviceWorker' in navigator) {
       // 데일리 카드 닫기 기록 지우고 다시 로드
       localStorage.removeItem('fortuna_daily_dismissed');
       loadDailyCard();
+      loadQimenDaily();
     }
   });
 }
@@ -6614,6 +6674,7 @@ document.addEventListener('visibilitychange', function() {
       // 날짜가 바뀌었으면 dismissed 초기화 후 새 운세 로드
       localStorage.removeItem('fortuna_daily_dismissed');
       loadDailyCard();
+      loadQimenDaily();
     }
   }
 });
