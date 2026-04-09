@@ -1235,7 +1235,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.30.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.30.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3548,6 +3548,41 @@ async function loadQimenDaily() {
   var existing = document.getElementById('qimenDailyWrap');
   if (existing) existing.remove();
 
+  // ── 오행/문 상수 ──
+  var DOOR_KW = {'生':'계약·서명·창업 최적','開':'왕성한 활동·투자·확장','休':'안정·화해·양생 유리','景':'문서·공부·창작 유리','傷':'이동·충돌 주의','杜':'막힘·정체 조심','驚':'긴장·놀람 주의','死':'중요 결정 보류 권장'};
+  var DOOR_ICON = {'生':'🌱','開':'🚀','休':'☕','景':'📖','傷':'⚡','杜':'🔒','驚':'😮','死':'🛑'};
+  var DOOR_SCORE = {'生':2,'開':2,'休':1,'景':1,'傷':-1,'杜':-1,'驚':-1,'死':-2};
+  var DOOR_EL = {'生':'목','傷':'목','杜':'목','景':'화','死':'토','開':'금','驚':'금','休':'수'};
+  var SAENG = {목:'화',화:'토',토:'금',금:'수',수:'목'};
+  var GEUK = {목:'토',토:'수',수:'화',화:'금',금:'목'};
+  var EL_HAN = {목:'木',화:'火',토:'土',금:'金',수:'水'};
+  var STEM_EL_KOR = {갑:'목',을:'목',병:'화',정:'화',무:'토',기:'토',경:'금',신:'금',임:'수',계:'수'};
+  var KOR_HAN = {갑:'甲',을:'乙',병:'丙',정:'丁',무:'戊',기:'己',경:'庚',신:'辛',임:'壬',계:'癸'};
+  var STEM_OHAENG = {'甲':'목','乙':'목','丙':'화','丁':'화','戊':'토','己':'토','庚':'금','辛':'금','壬':'수','癸':'수'};
+  var GRADE_COLOR = {'대길':'#4ade80','길':'#7ac4ff','평':'#9b8fb0','흉':'#f59e42','대흉':'#e05c6a'};
+  var doorNameMap = {'生':'생문','開':'개문','休':'휴문','景':'경문','傷':'상문','杜':'두문','驚':'경문','死':'사문'};
+
+  function elScore(src, tgt) {
+    if (!src || !tgt || src === tgt) return 0;
+    if (SAENG[src] === tgt) return 1;
+    if (GEUK[src] === tgt) return -1;
+    return 0;
+  }
+
+  function calcYeonmyeong(year, gender) {
+    var sum = 0, s = String(year);
+    for (var i = 0; i < s.length; i++) sum += parseInt(s[i]);
+    while (sum > 9) { var t = 0, ss = String(sum); for (var j = 0; j < ss.length; j++) t += parseInt(ss[j]); sum = t; }
+    var isMale = (gender !== 'F' && gender !== 'female');
+    var gong;
+    if (year < 2000) { gong = isMale ? 11 - sum : sum + 4; }
+    else { gong = isMale ? 9 - sum : sum + 6; }
+    if (gong > 9) gong -= 9;
+    if (gong <= 0) gong += 9;
+    if (gong === 5) gong = isMale ? 2 : 8;
+    return gong;
+  }
+
   try {
     var res = await fetch('https://fortuna.kkdmb7.workers.dev/qimen?year=' + y + '&month=' + m + '&day=' + d + '&hour=12&minute=0&type=ilga');
     if (!res.ok) return;
@@ -3555,21 +3590,78 @@ async function loadQimenDaily() {
     var door = data.직사문;
     if (!door) return;
 
-    var DOOR_KW = {
-      '生':'계약·서명·창업 최적','開':'왕성한 활동·투자·확장',
-      '休':'안정·화해·양생 유리','景':'문서·공부·창작 유리',
-      '傷':'이동·충돌 주의','杜':'막힘·정체 조심',
-      '驚':'긴장·놀람 주의','死':'중요 결정 보류 권장'
-    };
-    var DOOR_GRADE = {'生':'대길','開':'대길','休':'길','景':'길','傷':'흉','杜':'흉','驚':'흉','死':'대흉'};
-    var DOOR_ICON = {'生':'🌱','開':'🚀','休':'☕','景':'📖','傷':'⚡','杜':'🔒','驚':'😮','死':'🛑'};
-    var GRADE_COLOR = {'대길':'#4ade80','길':'#7ac4ff','흉':'#f59e42','대흉':'#e05c6a','평':'#9b8fb0'};
+    // ── 개인화 계산 ──
+    var userDayEl = null, userDayStem = '', ymGong = 0, personNote = '';
+    var profile = userProfile;
 
-    var grade = DOOR_GRADE[door] || '평';
-    var keyword = DOOR_KW[door] || '평온한 하루';
+    if (profile && profile.birth_date) {
+      // 연명궁
+      var birthYear = parseInt(profile.birth_date.split('-')[0]);
+      if (birthYear) ymGong = calcYeonmyeong(birthYear, profile.gender);
+
+      // 일간 (사주 데이터에서)
+      var sajuData = profile.saju_data;
+      if (sajuData && sajuData.pillars && sajuData.pillars.day) {
+        var dayPillar = sajuData.pillars.day;
+        if (dayPillar.length >= 1) {
+          userDayEl = STEM_EL_KOR[dayPillar[0]];
+          userDayStem = KOR_HAN[dayPillar[0]] || dayPillar[0];
+        }
+      }
+    }
+
+    var grade, keyword = DOOR_KW[door] || '평온한 하루';
+
+    if (userDayEl && ymGong) {
+      // 개인화 등급 계산
+      var base = DOOR_SCORE[door] || 0;
+
+      // 연명궁 팔문
+      var ymDoor = '', ymS = 0;
+      if (data.palaces && data.palaces[String(ymGong)]) {
+        ymDoor = data.palaces[String(ymGong)].팔문 || '';
+        ymS = DOOR_SCORE[ymDoor] || 0;
+      }
+
+      // 일간 vs 직사문 오행
+      var ilS = DOOR_EL[door] ? elScore(DOOR_EL[door], userDayEl) : 0;
+
+      // 직부궁 지반 vs 일간
+      var siS = 0;
+      if (data.직부궁 && data.palaces && data.palaces[String(data.직부궁)]) {
+        var stem = (data.palaces[String(data.직부궁)].지반 || '').trim();
+        if (stem && STEM_OHAENG[stem[0]]) {
+          siS = elScore(STEM_OHAENG[stem[0]], userDayEl);
+        }
+      }
+
+      var total = base + ymS + ilS + siS;
+      if (total >= 4) grade = '대길';
+      else if (total >= 2) grade = '길';
+      else if (total >= -1) grade = '평';
+      else if (total >= -3) grade = '흉';
+      else grade = '대흉';
+
+      // 세부 텍스트
+      var parts = [];
+      if (ymDoor) {
+        parts.push((DOOR_SCORE[ymDoor] > 0 ? '▲' : '▼') + ymDoor + '門');
+      }
+      var personalDelta = ilS + siS;
+      if (personalDelta > 0) parts.push('▲' + EL_HAN[userDayEl]);
+      else if (personalDelta < 0) parts.push('▼' + EL_HAN[userDayEl]);
+      if (parts.length > 0) {
+        var noteColor = total >= 2 ? '#7c3aed' : total <= -2 ? '#e05c6a' : '#9b8fb0';
+        personNote = '<div style="margin-top:6px;font-size:11px;color:' + noteColor + ';">✦ ' + userDayStem + '(' + EL_HAN[userDayEl] + ') 일간 · ' + ymGong + '궁 연명 맞춤 ' + parts.join(' ') + '</div>';
+      }
+    } else {
+      // 비개인화: 직사문 기반 단순 등급
+      var DOOR_GRADE = {'生':'대길','開':'대길','休':'길','景':'길','傷':'흉','杜':'흉','驚':'흉','死':'대흉'};
+      grade = DOOR_GRADE[door] || '평';
+    }
+
     var icon = DOOR_ICON[door] || '🔮';
     var color = GRADE_COLOR[grade] || '#9b8fb0';
-    var doorName = {'生':'생문','開':'개문','休':'휴문','景':'경문','傷':'상문','杜':'두문','驚':'경문','死':'사문'};
 
     var wrap = document.createElement('div');
     wrap.id = 'qimenDailyWrap';
@@ -3583,10 +3675,11 @@ async function loadQimenDaily() {
         '</div>' +
         '<div style="padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;color:' + color + ';background:rgba(0,0,0,0.3);border:1px solid ' + color + '30;">' + grade + '</div>' +
       '</div>' +
-      '<div style="margin-top:8px;font-size:11px;color:#9b8fb0;line-height:1.6;">직사문: ' + (doorName[door]||door) + '門 (' + door + ') — 일가 포국 기준</div>';
+      personNote +
+      '<div style="margin-top:' + (personNote ? '4' : '8') + 'px;font-size:11px;color:#9b8fb0;">직사문: ' + (doorNameMap[door]||door) + '門 (' + door + ') — 일가 포국 기준</div>';
 
     wrap.onclick = function() {
-      var msg = '오늘 기문둔갑 일운이 ' + (doorName[door]||door) + '문(' + grade + ')인데, 나한테 어떤 의미인지 자세히 알려줘';
+      var msg = '오늘 기문둔갑 일운이 ' + (doorNameMap[door]||door) + '문(' + grade + ')인데, 나한테 어떤 의미인지 자세히 알려줘';
       var input = document.getElementById('chatInput');
       if (input) { input.value = msg; input.focus(); }
     };
