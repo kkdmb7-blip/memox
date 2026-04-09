@@ -1235,7 +1235,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.30.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.30.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5289,6 +5289,25 @@ for (var i = 1; i <= 6; i++) {
     p2 += '- 한자 병기 금지. 갑목(甲木) 대신 그냥 "갑목"으로\n';
     p2 += '- 사용자가 특정 체계를 묻지 않으면 하나의 체계로만 답하세요\n';
     p2 += '- 첫 문장은 사용자의 감정이나 상황에 대한 공감으로 시작하세요\n';
+
+    p2 += '\n## 절대 금지 규칙 (치명적 오류 방지)\n';
+    p2 += '- 월건(갑오월, 계사월 등)을 직접 언급하지 마세요. 틀립니다.\n';
+    p2 += '- 일진(계축일, 갑인일 등)을 직접 언급하지 마세요. 틀립니다.\n';
+    p2 += '- 특정 월이나 날짜에 "좋다/나쁘다"를 예언하지 마세요.\n';
+    p2 += '- 대신 "올해 하반기" "지금 시기" "당분간" 같은 표현을 쓰세요.\n';
+    p2 += '- 자미두수, 베딕, 서양점성 체계 이름을 언급하지 마세요.\n';
+    p2 += '- 사주 전문 용어(십신, 격국, 용신 등)를 직접 쓰지 마세요.\n';
+    p2 += '- 한자 병기 금지. 갑목(甲木) 대신 그냥 갑목.\n';
+    p2 += '- 첫 문장은 반드시 사용자 감정에 대한 공감으로 시작하세요.\n';
+    p2 += '- 사주 근거는 문장 속에 자연스럽게 녹이세요.\n';
+
+    if (pattern.type === '양신성상') {
+      p2 += '\n## 현재 대운(신해) 해석 규칙\n';
+      p2 += '- 금이 수에 빠져 제어력이 약화된 구조.\n';
+      p2 += '- "황금기" "흐름이 형성" 같은 긍정 확정 표현 금지.\n';
+      p2 += '- 아이디어와 창의성은 깊어지나 실질 수익화는 아직 과제.\n';
+      p2 += '- 47세 이후 재물 구조가 서서히 열리기 시작.\n';
+    }
 
     console.log('[Phase2] 적천수 프레임 적용됨:', p2.substring(0, 100));
     systemPrompt += p2;
