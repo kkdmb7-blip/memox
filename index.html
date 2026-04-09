@@ -1287,7 +1287,8 @@ async function showAdminStats() {
       row('👥', '전체 가입자', d.totalUsers) +
       row('📅', '오늘 접속자', d.todayUsers) +
       row('💬', '누적 상담 수', d.totalMessages) +
-      row('🔥', '오늘 상담 수', d.todayMessages);
+      row('🔥', '오늘 상담 수', d.todayMessages) +
+      row('💳', '결제자 수', d.totalPayers);
   } catch(e) {
     body.innerHTML = '<div style="color:#f44336;text-align:center;">오류: ' + e.message + '</div>';
   }
