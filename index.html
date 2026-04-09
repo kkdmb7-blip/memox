@@ -184,7 +184,7 @@
     background:linear-gradient(135deg,var(--accent2),var(--accent));
     display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;
   }
-  .chat-header-info { flex:1; min-width:0; overflow:hidden; max-height:60px; }
+  .chat-header-info { flex:1; min-width:0; overflow:hidden; max-height:60px; white-space:nowrap; }
   .chat-header-name { font-size:14px; font-weight:700; }
   .chat-header-sub { font-size:11px; color:var(--text3); display:none; }
   #streakBadge {
@@ -1235,7 +1235,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.28.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.28.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2789,7 +2789,7 @@ function renderStreakBadge(streak) {
   if (!el) return;
   if (streak < 2) { el.style.display = 'none'; return; }
   el.style.display = 'inline-flex';
-  el.textContent = '🔥 ' + streak + '일 연속 접속 중';
+  el.textContent = '🔥 ' + streak + '일 연속';
 }
 
 function showStreakMilestone(streak) {
