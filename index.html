@@ -1284,7 +1284,7 @@ var _authHandled = false;
 
 async function loadTotalConsultations() {
   try {
-    var res = await fetch('https://fortuna-silk.vercel.app/api/stats');
+    var res = await fetch('https://fortuna-silk.vercel.app/api/support?action=public-stats');
     if (!res.ok) return;
     var d = await res.json();
     var el = document.getElementById('totalConsultations');
@@ -1412,7 +1412,7 @@ async function showAdminStats() {
   modal.classList.add('open');
   body.innerHTML = '<div style="color:var(--text3);text-align:center;padding:16px;">불러오는 중...</div>';
   try {
-    var res = await fetch('https://fortuna-silk.vercel.app/api/admin-stats?admin_id=' + ADMIN_UUID);
+    var res = await fetch('https://fortuna-silk.vercel.app/api/support?action=stats&admin_id=' + ADMIN_UUID);
     if (!res.ok) { body.innerHTML = '<div style="color:#f44336;text-align:center;">조회 실패</div>'; return; }
     var d = await res.json();
     var row = function(icon, label, val) {
