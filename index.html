@@ -1235,7 +1235,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.31.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.31.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3609,9 +3609,16 @@ async function loadQimenDaily() {
 
       // 일간 (사주 데이터에서)
       var sajuData = profile.saju_data;
-      if (sajuData && sajuData.pillars && sajuData.pillars.day) {
-        var dayPillar = sajuData.pillars.day;
-        if (dayPillar.length >= 1) {
+      if (sajuData) {
+        var dayPillar = '';
+        // saju_pillars: "계해년 을묘월 갑인일 갑자시" 형식에서 일주 추출
+        if (sajuData.saju_pillars && typeof sajuData.saju_pillars === 'string') {
+          var pillarMatch = sajuData.saju_pillars.match(/(\S+)일/);
+          if (pillarMatch) dayPillar = pillarMatch[1]; // "갑인"
+        } else if (sajuData.pillars && sajuData.pillars.day) {
+          dayPillar = sajuData.pillars.day;
+        }
+        if (dayPillar && dayPillar.length >= 1) {
           userDayEl = STEM_EL_KOR[dayPillar[0]];
           userDayStem = KOR_HAN[dayPillar[0]] || dayPillar[0];
         }
