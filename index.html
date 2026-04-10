@@ -4632,10 +4632,17 @@ async function sendMessage() {
     }
   }
   window._typingStart = Date.now();
+  isTyping = true;
+  document.getElementById('sendBtn').disabled = true;
 
   var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || 'fortuna';
   var _orbLeft = await getOrbBalance();
-  if (_orbLeft < 20) { showOrbEmptyModal(); return; }
+  if (_orbLeft < 20) {
+    isTyping = false;
+    document.getElementById('sendBtn').disabled = false;
+    showOrbEmptyModal();
+    return;
+  }
 
   input.value = '';
   autoResize(input);
@@ -4644,8 +4651,6 @@ async function sendMessage() {
   trackEmotionAndTopic(text);
   await saveMessage('user', text);
 
-  isTyping = true;
-  document.getElementById('sendBtn').disabled = true;
   showTyping();
 
   try {
