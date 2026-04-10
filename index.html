@@ -2736,8 +2736,8 @@ function extractAndSaveContext(replyText) {
   }
 
   window._fortunaUserCtx = ctx;
-  // 비동기 저장 (fire and forget)
-  sb.from('user_context').upsert({
+
+  var _ctxPayload = {
     user_id: currentUser.id,
     people: ctx.people,
     situations: ctx.situations,
@@ -2745,7 +2745,20 @@ function extractAndSaveContext(replyText) {
     last_topics: ctx.last_topics,
     emotion_pattern: ctx.emotion_pattern || '',
     updated_at: Date.now()
-  }).then(function(){}).catch(function(){});
+  };
+
+  // 카카오 유저: 서비스 키 경유 (RLS 우회)
+  if (currentUser.provider === 'kakao') {
+    fetch('https://fortuna-silk.vercel.app/api/save-context', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_ctxPayload)
+    }).catch(function(e){ console.warn('[CTX 저장 실패]', e.message); });
+  } else {
+    sb.from('user_context').upsert(_ctxPayload)
+      .then(function(){})
+      .catch(function(e){ console.warn('[CTX 저장 실패]', e.message); });
+  }
 }
 
 function getKSTDateOffset(days) {
