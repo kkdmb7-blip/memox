@@ -2676,9 +2676,18 @@ function getKSTDate(date) {
 async function loadUserContext() {
   if (!currentUser) return;
   try {
-    var res = await sb.from('user_context').select('*').eq('user_id', currentUser.id).maybeSingle();
-    if (res.data) window._fortunaUserCtx = res.data;
-  } catch(e) {}
+    if (currentUser.provider === 'kakao') {
+      // 카카오 유저: 서비스 키 경유 (RLS 우회)
+      var r = await fetch('https://fortuna-silk.vercel.app/api/save-context?user_id=' + encodeURIComponent(currentUser.id));
+      if (r.ok) {
+        var d = await r.json();
+        if (d.data) window._fortunaUserCtx = d.data;
+      }
+    } else {
+      var res = await sb.from('user_context').select('*').eq('user_id', currentUser.id).maybeSingle();
+      if (res.data) window._fortunaUserCtx = res.data;
+    }
+  } catch(e) { console.warn('[loadUserContext 실패]', e.message); }
 }
 
 function extractAndSaveContext(replyText) {
