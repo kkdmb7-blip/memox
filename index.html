@@ -1739,6 +1739,12 @@ function _smartExtractIlgan(saju) {
     var c3 = s.slice(0, idx).trim().split('').pop();
     if (c3 && /[가-힣]/.test(c3)) return c3;
   }
+  // 소스 3-b: "계해년 을묘월 갑인일 갑자시" 형식 — '일' 앞 한자어 첫 글자
+  var dayMatch = s.match(/([가-힣]+)일(?:\s|$)/);
+  if (dayMatch && dayMatch[1]) {
+    var c3b = dayMatch[1][0];
+    if (/[가-힣]/.test(c3b)) return c3b;
+  }
   // 소스 4: day_gan 직접 필드
   if (saju.day_gan) return String(saju.day_gan)[0];
   return null;
@@ -5447,13 +5453,11 @@ for (var i = 1; i <= 6; i++) {
   }
   // === Phase 2 끝 ===
 
-  console.log('[systemPrompt]', systemPrompt);
   var res;
   for (var _attempt = 0; _attempt < 2; _attempt++) {
     var _ctrl = new AbortController();
     var _tmr = setTimeout(function(){ _ctrl.abort(); }, 30000);
     try {
-      console.log('=== SYSTEM PROMPT ===', systemPrompt);
       res = await fetch('https://fortuna-silk.vercel.app/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
