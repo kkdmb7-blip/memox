@@ -162,14 +162,34 @@
     text-decoration:none;
   }
   .charge-btn-link:hover { background:rgba(255,255,255,0.08); }
-  .report-nudge {
-    margin-top:10px; padding-top:8px;
-    border-top:1px solid rgba(255,255,255,0.06);
-    font-size:11px; color:rgba(255,255,255,0.3);
-    text-align:right; cursor:pointer;
-    text-decoration:none; display:block;
+  .report-cta {
+    margin-top:10px;
+    background:rgba(201,168,76,0.08);
+    border:1px solid rgba(201,168,76,0.25);
+    border-radius:12px;
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
   }
-  .report-nudge:hover { color:rgba(255,255,255,0.5); }
+  .report-cta-text {
+    font-size:12px;
+    color:rgba(201,168,76,0.85);
+    line-height:1.4;
+    flex:1;
+  }
+  .report-cta-btn {
+    flex-shrink:0;
+    font-size:11px;
+    font-weight:700;
+    color:#1a1020;
+    background:linear-gradient(135deg,#b8952a,#d4af37);
+    border-radius:8px;
+    padding:6px 12px;
+    text-decoration:none;
+    white-space:nowrap;
+  }
     .chat-header {
     padding:8px 12px; border-bottom:1px solid var(--border);
     display:flex; align-items:center; gap:8px; flex-shrink:0;
@@ -1227,7 +1247,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.35.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.35.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6166,14 +6186,13 @@ for (var i = 1; i <= 6; i++) {
   // [CTX] 맥락 파싱 → 백그라운드 저장
   extractAndSaveContext(replyText);
 
-  // 리포트 유도 (33% 확률)
-  if (Math.random() > 0.66) {
-    var nudge = document.createElement('a');
-    nudge.className = 'report-nudge';
-    nudge.href = 'https://fortuna-silk.vercel.app';
-    nudge.target = '_blank';
-    nudge.textContent = '더 깊이 알고 싶다면 → 📋 리포트 보기';
-    bubble.parentNode.appendChild(nudge);
+  // 리포트 CTA (심층 질문 + 33% 확률)
+  if (window._isDeepQuestion && Math.random() > 0.66) {
+    var cta = document.createElement('div');
+    cta.className = 'report-cta';
+    cta.innerHTML = '<div class="report-cta-text">더 깊이 알고 싶다면 → 📋 리포트 보기</div>' +
+      '<a href="https://fortuna-silk.vercel.app" target="_blank" class="report-cta-btn">PDF 리포트 신청</a>';
+    bubble.parentNode.appendChild(cta);
   }
   scrollToBottom();
   return cleanReply;
