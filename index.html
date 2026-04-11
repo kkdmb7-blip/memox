@@ -3723,7 +3723,8 @@ async function loadQimenDaily() {
     wrap.onclick = function() {
       var now = new Date(Date.now()+9*3600000);
       var qy=now.getUTCFullYear(),qm=now.getUTCMonth()+1,qd=now.getUTCDate(),qh=now.getUTCHours(),qmi=now.getUTCMinutes();
-      window.location.href = 'https://picolab.kr/qimen.html?year='+qy+'&month='+qm+'&day='+qd+'&hour='+qh+'&minute='+qmi+'&type=siga';
+      var _g = (userProfile && userProfile.gender === 'F') ? 'female' : 'male';
+      window.location.href = 'https://picolab.kr/qimen.html?year='+qy+'&month='+qm+'&day='+qd+'&hour='+qh+'&minute='+qmi+'&type=siga&gender='+_g;
     };
 
     var chatMessages = document.getElementById('chatMessages');
