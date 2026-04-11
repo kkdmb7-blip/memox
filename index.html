@@ -1229,7 +1229,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.33.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.33.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4674,7 +4674,7 @@ function detectBranch(text) {
   var t = text;
   var tc = text.replace(/\s/g, ''); // 공백 제거 버전 (띄어쓰기 무시)
   // 연애/관계
-  if (/왜.*연애|연애.*안|남자친구.*없|여자친구.*없|연애.*못|솔로.*이유|연애복|남친.*없|여친.*없|이성.*안 만|사람.*안 생겨/.test(t) || /왜연애|연애안|남자친구없|여자친구없|연애못|솔로이유|연애복|남친없|여친없|이성안만|사람안생겨/.test(tc)) return 'love_why';
+  if (/왜.*연애|연애.*안|남자친구.*없|여자친구.*없|연애.*못|솔로.*이유|연애복|남친.*없|여친.*없|이성.*안 만|사람.*안 생겨/.test(t) || /왜연애|연애안|남자친구없|여자친구없|연애못|솔로이유|연애복|남친없|여친없|이성안만|사람안생겨|연애가왜|왜이렇게연애|연애가잘안/.test(tc)) return 'love_why';
   if (/언제.*만나|인연.*언제|좋은 사람.*언제|인연이.*올까|만남.*올까|연애.*시작|이성.*만날/.test(t) || /언제만나|인연언제|좋은사람언제|인연이올까|만남올까|연애시작|이성만날/.test(tc)) return 'love_timing';
   if (/지금.*사람.*맞|만나는.*사람.*맞|상대.*맞는지|이 사람.*맞을|지금 만나는.*맞|궁합.*맞는지/.test(t) || /지금사람맞|만나는사람맞|상대맞는지|이사람맞을|지금만나는맞|궁합맞는지/.test(tc)) return 'love_match';
   if (/고백.*해도|고백.*타이밍|마음.*전해도|좋아한다고.*해도|고백.*할까/.test(t) || /고백해도|고백타이밍|마음전해도|좋아한다고해도|고백할까/.test(tc)) return 'love_confess';
@@ -4682,7 +4682,7 @@ function detectBranch(text) {
   if (/이별.*후|헤어지고.*언제|상처.*회복|이별.*극복|실연.*후/.test(t) || /이별후|헤어지고언제|상처회복|이별극복|실연후/.test(tc)) return 'love_recover';
   if (/재회.*가능|다시.*만날|헤어진.*사람|전 남자친구|전 여자친구|전.*다시|다시 만날 수/.test(t) || /재회가능|다시만날|헤어진사람|전남자친구|전여자친구|전다시|다시만날수/.test(tc)) return 'love_reunion';
   if (/상대.*마음|그 사람.*나를|좋아하는지|나를 좋아할까|내 마음.*알까|그 사람.*어떻게 생각/.test(t) || /상대마음|그사람나를|좋아하는지|나를좋아할까|내마음알까|그사람어떻게생각/.test(tc)) return 'love_heart';
-  if (/결혼.*언제|결혼.*시기|혼인.*언제|결혼.*적령기|결혼은.*언제/.test(t) || /결혼언제|결혼시기|혼인언제|결혼적령기|결혼은언제/.test(tc)) return 'marry_timing';
+  if (/결혼.*언제|결혼.*시기|혼인.*언제|결혼.*적령기|결혼은.*언제/.test(t) || /결혼언제|결혼시기|혼인언제|결혼적령기|결혼은언제|언제결혼/.test(tc)) return 'marry_timing';
   if (/결혼.*상대|어떤 사람.*결혼|배우자.*어떤|이상형.*결혼|결혼할 사람/.test(t) || /결혼상대|어떤사람결혼|배우자어떤|이상형결혼|결혼할사람/.test(tc)) return 'marry_type';
   // 재물/사업
   if (/왜.*돈|돈.*안 모|재물.*안|돈이 없는 이유|가난한 이유|돈복이 없|재물복/.test(t) || /왜돈|돈안모|재물안|돈이없는이유|가난한이유|돈복이없|재물복/.test(tc)) return 'money_why';
@@ -4699,14 +4699,14 @@ function detectBranch(text) {
   if (/오늘.*운세|오늘.*어때|오늘.*흐름|오늘 운|오늘 기운/.test(t) || /오늘운세|오늘어때|오늘흐름|오늘운|오늘기운/.test(tc)) return 'fortune_today';
   if (/올해.*운세|올해.*어때|올해.*흐름|올해 운|올해 기운|2026.*운세/.test(t) || /올해운세|올해어때|올해흐름|올해운|올해기운|2026운세/.test(tc)) return 'fortune_year';
   if (/대운.*언제|대운.*바뀌|운이.*언제|대운 바뀌|운 언제 바뀌|대운.*보기/.test(t) || /대운언제|대운바뀌|운이언제|대운바뀌|운언제바뀌|대운보기/.test(tc)) return 'fortune_daeun';
-  if (/지금.*어떤 시기|지금.*어느 시기|내 인생.*지금|지금 내 운|현재 운세|지금 운이/.test(t) || /지금어떤시기|지금어느시기|내인생지금|지금내운|현재운세|지금운이/.test(tc)) return 'fortune_now';
+  if (/지금.*어떤 시기|지금.*어느 시기|내 인생.*지금|지금 내 운|현재 운세|지금 운이/.test(t) || /지금어떤시기|지금어느시기|내인생지금|지금내운|현재운세|지금운이|어느시기야/.test(tc)) return 'fortune_now';
   if (/언제.*좋아지|언제.*풀려|위기.*언제 끝|언제 좋아져|언제 나아지|이 시기 언제 끝/.test(t) || /언제좋아지|언제풀려|위기언제끝|언제좋아져|언제나아지|이시기언제끝/.test(tc)) return 'fortune_when_good';
   // 건강
   if (/건강.*어때|몸.*어때|아픈.*이유|건강 운|몸 상태|몸이 왜/.test(t) || /건강어때|몸어때|아픈이유|건강운|몸상태|몸이왜/.test(tc)) return 'health_general';
   if (/언제.*나을|회복.*언제|병이 낫|완쾌.*언제|치료.*언제/.test(t) || /언제나을|회복언제|병이낫|완쾌언제|치료언제/.test(tc)) return 'health_recover';
   if (/수술.*해도|수술.*타이밍|수술.*날짜|수술.*언제|수술.*괜찮/.test(t) || /수술해도|수술타이밍|수술날짜|수술언제|수술괜찮/.test(tc)) return 'health_surgery';
   // 심층 (사주 종합 - 우선순위 높게)
-  if (/내.*사주.*전체|사주.*전부|종합.*분석|사주.*풀어|사주.*봐줘|사주.*알려|내.*사주.*봐|전체.*사주|사주.*전체/.test(t) || /내사주전체|사주전부|종합분석|사주풀어|사주봐줘|사주알려|내사주봐|전체사주|사주전체/.test(tc)) return 'deep_saju';
+  if (/내.*사주.*전체|사주.*전부|종합.*분석|사주.*풀어|사주.*봐줘|사주.*알려|내.*사주.*봐|전체.*사주|사주.*전체|사주.*좀/.test(t) || /내사주전체|사주전부|종합분석|사주풀어|사주봐줘|사주알려|내사주봐|전체사주|사주전체|사주좀/.test(tc)) return 'deep_saju';
   if (/평생.*운|인생 전체|평생.*흐름|평생 운세|인생 운세|내 인생 전체/.test(t) || /평생운|인생전체|평생흐름|평생운세|인생운세|내인생전체/.test(tc)) return 'deep_lifetime';
   if (/내 성격.*왜|타고난.*성격|나는 왜 이런지|내.*성격|나는 왜 이렇게|내 기질|내 성향|나는 어떤 성격|내가 왜 이렇게/.test(t) || /내성격왜|타고난성격|나는왜이런지|내성격|나는왜이렇게|내기질|내성향|나는어떤성격|내가왜이렇게/.test(tc)) return 'deep_character';
   if (/전생|카르마|업/.test(t) || /전생|카르마|업/.test(tc)) return 'deep_karma';
@@ -5715,10 +5715,9 @@ for (var i = 1; i <= 6; i++) {
     .replace(/{일간}/g, _ilgan || '일간')
     .replace(/{대운}/g, _daeun);
 
-  // === Phase 2: 해석 프레임 (테스트 유저 전용) ===
-  var PHASE2_TEST_USER = '99f9f77a-2f2a-4055-ab44-421d1c070341';
-  console.log('[Phase2 debug]', 'currentUser:', currentUser?.id, 'saju:', typeof saju, 'five_count:', saju?.saju_five_count, 'pattern:', saju?.saju_pattern);
-  if (currentUser && currentUser.id === PHASE2_TEST_USER && saju) {
+  // === Phase 2: 해석 프레임 (사주 데이터 있는 모든 유저) ===
+  console.log('[Phase2 debug]', 'saju:', typeof saju, 'five_count:', saju?.saju_five_count, 'pattern:', saju?.saju_pattern);
+  if (saju) {
     var fc = saju.saju_five_count || {};
     var pattern = saju.saju_pattern || {};
     var sl5 = saju.saju_strength_level_5 || '';
@@ -5770,14 +5769,6 @@ for (var i = 1; i <= 6; i++) {
       p2 += '- 사주 용어 사용 가능하되, 쉽게 풀어서 설명하세요.\n';
       p2 += '- 월건/일진은 시스템이 제공한 데이터만 사용하세요.\n';
       p2 += '- 데이터에 없는 월건/일진을 추측하지 마세요.\n';
-    }
-
-    if (pattern.type === '양신성상') {
-      p2 += '\n## 현재 대운(신해) 해석 규칙\n';
-      p2 += '- 금이 수에 빠져 제어력이 약화된 구조.\n';
-      p2 += '- 황금기/흐름형성 같은 긍정 확정 표현 금지.\n';
-      p2 += '- 아이디어와 창의성은 깊어지나 실질 수익화는 아직 과제.\n';
-      p2 += '- 47세 이후 재물 구조가 서서히 열림.\n';
     }
 
     console.log('[Phase2] 적천수 프레임 적용됨:', p2.substring(0, 100));
