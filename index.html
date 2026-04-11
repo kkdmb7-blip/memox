@@ -1235,7 +1235,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.31.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.31.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4895,7 +4895,7 @@ async function handleReferralOnLoad() {
 
 // ── Orb 시스템 ────────────────────────────────────────────
 
-var FREE_DAILY = 60; // 하루 무료 충전량 (orb)
+var FREE_DAILY_PER_SLOT = 20; // 회당 무료 충전량 (orb), 하루 3회 = 총 60
 
 async function loadOrbBalance() {
   if (!currentUser) return;
@@ -4907,21 +4907,25 @@ async function loadOrbBalance() {
       _orbBalance = res.data.balance || (_orbFreeBalance + _orbPaidBalance);
       _isFirstCharge = res.data.is_first_charge !== false;
 
-      // ── 일일 무료 충전 ──
-      var _todayKST = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+      // ── 하루 3회 무료 충전 (00~07시: 1회차, 08~15시: 2회차, 16~23시: 3회차) ──
+      var _nowKST = new Date(Date.now() + 9 * 3600000);
+      var _todayKST = _nowKST.toISOString().slice(0, 10);
+      var _hourKST = _nowKST.getUTCHours();
+      var _slot = _hourKST < 8 ? 1 : _hourKST < 16 ? 2 : 3;
+      var _slotKey = _todayKST + '-' + _slot; // e.g. "2026-04-11-2"
       var _lastDaily = res.data.last_daily_at || '';
-      if (_lastDaily.slice(0, 10) !== _todayKST) {
-        var _newFree = _orbFreeBalance + FREE_DAILY;
+      if (_lastDaily !== _slotKey) {
+        var _newFree = _orbFreeBalance + FREE_DAILY_PER_SLOT;
         var _newTotal = _newFree + _orbPaidBalance;
         await sb.from('orb_balance').update({
           free_balance: _newFree,
           balance: _newTotal,
-          last_daily_at: _todayKST,
+          last_daily_at: _slotKey,
           updated_at: new Date().toISOString()
         }).eq('user_id', currentUser.id);
         _orbFreeBalance = _newFree;
         _orbBalance = _newTotal;
-        console.log('[Orb] 일일 무료 충전 +' + FREE_DAILY + ' → 총 ' + _newTotal);
+        console.log('[Orb] 무료 충전 +' + FREE_DAILY_PER_SLOT + ' (' + _slotKey + ') → 총 ' + _newTotal);
       }
     } else {
       // orb_balance가 없음 — ID 불일치 가능성 체크
