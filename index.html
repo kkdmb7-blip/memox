@@ -1229,7 +1229,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.32.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.32.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3926,6 +3926,19 @@ async function loadChatHistory() {
     chatHistory = msgs.map(function(m) { return { role: m.role, content: m.content, created_at: m.created_at }; });
     renderChatHistory();
     return;
+  }
+  // 다른 기기에서 접속해도 최근 대화를 불러오기 위해 DB에서 최신 session_id 우선 조회
+  var latestRes = await sb.from('chat_messages')
+    .select('session_id')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (!latestRes.error && latestRes.data && latestRes.data.length > 0) {
+    var dbSessionId = latestRes.data[0].session_id;
+    if (dbSessionId && dbSessionId !== currentSessionId) {
+      currentSessionId = dbSessionId;
+      localStorage.setItem('memox_session_id', currentSessionId);
+    }
   }
   var supaRes = await sb.from('chat_messages')
     .select('*')
