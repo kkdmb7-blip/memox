@@ -1229,7 +1229,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.33.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.33.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1616,12 +1616,7 @@ function logoutKakao() {
 var ADMIN_UUID = '99f9f77a-2f2a-4055-ab44-421d1c070341';
 
 // ── SMART CHAT 플래그 ─────────────────────────────────────────
-var USE_SMART_CHAT = false;
-var TEST_USER_IDS = ['3d7633bc-3351-4f22-bc10-10cd1bfc5c28'];
-
-function _initSmartChatFlag(userId) {
-  USE_SMART_CHAT = TEST_USER_IDS.indexOf(userId) !== -1;
-}
+var USE_SMART_CHAT = true;
 
 // ── [SMART] 캐시 날짜 키 ─────────────────────────────────────
 function _getTodayKey() {
@@ -1836,7 +1831,6 @@ function _smartClassifyTopic(msg) {
 function applyProfile(profile) {
   userProfile = profile;
   window._vedicCache = null; window._vedicFetched = false;
-  if (currentUser) _initSmartChatFlag(currentUser.id);
   showScreen('chat');
   if (currentUser && currentUser.id === ADMIN_UUID) {
     var el = document.getElementById('adminStatsMenuItem');
@@ -1893,7 +1887,7 @@ function applyProfile(profile) {
     }
     loadDailyCard();
     loadQimenDaily();
-    // [SMART] 백그라운드 prefetch (TEST 사용자만)
+    // [SMART] 백그라운드 prefetch
     setTimeout(function() { _smartPrefetch(profile); }, 1500);
   }).catch(function() {
     showScreen('chat');
