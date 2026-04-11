@@ -1235,7 +1235,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.31.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.31.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4629,7 +4629,17 @@ function appendRawBubble(html) {
   scrollToBottom();
 }
 
+var _VEDIC_CHIP_INSTRUCTIONS = {
+  '내 탄생별 알기': '【전용 지시문】\n베딕 라그나(상승궁)와 낙샤트라를 중심으로 심층 분석하라.\n## 라그나 — 내가 세상에 보이는 방식\n## 낙샤트라 — 달이 머문 별자리가 새긴 기질\n## 지금 내 기운의 방향\n각 섹션에 [베딕] 배지 포함. 800자. 단정적 톤. "~일 수 있어요" 최소화.\n\n',
+  '내 인생 지금 어느 시기?': '【전용 지시문】\n현재 대운·다샤·자미두수 대한을 3섹션으로 분석하라.\n## [사주] 대운 — 10년 단위 흐름\n## [베딕] 다샤 — 행성 시기의 기운\n## [자미두수] 대한 — 지금 어느 궁이 열렸나\n1000자. 직설적. 각 섹션 끝에 "지금 이 시기에 해야 할 것"을 한 문장으로.\n\n',
+  '나만의 운명 조합': '【전용 지시문】\n사주·점성·베딕 3시스템을 융합해 이 사람만의 운명 패턴을 분석하라.\n## [사주] 일간과 격국이 만든 핵심 기질\n## [점성] 태양·달·상승이 보여주는 삶의 방향\n## [베딕] 라그나·다샤가 말하는 카르마\n1000자. 3시스템이 공통으로 가리키는 핵심을 마지막에 한 줄로 결론 내릴 것.\n\n',
+  '결혼운 보기': '【전용 지시문】\n사주·점성·베딕 3각도로 결혼운을 분석하라.\n## [사주] 배우자궁과 관성이 말하는 인연\n## [점성] 7하우스와 금성이 보여주는 파트너\n## [베딕] 다샤와 7궁 배치로 본 결혼 시기\n1000자. 결혼 가능성·시기·파트너 유형을 단정적으로 제시. "~일 수 있어요" 금지.\n\n'
+};
+
 async function sendVedicChip(text) {
+  // 버튼별 전용 지시문 설정 (sendMessage에서 시스템 프롬프트에 주입)
+  window._vedicChipInstruction = _VEDIC_CHIP_INSTRUCTIONS[text] || '';
+
   if (text === '궁합 보기' || text === '결혼운 보기') {
     openPartnerModal(text);
     return;
@@ -4666,7 +4676,7 @@ async function sendMessage() {
 
   // ── 심층질문 감지 ──
   var _deepKeywords = ['왜','언제','어떻게','안돼','못해','될까','평생','진짜','솔직히'];
-  window._isDeepQuestion = _deepKeywords.some(function(k) { return text.indexOf(k) !== -1; });
+  window._isDeepQuestion = !!(window._vedicChipInstruction) || _deepKeywords.some(function(k) { return text.indexOf(k) !== -1; });
 
   var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || 'fortuna';
   var _orbLeft = await getOrbBalance();
@@ -4698,6 +4708,8 @@ async function sendMessage() {
     isTyping = false;
     document.getElementById('sendBtn').disabled = false;
     hideTyping(); // 혹시 남아있을 경우 한번 더
+    window._vedicChipInstruction = ''; // 버튼 전용 지시문 초기화
+    window._isDeepQuestion = false;
   }
 }
 
@@ -5354,6 +5366,8 @@ for (var i = 1; i <= 6; i++) {
   + '- 없는 데이터 절대 만들지 말 것\n'
   + '- 오행 비율은 참고만 하고 답변에 직접 수치 언급 금지 (예: "목 74%" 같은 표현 금지)\n'
   + '- 같은 내용 반복 금지. 이전 답변과 다른 근거 사용할 것\n\n'
+
+  + (window._vedicChipInstruction || '')
 
   + '【추가 지침】\n'
   + (function(){ var _y=new Date().getFullYear(); var _h=['갑','을','병','정','무','기','경','신','임','계']; var _e=['자','축','인','묘','진','사','오','미','신','유','술','해']; return '- ' + _y + '년 ' + _h[(_y-2024+40)%10] + _e[(_y-2024+48)%12] + '년 기운을 반영할 것\n'; })()
