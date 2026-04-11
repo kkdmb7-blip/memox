@@ -6101,7 +6101,8 @@ for (var i = 1; i <= 6; i++) {
           user_id: currentUser.id,
           messages: claudeMessages,
           system_prompt: systemPrompt,
-          mode: _chatMode
+          mode: _chatMode,
+          max_tokens: _isDeepQuestion ? 4000 : 2000
         }),
         signal: _ctrl.signal
       });
