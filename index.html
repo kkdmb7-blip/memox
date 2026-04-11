@@ -1229,7 +1229,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.33.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.34.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4765,6 +4765,27 @@ function detectBranch(text) {
   if (/자미두수.*봐줘|자미.*분석|자미두수 분석|자미두수 봐줘/.test(t) || /자미두수봐줘|자미분석|자미두수분석|자미두수봐줘/.test(tc)) return 'deep_ziwei';
   if (/베딕.*봐줘|베딕.*분석|베딕 사주|베딕 봐줘/.test(t) || /베딕봐줘|베딕분석|베딕사주|베딕봐줘/.test(tc)) return 'deep_vedic';
   if (/나만의 운명|운명 조합|나는 어떤 사람|내 운명 패턴|나라는 사람/.test(t) || /나만의운명|운명조합|나는어떤사람|내운명패턴|나라는사람/.test(tc)) return 'deep_identity';
+  if (/재혼.*할|재혼.*가능|이혼.*후.*만남|두번째.*결혼/.test(t) || /재혼할|재혼가능|두번째결혼/.test(tc)) return 'love_remarry';
+  if (/부모님.*건강|부모.*걱정|부모님.*오래|어머니.*아버지/.test(t) || /부모님건강|부모걱정/.test(tc)) return 'love_parent';
+  if (/자녀.*미래|아이.*사주|자식.*잘될|아들.*딸.*운/.test(t) || /자녀미래|아이사주|자식잘될/.test(tc)) return 'child_future';
+  if (/자녀.*관계|아이.*사이|자식.*갈등|부모자식.*갈등/.test(t) || /자녀관계|아이사이|자식갈등/.test(tc)) return 'child_relation';
+  if (/형제.*갈등|자매.*갈등|형제.*사이|자매.*사이/.test(t) || /형제갈등|자매갈등/.test(tc)) return 'sibling';
+  if (/중년.*운세|40대.*운|50대.*운|마흔|쉰살/.test(t) || /중년운세|40대운|50대운/.test(tc)) return 'midlife';
+  if (/말년.*운|노후.*운|은퇴.*후|60대.*운|70대.*운/.test(t) || /말년운|노후운|은퇴후/.test(tc)) return 'oldage';
+  if (/명예.*운|평판.*어때|인정.*받을|유명해질/.test(t) || /명예운|평판어때|인정받을/.test(tc)) return 'fame';
+  if (/이름.*운|작명|이름.*바꾸|이름.*영향/.test(t) || /이름운|작명|이름바꾸/.test(tc)) return 'naming';
+  if (/꿈.*해몽|꿈.*무슨뜻|꿈.*의미|어젯밤.*꿈/.test(t) || /꿈해몽|꿈무슨뜻|꿈의미/.test(tc)) return 'dream';
+  if (/살.*풀|액막이|부적|개운.*방법|운.*좋아지/.test(t) || /살풀|액막이|부적|개운방법/.test(tc)) return 'purify';
+  if (/운.*높이|운.*좋아지는|개운법|행운.*방법/.test(t) || /운높이|운좋아지는|개운법/.test(tc)) return 'lucky_method';
+  if (/코인.*해도|주식.*지금|비트코인|암호화폐/.test(t) || /코인해도|비트코인|암호화폐/.test(tc)) return 'money_coin';
+  if (/유튜브.*사업|온라인.*사업|블로그.*수익|SNS.*수익/.test(t) || /유튜브사업|온라인사업|블로그수익/.test(tc)) return 'biz_online';
+  if (/은퇴.*시기|퇴직.*언제|직장.*그만|몇살까지.*일/.test(t) || /은퇴시기|퇴직언제|직장그만/.test(tc)) return 'job_retire';
+  if (/만성.*병|오래된.*병|낫지.*않|고질병/.test(t) || /만성병|오래된병|고질병/.test(tc)) return 'health_chronic';
+  if (/시댁.*관계|처가.*관계|시어머니|장모님/.test(t) || /시댁관계|처가관계|시어머니|장모님/.test(tc)) return 'marry_inlaw';
+  if (/이민.*정착|해외.*살면|외국.*정착/.test(t) || /이민정착|해외살면|외국정착/.test(tc)) return 'move_oversea';
+  if (/올해.*월별|월별.*운세|달마다.*운/.test(t) || /올해월별|월별운세/.test(tc)) return 'deep_annual';
+  if (/내.*행운.*시기|인생.*최고.*운|언제가.*제일.*좋/.test(t) || /내행운시기|인생최고운/.test(tc)) return 'deep_lucky';
+  if (/시댁|처가|고부갈등/.test(t)) return 'marry_inlaw';
   return 'default';
 }
 
@@ -4787,7 +4808,11 @@ var _DEEP_BRANCHES = {
   health_careful:1, health_diet:1, health_mental:1,
   exam_general:1,
   deep_saju:1, deep_lifetime:1, deep_character:1, deep_karma:1, deep_guardian:1, deep_purpose:1,
-  deep_astro:1, deep_ziwei:1, deep_vedic:1, deep_identity:1
+  deep_astro:1, deep_ziwei:1, deep_vedic:1, deep_identity:1,
+  love_remarry:1, love_parent:1, child_future:1, child_relation:1, sibling:1,
+  midlife:1, oldage:1, fame:1, naming:1, purify:1, lucky_method:1,
+  money_coin:1, biz_online:1, job_retire:1, health_chronic:1,
+  marry_inlaw:1, move_oversea:1, deep_annual:1, deep_lucky:1, dream:1
 };
 
 function getBranchInstruction(branch) {
@@ -4869,6 +4894,9 @@ function getBranchInstruction(branch) {
     deep_ziwei: '\n【분석 순서】\n1. 명궁 주성 심층 분석\n   - 명궁 주성의 특성과 기질\n   - 보좌성/살성이 있으면 어떻게 달라지는지\n   - 명궁이 삼합/대궁과 어떻게 연결되는지\n2. 재백궁/관록궁/부처궁 핵심\n   - 재백궁 주성 → 재물 운의 특성\n   - 관록궁 주성 → 직업/사업 운의 특성\n   - 부처궁 주성 → 배우자/파트너십의 특성\n3. 현재 대한 의미\n   - 현재 대한 궁의 주성 특성\n   - 이 대한이 끝나는 시기\n   - 다음 대한 예고\n4. 올해 유년궁 활용법\n   - 유년궁 주성으로 올해 흐름\n   - 올해 집중해야 할 것\n→ 1000자 이상.\n\n',
     deep_vedic: '\n【분석 순서】\n1. 라그나/낙샤트라 심층 분석\n   - 라그나(상승궁)의 특성과 삶의 방향\n   - 낙샤트라의 카르마적 의미\n   - 낙샤트라 파다(pada) 번호에 따른 세부 특성\n2. 현재 다샤 의미와 기간\n   - 현재 마하다샤 행성의 특성\n   - 안타르다샤(부크티) 행성과의 조합\n   - 이 다샤가 끝나는 시기\n   - 다음 다샤 예고\n3. 카르마적 과제\n   - 라후/케투 축의 의미\n   - 이번 생에서 해소해야 할 카르마\n4. 이번 생에서 해야 할 것\n   베딕 관점에서 구체적 방향.\n→ 1000자 이상.\n\n',
     deep_identity: '\n【분석 순서】\n1. 사주+점성+베딕 융합 정체성 분석\n   - 사주 일간의 본질\n   - 베딕 라그나의 특성\n   - 자미두수 명궁의 특성\n   - 세 가지가 일치하는 부분 → "핵심 정체성"\n   - 세 가지가 다른 부분 → "내면의 갈등/다양성"\n2. 내가 타고난 고유한 에너지\n   - 사주 전체에서 가장 강한 오행\n   - 베딕에서 가장 강한 행성\n   - 자미두수 명궁 주성\n   - 이 세 가지의 공통점\n3. 남들과 다른 나만의 강점\n   - 이 조합이 만들어내는 독특한 능력\n   - 어떤 상황에서 가장 빛나는지\n4. 이 운명을 잘 사는 방법\n   - 강점을 극대화하는 방향\n   - 약점을 보완하는 방법\n   - 지금 당장 시작할 수 있는 것\n→ 1200자 이상. 헤더 4개.\n\n'
+    naming: '\n【분석 순서】\n1. 이름보다 중요한 것\n   - 사주에서 용신 오행이 무엇인지 먼저 확인\n   - 이름의 오행보다 용신 오행을 생활에서 직접 활용하는 게\n     더 효과적임을 먼저 말할 것\n2. 용신 오행을 이름/호/닉네임에 반영하는 방향\n   - 목(木) 용신 → 나무/성장/새벽 관련 느낌의 이름\n   - 화(火) 용신 → 빛/태양/열정 관련 느낌의 이름\n   - 토(土) 용신 → 땅/안정/중심 관련 느낌의 이름\n   - 금(金) 용신 → 결실/정밀/강함 관련 느낌의 이름\n   - 수(水) 용신 → 지혜/흐름/깊이 관련 느낌의 이름\n3. 개명 효과가 있는지\n   - 이름이 기신 오행이면 바꾸는 것이 도움될 수 있음\n   - 단 근본적인 사주 자체는 바뀌지 않음. 보조적 효과\n4. 지금 이름이 용신 오행과 맞는지 방향 제시.\n→ 600자 이내.\n\n',
+    child_relation: '\n【분석 순서】\n1. 내가 자녀에게 어떤 부모인지\n   - 식상이 충/형 → "무의식적으로 자녀를 압박하는 패턴"\n   - 인성이 과다 → "자녀에게 과도하게 간섭하는 패턴"\n   - 비겁이 식상을 극함 → "자기 방식을 강요해서 자녀가 힘든 구조"\n   - 식상이 용신 → "자녀가 내 삶에 기쁨이 되는 구조"\n2. 자녀가 나를 어떻게 보는지\n   - 식상 오행의 특성으로 자녀가 원하는 부모상\n   - 내가 주지 못하고 있는 것\n3. 관계가 개선되는 시기\n   - 식상이 안정되는 세운 → 구체적 시기\n   - 자녀 나이와 겹치는 시기\n4. 지금 자녀에게 해줄 수 있는 것\n   일간 기질에 맞는 소통 방식.\n→ 800자 이상.\n\n',
+    dream: '\n【분석 순서】\n1. 지금 꿈이 많은 이유\n   - 현재 세운/대운에서 수(水) 기운이 강해짐 → "무의식이 활발해지는 시기"\n   - 충이 발동하는 세운 → "불안한 꿈이 많은 시기"\n   - 기신이 강한 세운 → "걱정이 꿈으로 나오는 시기"\n   - 인성이 강한 시기 → "직관과 무의식이 활발한 시기"\n2. 반복되는 꿈의 사주적 의미\n   - 쫓기는 꿈 반복 → 기신이 강한 시기의 불안 신호\n   - 높은 곳에서 떨어지는 꿈 → 관성 불안정 신호\n   - 물에 빠지는 꿈 → 수(水) 기운 과다 또는 감정 과부하\n   - 돌아가신 분 꿈 → 인성 에너지. 보호/조언 신호\n   - 돈/재물 꿈 → 재성 활성화 시기\n3. 지금 꿈이 말하는 것\n   현재 사주 흐름과 연결해서 해석.\n4. 꿈 에너지를 좋게 바꾸는 방법\n   용신 오행 방향 활동 제안.\n→ 600자 이내.\n\n',
   };
   return map[branch] || '';
 }
