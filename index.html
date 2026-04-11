@@ -1227,7 +1227,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.35.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.35.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5784,11 +5784,10 @@ for (var i = 1; i <= 6; i++) {
     return null;
   })();
   var _iljuBlock = (_iljuKey && ILJU_DATA[_iljuKey]) ?
-    '【' + _iljuKey + '일주 핵심 특성 - 이 데이터를 분기 분석에 반드시 활용】\n' +
-    '핵심기질: ' + ILJU_DATA[_iljuKey].core + '\n' +
-    '연애패턴: ' + ILJU_DATA[_iljuKey].love + '\n' +
-    '재물패턴: ' + ILJU_DATA[_iljuKey].money + '\n' +
-    '직업적성: ' + ILJU_DATA[_iljuKey].job + '\n\n' : '';
+    '[' + _iljuKey + '일주] 기질:' + ILJU_DATA[_iljuKey].core.slice(0,40) +
+    ' / 연애:' + ILJU_DATA[_iljuKey].love.slice(0,40) +
+    ' / 재물:' + ILJU_DATA[_iljuKey].money.slice(0,40) +
+    ' / 직업:' + ILJU_DATA[_iljuKey].job.slice(0,40) + '\n' : '';
 
   var _nakshatraKey = (function() {
     try {
@@ -5798,11 +5797,8 @@ for (var i = 1; i <= 6; i++) {
     } catch(e) { return null; }
   })();
   var _nakshatraBlock = (_nakshatraKey && NAKSHATRA_DATA[_nakshatraKey]) ?
-    '【' + _nakshatraKey + ' 낙샤트라 특성 - 베딕 분석에 반드시 활용】\n' +
-    '핵심기질: ' + NAKSHATRA_DATA[_nakshatraKey].core + '\n' +
-    '연애패턴: ' + NAKSHATRA_DATA[_nakshatraKey].love + '\n' +
-    '카르마과제: ' + NAKSHATRA_DATA[_nakshatraKey].karma + '\n' +
-    '타고난선물: ' + NAKSHATRA_DATA[_nakshatraKey].gift + '\n\n' : '';
+    '[' + _nakshatraKey + '낙샤트라] 기질:' + NAKSHATRA_DATA[_nakshatraKey].core.slice(0,40) +
+    ' / 카르마:' + NAKSHATRA_DATA[_nakshatraKey].karma.slice(0,40) + '\n' : '';
 
   var _astroDataBlock =
     '【점성술 데이터】\n' +
