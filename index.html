@@ -1247,7 +1247,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.35.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.35.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3725,14 +3725,12 @@ async function loadQimenDaily() {
 
     var wrap = document.createElement('div');
     wrap.id = 'qimenDailyWrap';
-    wrap.style.cssText = 'flex-shrink:0;margin:0 12px 8px;padding:14px 16px;border-radius:16px;background:linear-gradient(160deg,#1a1a2e,#16213e);border:1px solid rgba(167,139,250,0.2);cursor:pointer;';
+    wrap.style.cssText = 'flex-shrink:0;margin:0 12px 6px;padding:10px 14px;border-radius:14px;background:linear-gradient(160deg,#1a1a2e,#16213e);border:1px solid rgba(167,139,250,0.2);cursor:pointer;position:relative;';
     wrap.innerHTML =
-      '<div style="font-size:11px;color:rgba(167,139,250,0.55);letter-spacing:0.05em;font-weight:500;margin-bottom:6px;">🕐 지금 이 시간의 기운</div>' +
-      '<div style="font-size:15px;font-weight:300;color:#e8e0f0;letter-spacing:-0.01em;line-height:1.5;margin-bottom:8px;">' + keyword + '</div>' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-        '<span style="font-size:13px;font-weight:500;color:' + color + ';">' + (doorNameMap[door]||door) + '門 · ' + gradeLabel + '</span>' +
-        '<span style="font-size:10px;color:rgba(167,139,250,0.6);letter-spacing:0.03em;">자세히 보기 →</span>' +
-      '</div>';
+      '<div style="font-size:10px;color:rgba(167,139,250,0.55);letter-spacing:0.05em;font-weight:500;margin-bottom:4px;">🕐 지금 이 시간의 기운</div>' +
+      '<span style="position:absolute;top:10px;right:12px;font-size:12px;font-weight:600;color:' + color + ';">' + (doorNameMap[door]||door) + '門 · ' + gradeLabel + '</span>' +
+      '<div style="font-size:14px;font-weight:300;color:#e8e0f0;letter-spacing:-0.01em;line-height:1.4;margin-bottom:4px;padding-right:80px;">' + keyword + '</div>' +
+      '<span style="font-size:10px;color:rgba(167,139,250,0.5);letter-spacing:0.03em;">자세히 보기 →</span>';
 
     wrap.onclick = function() {
       var now = new Date(Date.now()+9*3600000);
