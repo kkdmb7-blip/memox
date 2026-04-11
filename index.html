@@ -1235,7 +1235,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.31.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.31.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4664,6 +4664,10 @@ async function sendMessage() {
   isTyping = true;
   document.getElementById('sendBtn').disabled = true;
 
+  // ── 심층질문 감지 ──
+  var _deepKeywords = ['왜','언제','어떻게','안돼','못해','될까','평생','진짜','솔직히'];
+  window._isDeepQuestion = _deepKeywords.some(function(k) { return text.indexOf(k) !== -1; });
+
   var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || 'fortuna';
   var _orbLeft = await getOrbBalance();
   if (_orbLeft < 20) {
@@ -5314,11 +5318,20 @@ for (var i = 1; i <= 6; i++) {
 
   + '【답변 규칙】\n'
   + '- 언어: 모든 답변은 반드시 한국어로만 작성. 영어 단어 절대 사용 금지. house→궁, aspect→각도로 번역.\n'
-  + '- 길이: 400~600자\n'
-  + '- 구조: ①공감 한 줄 → ②사주/점성 근거 → ③현실 연결 → ④행동 한 줄\n'
-  + '- ④행동은 한 줄로만. 목록 절대 금지\n'
-  + '- 마지막 문장: 반드시 희망적으로\n'
-  + '- ## ### 헤더 절대 금지 / ** 볼드는 사주용어, 핵심 키워드에 적극 사용. 답변당 3~5개 허용\n'
+  + (window._isDeepQuestion
+    ? '- 길이: 800~1200자\n'
+    + '- 구조: ## 헤더 2~3개로 섹션 구분 (## 사용 허용)\n'
+    + '- 각 섹션에서 사주/점성/베딕 중 2개 이상 근거 제시\n'
+    + '- 출처 배지 텍스트로 표시: [사주] [점성] [베딕]\n'
+    + '- 직설적이고 단정적인 톤. "~일 수 있어요" 표현 최소화\n'
+    + '- ④행동은 한 줄로만. 목록 절대 금지\n'
+    + '- 마지막 문장: 반드시 희망적으로\n'
+    : '- 길이: 400~600자\n'
+    + '- 구조: ①공감 한 줄 → ②사주/점성 근거 → ③현실 연결 → ④행동 한 줄\n'
+    + '- ④행동은 한 줄로만. 목록 절대 금지\n'
+    + '- 마지막 문장: 반드시 희망적으로\n'
+    + '- ## ### 헤더 절대 금지\n')
+  + '- ** 볼드는 사주용어, 핵심 키워드에 적극 사용. 답변당 3~5개 허용\n'
   + '- 표(table) | 기호 구분선 --- 절대 금지\n'
   + '- HTML 태그 금지\n'
   + '- 시간대별 분석 금지 (아침/오전/점심 등)\n\n'
