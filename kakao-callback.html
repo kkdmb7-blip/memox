@@ -58,18 +58,20 @@ async function handleLogin() {
       return;
     }
 
+    const kakaoNumericId = userData.id; // 카카오 고유 숫자 ID (절대 변하지 않음)
+
     // 3. resolve-user로 프로필 조회/생성 (실패해도 로그인은 완료)
     try {
       const resolveRes = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name: nickname })
+        body: JSON.stringify({ email, name: nickname, kakao_id: kakaoNumericId })
       });
       const profile = await resolveRes.json();
       if (profile && !profile.error) {
         // 성공: 전체 데이터 저장
         localStorage.setItem('fortuna_kakao_user', JSON.stringify({
-          id: profile.id, email, name: nickname, profile
+          id: profile.id, email, name: nickname, kakao_id: kakaoNumericId, profile
         }));
         location.href = "/memox/";
         return;
@@ -78,7 +80,7 @@ async function handleLogin() {
 
     // resolve-user 실패 시: 최소 정보만 저장 후 이동
     // index.html에서 백그라운드 재시도
-    localStorage.setItem('fortuna_kakao_user', JSON.stringify({ email, name: nickname }));
+    localStorage.setItem('fortuna_kakao_user', JSON.stringify({ email, name: nickname, kakao_id: kakaoNumericId }));
     location.href = "/memox/";
 
   } catch (e) {
