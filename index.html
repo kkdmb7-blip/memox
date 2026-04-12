@@ -3768,8 +3768,16 @@ async function loadQimenDaily() {
       '</div>';
 
     wrap.onclick = function() {
-      var now = new Date(Date.now()+9*3600000);
-      var qy=now.getUTCFullYear(),qm=now.getUTCMonth()+1,qd=now.getUTCDate(),qh=now.getUTCHours(),qmi=now.getUTCMinutes();
+      var _now = new Date();
+      var _kstH = _now.getHours(), _kstM = _now.getMinutes();
+      var _doy = Math.floor((_now - new Date(_now.getFullYear(),0,0))/86400000);
+      var _B = 2*Math.PI*(_doy-81)/365;
+      var _eot = 9.87*Math.sin(2*_B)-7.53*Math.cos(_B)-1.5*Math.sin(_B);
+      var _tstMin = _kstH*60+_kstM-32+_eot;
+      if(_tstMin<0)_tstMin+=1440;
+      var qh=Math.floor(_tstMin/60)%24, qmi=Math.round(_tstMin%60);
+      var _kst = new Date(Date.now()+9*3600000);
+      var qy=_kst.getUTCFullYear(),qm=_kst.getUTCMonth()+1,qd=_kst.getUTCDate();
       var _g = (userProfile && userProfile.gender === 'F') ? 'female' : 'male';
       var url = 'https://picolab.kr/qimen.html?year='+qy+'&month='+qm+'&day='+qd+'&hour='+qh+'&minute='+qmi+'&type=siga&gender='+_g;
       if (userProfile && userProfile.birth_date) {
