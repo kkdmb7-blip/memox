@@ -3754,14 +3754,13 @@ async function loadQimenDaily() {
     }
 
     var color = GRADE_COLOR[grade] || '#9b8fb0';
-    var gradeLabel = (grade === '대길' || grade === '길') ? '길(吉)' : (grade === '흉' || grade === '대흉') ? '흉(凶)' : '평';
 
     var wrap = document.createElement('div');
     wrap.id = 'qimenDailyWrap';
     wrap.style.cssText = 'flex-shrink:0;margin:0 12px 6px;padding:10px 14px;border-radius:14px;background:linear-gradient(160deg,#1a1a2e,#16213e);border:1px solid rgba(167,139,250,0.2);cursor:pointer;position:relative;';
     wrap.innerHTML =
       '<div style="font-size:10px;color:rgba(167,139,250,0.55);letter-spacing:0.05em;font-weight:500;margin-bottom:4px;">🕐 지금 이 시간의 기운</div>' +
-      '<span style="position:absolute;top:10px;right:12px;font-size:12px;font-weight:600;color:' + color + ';">' + (doorNameMap[door]||door) + '門 · ' + gradeLabel + '</span>' +
+      '<span style="position:absolute;top:10px;right:12px;font-size:12px;font-weight:700;color:' + color + ';">' + grade + ' <span style="font-weight:400;font-size:10px;opacity:0.7;">· ' + (doorNameMap[door]||door) + '門</span></span>' +
       '<div style="font-size:14px;font-weight:300;color:#e8e0f0;letter-spacing:-0.01em;line-height:1.4;margin-bottom:4px;padding-right:80px;">' + keyword + '</div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;">' +
         '<span id="qimenCountdown" style="font-size:11px;color:#d4af37;opacity:0.6;letter-spacing:0.03em;"></span>' +
