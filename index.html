@@ -3750,6 +3750,7 @@ async function loadQimenDaily() {
 
     var chatMessages = document.getElementById('chatMessages');
     chatMessages.parentNode.insertBefore(wrap, chatMessages);
+    updateQimenCountdown();
   } catch(e) { console.warn('기문둔갑 일운 로드 실패', e.message); }
 }
 // 시가 포국은 2시간마다 바뀌므로 1시간마다 갱신
@@ -3782,7 +3783,6 @@ function updateQimenCountdown() {
 if (!window._qimenCountdownInterval) {
   window._qimenCountdownInterval = setInterval(updateQimenCountdown, 60 * 1000);
 }
-setTimeout(updateQimenCountdown, 300);
 
 async function loadDailyCard() {
   return; // 오늘의 운세 비활성화
