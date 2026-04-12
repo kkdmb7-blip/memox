@@ -3626,18 +3626,16 @@ async function loadQimenDaily() {
   if (!currentUser) return;
   var _kst = new Date(Date.now() + 9 * 3600000);
   var y = _kst.getUTCFullYear(), m = _kst.getUTCMonth() + 1, d = _kst.getUTCDate();
-  var kstH = _kst.getUTCHours(), kstM = _kst.getUTCMinutes();
-  // 진태양시 보정 (서울 경도 127° → -32분 보정 + 균시차)
-  var _now = new Date();
-  var doy = Math.floor((_now - new Date(_now.getFullYear(), 0, 0)) / 86400000);
-  var B = 2 * Math.PI * (doy - 81) / 365;
-  var eot = 9.87 * Math.sin(2*B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
-  var tstMin = kstH * 60 + kstM - 32 + eot;
-  if (tstMin < 0) tstMin += 1440;
-  if (tstMin >= 1440) tstMin -= 1440;
-  var h = Math.floor(tstMin / 60) % 24;
-  var mi = Math.floor(tstMin % 60);
-  window._qimenLoadedSiju = h % 2 === 0 ? h : h - 1;
+  // API는 KST 입력 후 내부에서 TST 변환 → KST 그대로 전송
+  var h = _kst.getUTCHours(), mi = _kst.getUTCMinutes();
+  // TST는 시주 변경 감지 전용
+  var _doy = Math.floor((_kst - new Date(_kst.getUTCFullYear(), 0, 0)) / 86400000);
+  var _B = 2 * Math.PI * (_doy - 81) / 365;
+  var _eot = 9.87 * Math.sin(2*_B) - 7.53 * Math.cos(_B) - 1.5 * Math.sin(_B);
+  var _tstMin = h * 60 + mi - 32 + _eot;
+  if (_tstMin < 0) _tstMin += 1440;
+  var _tstH = Math.floor(_tstMin / 60) % 24;
+  window._qimenLoadedSiju = _tstH % 2 === 0 ? _tstH : _tstH - 1;
 
   var existing = document.getElementById('qimenDailyWrap');
   if (existing) existing.remove();
@@ -3786,16 +3784,9 @@ async function loadQimenDaily() {
       '</div>';
 
     wrap.onclick = function() {
-      var _now = new Date();
-      var _kstH = _now.getHours(), _kstM = _now.getMinutes();
-      var _doy = Math.floor((_now - new Date(_now.getFullYear(),0,0))/86400000);
-      var _B = 2*Math.PI*(_doy-81)/365;
-      var _eot = 9.87*Math.sin(2*_B)-7.53*Math.cos(_B)-1.5*Math.sin(_B);
-      var _tstMin = _kstH*60+_kstM-32+_eot;
-      if(_tstMin<0)_tstMin+=1440;
-      var qh=Math.floor(_tstMin/60)%24, qmi=Math.round(_tstMin%60);
       var _kst = new Date(Date.now()+9*3600000);
       var qy=_kst.getUTCFullYear(),qm=_kst.getUTCMonth()+1,qd=_kst.getUTCDate();
+      var qh=_kst.getUTCHours(), qmi=_kst.getUTCMinutes();
       var _g = (userProfile && userProfile.gender === 'F') ? 'female' : 'male';
       var url = 'https://picolab.kr/qimen.html?year='+qy+'&month='+qm+'&day='+qd+'&hour='+qh+'&minute='+qmi+'&type=siga&gender='+_g;
       if (userProfile && userProfile.birth_date) {
