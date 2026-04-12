@@ -3572,6 +3572,29 @@ async function callDailyFortune() {
 
 
 // ── 기문둔갑 일운 ──────────────────────────────────────────────
+function updateQimenCountdown() {
+  var el = document.getElementById('qimenCountdown');
+  if (!el) return;
+  var now = new Date();
+  var kst = new Date(now.getTime() + 9*60*60*1000);
+  var h = kst.getUTCHours(), m = kst.getUTCMinutes();
+  var nextH = (h % 2 === 0) ? h + 2 : h + 1;
+  var minutesLeft = nextH * 60 - (h * 60 + m);
+  if (minutesLeft <= 0) minutesLeft = 120;
+  var text = minutesLeft >= 60
+    ? Math.floor(minutesLeft/60) + '시간 ' + (minutesLeft%60) + '분 후 갱신'
+    : minutesLeft + '분 후 갱신';
+  if (minutesLeft <= 10) {
+    el.textContent = '곧 갱신';
+    el.style.opacity = '1';
+    el.style.color = '#f5c842';
+  } else {
+    el.textContent = text;
+    el.style.opacity = '0.6';
+    el.style.color = '#d4af37';
+  }
+}
+
 async function loadQimenDaily() {
   if (!currentUser) return;
   var _kst = new Date(Date.now() + 9 * 3600000);
@@ -3758,28 +3781,6 @@ if (!window._qimenInterval) {
   window._qimenInterval = setInterval(function() { if (currentUser) loadQimenDaily(); }, 60 * 60 * 1000);
 }
 
-function updateQimenCountdown() {
-  var el = document.getElementById('qimenCountdown');
-  if (!el) return;
-  var now = new Date();
-  var kst = new Date(now.getTime() + 9*60*60*1000);
-  var h = kst.getUTCHours(), m = kst.getUTCMinutes();
-  var nextH = (h % 2 === 0) ? h + 2 : h + 1;
-  var minutesLeft = nextH * 60 - (h * 60 + m);
-  if (minutesLeft <= 0) minutesLeft = 120;
-  var text = minutesLeft >= 60
-    ? Math.floor(minutesLeft/60) + '시간 ' + (minutesLeft%60) + '분 후 갱신'
-    : minutesLeft + '분 후 갱신';
-  if (minutesLeft <= 10) {
-    el.textContent = '곧 갱신';
-    el.style.opacity = '1';
-    el.style.color = '#f5c842';
-  } else {
-    el.textContent = text;
-    el.style.opacity = '0.6';
-    el.style.color = '#d4af37';
-  }
-}
 if (!window._qimenCountdownInterval) {
   window._qimenCountdownInterval = setInterval(updateQimenCountdown, 60 * 1000);
 }
