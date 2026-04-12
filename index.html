@@ -3730,7 +3730,10 @@ async function loadQimenDaily() {
       '<div style="font-size:10px;color:rgba(167,139,250,0.55);letter-spacing:0.05em;font-weight:500;margin-bottom:4px;">🕐 지금 이 시간의 기운</div>' +
       '<span style="position:absolute;top:10px;right:12px;font-size:12px;font-weight:600;color:' + color + ';">' + (doorNameMap[door]||door) + '門 · ' + gradeLabel + '</span>' +
       '<div style="font-size:14px;font-weight:300;color:#e8e0f0;letter-spacing:-0.01em;line-height:1.4;margin-bottom:4px;padding-right:80px;">' + keyword + '</div>' +
-      '<span style="font-size:10px;color:rgba(167,139,250,0.5);letter-spacing:0.03em;">자세히 보기 →</span>';
+      '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+        '<span style="font-size:10px;color:rgba(167,139,250,0.5);letter-spacing:0.03em;">자세히 보기 →</span>' +
+        '<span id="qimenCountdown" style="font-size:11px;color:#d4af37;opacity:0.6;letter-spacing:0.03em;"></span>' +
+      '</div>';
 
     wrap.onclick = function() {
       var now = new Date(Date.now()+9*3600000);
@@ -3753,6 +3756,33 @@ async function loadQimenDaily() {
 if (!window._qimenInterval) {
   window._qimenInterval = setInterval(function() { if (currentUser) loadQimenDaily(); }, 60 * 60 * 1000);
 }
+
+function updateQimenCountdown() {
+  var el = document.getElementById('qimenCountdown');
+  if (!el) return;
+  var now = new Date();
+  var kst = new Date(now.getTime() + 9*60*60*1000);
+  var h = kst.getUTCHours(), m = kst.getUTCMinutes();
+  var nextH = (h % 2 === 0) ? h + 2 : h + 1;
+  var minutesLeft = nextH * 60 - (h * 60 + m);
+  if (minutesLeft <= 0) minutesLeft = 120;
+  var text = minutesLeft >= 60
+    ? Math.floor(minutesLeft/60) + '시간 ' + (minutesLeft%60) + '분 후 갱신'
+    : minutesLeft + '분 후 갱신';
+  if (minutesLeft <= 10) {
+    el.textContent = '곧 갱신';
+    el.style.opacity = '1';
+    el.style.color = '#f5c842';
+  } else {
+    el.textContent = text;
+    el.style.opacity = '0.6';
+    el.style.color = '#d4af37';
+  }
+}
+if (!window._qimenCountdownInterval) {
+  window._qimenCountdownInterval = setInterval(updateQimenCountdown, 60 * 1000);
+}
+setTimeout(updateQimenCountdown, 300);
 
 async function loadDailyCard() {
   return; // 오늘의 운세 비활성화
