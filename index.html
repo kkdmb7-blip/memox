@@ -1247,7 +1247,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.35.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.36.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5952,8 +5952,8 @@ for (var i = 1; i <= 6; i++) {
 
   var systemPrompt = personaPrompt + outputControl + '\n\n【절대 규칙 - 반드시 준수】\n' + '오늘 날짜: ' + dateStr + '\n' + '올해 년건: ' + yearGanji + '년\n' + '이번 달 월건: ' + monthGanji + '월\n' + '오늘 일진: ' + todayGanji + '일\n' + '⚠️ 위 년건/월건/일진은 시스템이 직접 계산한 정확한 값이다.\n' + '절대 스스로 계산하거나 추측하지 말 것.\n' + '반드시 위 값만 사용할 것.\n\n' +
 '【향후 6개월 월건 - 월운 질문 시 반드시 이 표를 참고하라】\n' + futureMonthGanji + '\n' +
-'【과거 60일 일진】\n' + pastGanji + '\n' +
-'【향후 60일 일진 - 내일부터 시작, 오늘(' + dateStr + ')은 위 일진 참고】\n' + futureGanji + '\n' +
+'【과거 3일 일진】\n' + pastGanji + '\n' +
+'【향후 3일 일진 - 내일부터 시작, 오늘(' + dateStr + ')은 위 일진 참고】\n' + futureGanji + '\n' +
     '【내담자 정보】\n' +
     '이름: ' + (profile.name || '미상') + '\n' +
     '성별: ' + (profile.gender === 'M' ? '남성' : '여성') + '\n' +
