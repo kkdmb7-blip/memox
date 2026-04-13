@@ -1247,7 +1247,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.36.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.36.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6098,12 +6098,35 @@ for (var i = 1; i <= 6; i++) {
   var _daeun = currentBigLuck || '현재 대운';
 
   // 5. [SMART] 질문 주제 자동 분류 → 시스템 프롬프트에 주입
+  var _classified = null;
   if (USE_SMART_CHAT) {
-    var _classified = _smartClassifyTopic(userMsg);
+    _classified = _smartClassifyTopic(userMsg);
     if (_classified) {
       systemPrompt = '[질문 분류] 주제: ' + _classified.topic + ' > 상황: ' + _classified.situation + '\n이 분류를 참고하여 해당 주제에 집중한 답변을 제공하세요.\n\n' + systemPrompt;
     }
   }
+
+  // 6. 답변 패턴 자동 선택 → 감정 우선, 토픽 기반 매핑
+  var _emotionKeywords = ['힘들','슬프','무서','불안','외로','지쳐','막막','모르겠','속상','답답','걱정','우울','두려','아프','힘내','눈물','포기','지겨','지쳤'];
+  var _isEmotional = _emotionKeywords.some(function(kw){ return userMsg.indexOf(kw) !== -1; });
+  var _patternMap = {
+    '오늘운세':     'B. 직구형: 결론 먼저 → 이유 → 행동 제안',
+    '직업커리어':   'B. 직구형: 결론 먼저 → 이유 → 행동 제안',
+    '재물투자':     'B. 직구형: 결론 먼저 → 이유 → 행동 제안',
+    '연애결혼':     'C. 질문형: 핵심 질문으로 되돌리기 → 사용자가 스스로 답을 찾게 유도',
+    '가족인간관계': 'C. 질문형: 핵심 질문으로 되돌리기 → 사용자가 스스로 답을 찾게 유도',
+    '인생운명':     'D. 이야기형: 비유나 예시로 시작 → 사용자 상황에 연결',
+    '건강':         'D. 이야기형: 비유나 예시로 시작 → 사용자 상황에 연결'
+  };
+  var _responsePattern;
+  if (_isEmotional) {
+    _responsePattern = 'A. 공감형: 감정을 먼저 인정하고 → 사주 근거를 비유로 → 구체적 조언';
+  } else if (_classified && _patternMap[_classified.topic]) {
+    _responsePattern = _patternMap[_classified.topic];
+  } else {
+    _responsePattern = 'B. 직구형: 결론 먼저 → 이유 → 행동 제안';
+  }
+  systemPrompt = '[이번 답변 패턴] 반드시 아래 패턴으로만 답변하세요:\n' + _responsePattern + '\n\n' + systemPrompt;
   systemPrompt = systemPrompt
     .replace(/{이름}/g, _pName)
     .replace(/{일간}/g, _ilgan || '일간')
@@ -6146,13 +6169,6 @@ for (var i = 1; i <= 6; i++) {
       p2 += '- 사주 근거는 문장 속에 자연스럽게 녹이세요.\n';
       p2 += '- 격국 이름(양인격, 정관격 등)을 직접 언급하지 마세요.\n';
       p2 += '- 부정적 질문("포기하고 싶지 않아요?" "힘들지 않아요?")은 금지. 대신 긍정형으로 물어보세요("어디까지 진행됐어요?" "어떤 부분이 재미있어요?")\n';
-      p2 += '\n## 응답 스타일 다양화 (매번 다른 패턴으로)\n';
-      p2 += '- 매번 같은 구조로 답하지 마세요. 아래 패턴을 번갈아 사용하세요:\n';
-      p2 += '  A. 공감형: 감정 인정 → 사주 근거를 비유로 → 구체적 조언\n';
-      p2 += '  B. 직구형: 결론 먼저 → 이유 → 행동 제안\n';
-      p2 += '  C. 질문형: 핵심 질문으로 되돌리기 → 사용자가 스스로 답을 찾게 유도\n';
-      p2 += '  D. 이야기형: 비유나 예시로 시작 → 사용자 상황에 연결\n';
-      p2 += '- 직전 응답과 같은 패턴을 연속 사용하지 마세요.\n';
       p2 += '- 답변 길이는 5~8문장이 적당합니다.\n';
       p2 += '- 마지막에 질문을 넣되, 매번 넣지는 마세요. 3번 중 2번 정도.\n';
     }
