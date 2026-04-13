@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "kr.picolab.fortuna",
+    "sha256_cert_fingerprints": [
+      "89:F4:0B:21:82:35:A4:57:D8:8A:CE:A2:E5:A5:8B:9B:9C:B0:A7:EB:64:61:E9:88:96:86:5F:E8:11:06:6E:52"
+    ]
+  }
+}]
