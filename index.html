@@ -7170,9 +7170,12 @@ function toast(msg) {
 
 
 // ── PWA 설치 배너 ─────────────────────────────────────────────
+// TWA 또는 standalone으로 이미 실행 중이면 설치 배너 완전 차단
+var _isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 var deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
+  if (_isStandalone) return; // TWA/설치된 PWA면 무시
   deferredPrompt = e;
   showInstallBanner();
 });
@@ -7437,10 +7440,11 @@ function showPwaIosModal() {
     return;
   }
 
-  // beforeinstallprompt 지원 브라우저 (Chrome 등)
+  // beforeinstallprompt 지원 브라우저 (Chrome 등) — TWA/standalone이면 차단
   var _deferredPrompt = null;
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
+    if (_isStandalone) return;
     _deferredPrompt = e;
     textEl.innerHTML = '📲 홈 화면에 추가하면 앱처럼 빠르게 실행할 수 있어요!';
     installBtn.textContent = '홈 화면에 추가하기';
@@ -7542,6 +7546,7 @@ function closePwaChatBanner() {
 
 window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
+  if (_isStandalone) return;
   _pwaChatInstallPrompt = e;
 });
 window.addEventListener('appinstalled', function() {
