@@ -1205,7 +1205,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.37.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.37.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1415,23 +1415,22 @@ async function initAuth() {
         if (nameInput) nameInput.value = parsed.name;
       }
       if (parsed.profile && parsed.profile.birth_date) {
-        // resolve-user로 최신 ID 확인 (프로필 초기화 후 ID 변경 대응)
-        try {
-          var _rvRes = await fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: parsed.email, name: parsed.name, kakao_id: parsed.kakao_id })
-          });
-          var _rvData = await _rvRes.json();
+        // 캐시된 프로필로 즉시 화면 표시 (resolve-user는 백그라운드)
+        currentUser = { id: parsed.id, email: parsed.email, provider: 'kakao' };
+        applyProfile(parsed.profile);
+        // 백그라운드에서 ID 변경 확인 (화면 표시 블로킹 없음)
+        fetch('https://fortuna-silk.vercel.app/api/resolve-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: parsed.email, name: parsed.name, kakao_id: parsed.kakao_id })
+        }).then(function(r) { return r.json(); }).then(function(_rvData) {
           if (_rvData && _rvData.id && _rvData.id !== parsed.id) {
-            // ID가 변경됨 — 캐시 갱신
             parsed.id = _rvData.id;
             if (_rvData.birth_date) parsed.profile = _rvData;
             localStorage.setItem('fortuna_kakao_user', JSON.stringify(parsed));
+            currentUser.id = _rvData.id;
           }
-        } catch(e) { /* 실패 시 기존 캐시 사용 */ }
-        currentUser = { id: parsed.id, email: parsed.email, provider: 'kakao' };
-        applyProfile(parsed.profile);
+        }).catch(function() {});
         return;
       } else if (parsed.profile) {
         currentUser = { id: parsed.id, email: parsed.email, provider: 'kakao' };
@@ -3966,26 +3965,6 @@ function startDailyChat(summary) {
 
 async function loadChatHistory() {
   var res;
-  if (currentUser && currentUser.provider === 'kakao') {
-    // session_id 없이 최신 메시지 1개 먼저 조회해서 최근 session_id 동기화
-    var latestR = await fetch('https://fortuna-silk.vercel.app/api/messages?user_id=' + currentUser.id);
-    var latestJson = await latestR.json();
-    var latestMsgs = latestJson.messages || [];
-    if (latestMsgs.length > 0 && latestMsgs[0].session_id) {
-      var dbSid = latestMsgs[0].session_id;
-      if (dbSid !== currentSessionId) {
-        currentSessionId = dbSid;
-        localStorage.setItem('memox_session_id', currentSessionId);
-      }
-    }
-    var msgs = latestMsgs.filter(function(m) { return m.session_id === currentSessionId; }).reverse();
-    chatHistory = msgs.map(function(m) {
-      var dateTag = m.created_at ? '[' + m.created_at.slice(0,10) + '] ' : '';
-      return { role: m.role, content: dateTag + m.content, created_at: m.created_at };
-    });
-    renderChatHistory();
-    return;
-  }
   // 다른 기기에서 접속해도 최근 대화를 불러오기 위해 DB에서 최신 session_id 우선 조회
   var latestRes = await sb.from('chat_messages')
     .select('session_id')
