@@ -1247,7 +1247,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.36.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.36.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -3617,6 +3617,8 @@ function updateQimenCountdown() {
 
 async function loadQimenDaily() {
   if (!currentUser) return;
+  if (window._qimenLoading) return;
+  window._qimenLoading = true;
   var _kst = new Date(Date.now() + 9 * 3600000);
   var y = _kst.getUTCFullYear(), m = _kst.getUTCMonth() + 1, d = _kst.getUTCDate();
   // API는 KST 입력 후 내부에서 TST 변환 → KST 그대로 전송
@@ -3799,9 +3801,12 @@ async function loadQimenDaily() {
     };
 
     var chatMessages = document.getElementById('chatMessages');
+    var dup = document.getElementById('qimenDailyWrap');
+    if (dup) dup.remove();
     chatMessages.parentNode.insertBefore(wrap, chatMessages);
     updateQimenCountdown();
   } catch(e) { console.warn('기문둔갑 일운 로드 실패', e.message); }
+  finally { window._qimenLoading = false; }
 }
 // 시가 포국은 2시간마다 바뀌므로 1시간마다 갱신
 if (!window._qimenInterval) {
