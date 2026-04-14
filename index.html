@@ -5829,9 +5829,11 @@ for (var i = 1; i <= 6; i++) {
   var _sajuDataBlock =
     '【사주 핵심 정보】\n' +
     '사주 기둥: ' + (function(p){ if(!p) return JSON.stringify(saju); if(typeof p==='object') return '년주 '+(p.year||'')+' / 월주 '+(p.month||'')+' / 일주 '+(p.day||'')+' / 시주 '+(p.hour||''); return String(p); })(saju.saju_pillars || saju.pillars) + '\n' +
+    '일간(일주 첫 글자 = 타고난 오행): ' + (function(p){ if(typeof p==='string'){ var m=p.match(/(\S+)일/); return m?m[1][0]:'미상'; } if(p&&typeof p==='object') return (p.day||'')[0]||'미상'; return '미상'; })(saju.saju_pillars || saju.pillars) + '\n' +
     '띠: ' + (saju.saju_zodiac || saju.zodiac || '미상') + '\n' +
     '신강/신약: ' + (saju.saju_strength || saju.strength || '미상') + '\n' +
     '격국: ' + (saju.saju_geokguk || saju.geokguk || '미상') + '\n' +
+    '용신(부족해서 채워야 할 기운, 일간 오행과 다름): ' + (saju.saju_yongshin_primary || saju.saju_yongshin_full && saju.saju_yongshin_full.primary_kor || '미상') + '\n' +
     '【오행 비율】\n' +
     '목(木): ' + (fivePct.wood || 0) + '% / 화(火): ' + (fivePct.fire || 0) + '% / 토(土): ' + (fivePct.earth || 0) + '% / 금(金): ' + (fivePct.metal || 0) + '% / 수(水): ' + (fivePct.water || 0) + '%\n\n' +
     '【대운 흐름】\n' +
