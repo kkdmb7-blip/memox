@@ -1899,7 +1899,6 @@ function applyProfile(profile) {
       }, 600);
     }
     loadDailyCard();
-    loadQuoteCard();
     loadQimenDaily();
     // [SMART] 백그라운드 prefetch
     setTimeout(function() { _smartPrefetch(profile); }, 1500);
@@ -3785,52 +3784,6 @@ async function loadDailyCard() {
   } catch(e) {
     console.warn('데일리 카드 오류:', e);
   }
-}
-
-// ── 오늘의 명언 카드 ──────────────────────────────────────────────
-async function loadQuoteCard() {
-  var today = getKSTDate();
-  if (localStorage.getItem('fortuna_quote_dismissed') === today) return;
-  try {
-    var res = await fetch('https://fortuna-silk.vercel.app/api/daily-quote');
-    if (!res.ok) return;
-    var data = await res.json();
-    if (data.quote) renderQuoteCard(data);
-  } catch(e) {}
-}
-
-function renderQuoteCard(data) {
-  var existing = document.getElementById('quoteCardWrap');
-  if (existing) existing.remove();
-  if (!data || !data.quote) return;
-
-  var wrap = document.createElement('div');
-  wrap.id = 'quoteCardWrap';
-  wrap.style.cssText = 'flex-shrink:0;margin:0 0 8px;';
-
-  wrap.innerHTML =
-    '<div style="border-radius:20px;background:linear-gradient(160deg,#0f0a1e 0%,#1a1035 50%,#0d1a2e 100%);border:1px solid rgba(212,175,55,0.2);padding:16px 18px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
-        '<span style="font-size:10px;color:rgba(212,175,55,0.5);letter-spacing:0.12em;text-transform:uppercase;">✦ 오늘의 우주 메시지</span>' +
-        '<button onclick="dismissQuoteCard()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:16px;cursor:pointer;line-height:1;padding:2px 4px;">✕</button>' +
-      '</div>' +
-      '<div style="text-align:center;padding:4px 8px 12px;">' +
-        '<div style="font-size:18px;margin-bottom:10px;">✦</div>' +
-        '<p style="font-size:14px;font-style:italic;color:#e8e0f0;line-height:1.7;margin:0 0 8px;font-family:\'Noto Serif KR\',serif;">&ldquo;' + escHtml(data.quote) + '&rdquo;</p>' +
-        '<p style="font-size:11px;color:rgba(212,175,55,0.6);margin:0 0 12px;letter-spacing:0.05em;">— ' + escHtml(data.source || '') + '</p>' +
-        (data.message ? '<p style="font-size:12px;color:rgba(200,190,230,0.8);line-height:1.6;margin:0;background:rgba(212,175,55,0.06);border-radius:10px;padding:10px 12px;">' + escHtml(data.message) + '</p>' : '') +
-      '</div>' +
-    '</div>';
-
-  var chatMessages = document.getElementById('chatMessages');
-  if (chatMessages) chatMessages.parentNode.insertBefore(wrap, chatMessages);
-}
-
-function dismissQuoteCard() {
-  var today = getKSTDate();
-  localStorage.setItem('fortuna_quote_dismissed', today);
-  var el = document.getElementById('quoteCardWrap');
-  if (el) el.remove();
 }
 
 function renderDailyCard(card) {
@@ -7567,9 +7520,7 @@ if ('serviceWorker' in navigator) {
     if (e.data && e.data.type === 'OPEN_DAILY_CARD') {
       // 데일리 카드 닫기 기록 지우고 다시 로드
       localStorage.removeItem('fortuna_daily_dismissed');
-      localStorage.removeItem('fortuna_quote_dismissed');
       loadDailyCard();
-      loadQuoteCard();
       loadQimenDaily();
     }
   });
@@ -7583,9 +7534,7 @@ document.addEventListener('visibilitychange', function() {
     if (lastDate && lastDate !== todayKST) {
       // 날짜가 바뀌었으면 dismissed 초기화 후 새 운세 로드
       localStorage.removeItem('fortuna_daily_dismissed');
-      localStorage.removeItem('fortuna_quote_dismissed');
       loadDailyCard();
-      loadQuoteCard();
       loadQimenDaily();
     }
   }
