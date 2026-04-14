@@ -203,11 +203,6 @@
   .chat-header-info { flex:1; min-width:0; overflow:hidden; max-height:60px; white-space:nowrap; }
   .chat-header-name { font-size:14px; font-weight:700; }
   .chat-header-sub { font-size:11px; color:var(--text3); display:none; }
-  #streakBadge {
-    display:none; align-items:center; gap:3px;
-    font-size:11px; color:#d4af37; font-weight:600;
-    margin-top:2px; letter-spacing:0.02em;
-  }
   .chat-header-actions { display:flex; gap:4px; flex-shrink:0; }
 
   #orbBadge { display:flex; align-items:center; gap:4px; font-size:12px; font-weight:700; padding:4px 10px; border-radius:12px; background:rgba(80,160,255,0.1); border:1px solid rgba(80,160,255,0.25); cursor:pointer; flex-shrink:0; color:#7ac4ff; text-decoration:none; transition:border-color 0.2s; }
@@ -1247,7 +1242,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.36.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.36.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1860,7 +1855,7 @@ function applyProfile(profile) {
     updateChatHeader();
     loadOrbBalance();
     handleReferralOnLoad();
-    updateStreak();
+
     loadUserContext();
     loadMoonPhase();
     loadWeekAgoFortune();
@@ -2781,92 +2776,6 @@ function getKSTDateOffset(days) {
   return d.toISOString().slice(0, 10);
 }
 
-async function updateStreak() {
-  var today = getKSTDate();
-  var storageKey = 'fortuna_streak_' + (currentUser ? currentUser.id : 'guest');
-  var streakData = JSON.parse(localStorage.getItem(storageKey) || '{"streak":1,"last_date":""}');
-
-  if (streakData.last_date === today) {
-    renderStreakBadge(streakData.streak);
-    return;
-  }
-
-  var yesterday = getKSTDate(new Date(Date.now() - 86400000));
-  if (streakData.last_date === yesterday) {
-    streakData.streak += 1;
-  } else if (streakData.last_date !== today) {
-    streakData.streak = 1;
-  }
-
-  streakData.max_streak = Math.max(streakData.streak, streakData.max_streak || 0);
-  streakData.last_date = today;
-  localStorage.setItem(storageKey, JSON.stringify(streakData));
-  renderStreakBadge(streakData.streak);
-  showStreakMilestone(streakData.streak);
-  scheduleStreakReminder(streakData.streak);
-
-  if (currentUser) {
-    try {
-      var sb = window.supabase.createClient(SB_URL, SB_KEY);
-      sb.from('user_streaks').upsert({
-        user_id: currentUser.id,
-        streak_count: streakData.streak,
-        last_visit: today,
-        max_streak: streakData.max_streak
-      }, { onConflict: 'user_id' });
-    } catch(e) {}
-  }
-}
-
-function renderStreakBadge(streak) {
-  var el = document.getElementById('streakBadge');
-  if (!el) return;
-  if (streak < 2) { el.style.display = 'none'; return; }
-  el.style.display = 'inline-flex';
-  el.textContent = '🔥 ' + streak + '일 연속';
-}
-
-function showStreakMilestone(streak) {
-  var msgs = {
-    7:   { icon: '🔥', text: '7일 연속! 운명의 흐름을 타고 있어요<br><span style="font-size:13px;color:#a78bfa;">🎁 질문권 1개 지급</span>' },
-    14:  { icon: '⚡', text: '14일 연속! 두 주를 꽉 채웠어요<br><span style="font-size:13px;color:#a78bfa;">🎁 질문권 1개 지급</span>' },
-    30:  { icon: '✨', text: '30일 연속! 포르투나와 깊은 인연이네요<br><span style="font-size:13px;color:#a78bfa;">🎁 질문권 1개 지급</span>' },
-    100: { icon: '👑', text: '100일 연속! 당신은 진짜 운명을 읽는 사람' }
-  };
-  var m = msgs[streak];
-  if (!m) return;
-  var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);z-index:10001;display:flex;align-items:center;justify-content:center;';
-  var box = document.createElement('div');
-  box.style.cssText = 'background:linear-gradient(160deg,#1a1a2e,#16213e);border:1px solid rgba(212,175,55,0.5);border-radius:24px;padding:36px 28px;text-align:center;width:min(300px,calc(100vw-40px));box-shadow:0 8px 48px rgba(212,175,55,0.2);';
-  box.innerHTML =
-    '<div style="font-size:52px;margin-bottom:14px;">' + m.icon + '</div>' +
-    '<div style="font-size:20px;font-weight:800;color:#d4af37;margin-bottom:10px;">' + streak + '일 연속!</div>' +
-    '<div style="font-size:14px;color:#e5e7eb;line-height:1.7;">' + m.text + '</div>';
-  var btn = document.createElement('button');
-  btn.textContent = '확인';
-  btn.style.cssText = 'margin-top:24px;padding:12px 36px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;';
-  btn.addEventListener('click', function() { overlay.remove(); });
-  box.appendChild(btn);
-  overlay.appendChild(box);
-  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
-  document.body.appendChild(overlay);
-}
-
-function scheduleStreakReminder(streak) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  var now = new Date();
-  var target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 21, 0, 0);
-  if (now >= target) return; // 오늘 21시 이미 지났으면 스킵
-  var delay = target - now;
-  clearTimeout(window._fortunaStreakTimer);
-  window._fortunaStreakTimer = setTimeout(function() {
-    if (Notification.permission !== 'granted') return;
-    var name = (userProfile && userProfile.name) ? userProfile.name : '';
-    var body = streak + '일 스트릭 지키고 있어요. 내일도 올 거죠?';
-    new Notification('🔥 포르투나', { body: body, icon: '/icon.svg', tag: 'fortuna-streak', renotify: true });
-  }, delay);
-}
 
 
 // ── 궁합 카드 생성 ────────────────────────────────────────────────────
