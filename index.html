@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5295,7 +5295,7 @@ function convertChanja(str) {
   return String(str).split('').map(function(c){ return CHANJA_MAP[c] || c; }).join('');
 }
 
-var consultState = { category:'', question:'', timeOrTarget:'', freeInput:'' };
+var consultState = { category:'', question:'', timeOrTarget:'', context:'', freeInput:'' };
 var _activeQCard = null; // 현재 활성 카드 DOM
 
 var _QCAT_ICONS = {
@@ -5319,23 +5319,33 @@ var QCAT = [
   { id:'total',    label:'전체 운세' },
 ];
 var QSUB = {
-  money:    ['돈 들어올까?','투자 타이밍은?','지출 조심해야 해?','큰돈 생길까?','재물운 언제 와?'],
-  career:   ['이직 타이밍은?','승진 될까?','새 일 시작해도 될까?','지금 직장 계속 다닐까?','사업 해도 될까?'],
-  love:     ['지금 이 사람 맞아?','이별할까?','새 인연 올까?','관계가 발전할까?','고백해도 될까?'],
-  family:   ['가족 갈등 해결될까?','부모님 건강은?','자녀 걱정되는 것','가족 운은?'],
-  relation: ['이 사람 믿어도 돼?','갈등 어떻게 해?','관계 끊어야 할까?','화해될까?'],
-  health:   ['컨디션 언제 좋아져?','조심해야 할 것은?','에너지 올리는 법','건강운은?'],
-  invest:   ['지금 살까 팔까?','이 종목 괜찮아?','손절해야 해?','언제 반등해?','부동산 타이밍은?'],
-  total:    ['오늘 운세는?','이번 달 운세는?','올해 운세는?','지금 내 운의 흐름은?'],
+  money:    ['수입이 줄고 있어요','큰 지출이 생겼어요','빌린/빌려준 돈 걱정','투자·부업 고민 중','재물운 전반이 궁금해요'],
+  career:   ['이직을 진지하게 고민 중','지금 회사가 너무 힘들어요','창업·사업 시작할까요?','승진·평가 결과가 걱정돼요','커리어 방향을 모르겠어요'],
+  love:     ['지금 이 사람과 될까요?','고백·프러포즈 타이밍은?','관계가 멀어지는 것 같아요','새 인연이 생길까요?','이별 후 어떻게 해야 할까요?'],
+  family:   ['가족 간 갈등이 심해요','부모님·가족 건강이 걱정돼요','자녀 문제로 고민이에요','가족에게 큰 결정이 있어요'],
+  relation: ['이 사람을 믿어도 될까요?','직장 내 관계가 힘들어요','갈등을 어떻게 풀어야 할까요?','관계를 끊어야 할지 모르겠어요'],
+  health:   ['요즘 몸 상태가 좋지 않아요','만성 피로·스트레스가 심해요','특정 부위가 걱정돼요','건강운 전반이 궁금해요'],
+  invest:   ['지금 살까 말까 고민 중','이미 투자해서 불안해요','손해보는 중이에요','수익 중인데 언제 팔까요?','부동산 타이밍이 궁금해요'],
+  total:    ['오늘 전반적인 운세가 궁금해요','이번 달 운의 흐름은?','올해 큰 그림이 궁금해요','지금 내 상황 전체를 봐주세요'],
 };
 var QSTEP3 = {
   money:    { label:'시점은?', items:['지금 당장','이번 주','이번 달','올해'] },
   career:   { label:'시점은?', items:['이번 주','이번 달','올해'] },
-  love:     { label:'대상은?', items:['썸','연인','전 애인','짝사랑'] },
+  love:     { label:'대상은?', items:['썸 중인 사람','사귀는 연인','전 애인','짝사랑'] },
   family:   { label:'대상은?', items:['부모님','배우자','자녀','형제자매'] },
   relation: { label:'대상은?', items:['직장동료','친구','지인','가족'] },
-  health:   { label:'시점은?', items:['지금','이번 주','이번 달'] },
+  health:   { label:'시점은?', items:['지금 당장','이번 주','이번 달'] },
   invest:   { label:'시점은?', items:['오늘','이번 주','이번 달'] },
+  total:    null,
+};
+var QSTEP4 = {
+  money:    { label:'지금 마음이 어때요?', items:['많이 불안해요','결정을 앞두고 있어요','이미 일어난 일이에요','그냥 궁금해서요'] },
+  career:   { label:'지금 마음이 어때요?', items:['많이 힘들고 지쳐요','결정을 앞두고 있어요','이미 행동했어요','그냥 궁금해서요'] },
+  love:     { label:'지금 마음이 어때요?', items:['설레고 좋아요','많이 걱정돼요','많이 힘들고 아파요','냉정하게 판단하고 싶어요'] },
+  family:   { label:'지금 마음이 어때요?', items:['많이 걱정돼요','속상하고 힘들어요','빨리 해결하고 싶어요','그냥 궁금해서요'] },
+  relation: { label:'지금 마음이 어때요?', items:['많이 상처받았어요','답답하고 화가 나요','어떻게 해야 할지 모르겠어요','차분하게 알고 싶어요'] },
+  health:   { label:'지금 상황은?', items:['많이 안 좋아요','조금 걱정돼요','회복 중이에요','예방 차원이에요'] },
+  invest:   { label:'지금 마음이 어때요?', items:['불안하고 초조해요','냉정하게 판단하고 싶어요','이미 많이 잃었어요','기회를 보고 있어요'] },
   total:    null,
 };
 var QCAT_LABEL = {};
@@ -5346,7 +5356,7 @@ function onQFreeInput(val) {
 }
 
 function initQPanel() {
-  consultState = { category:'', question:'', timeOrTarget:'', freeInput:'' };
+  consultState = { category:'', question:'', timeOrTarget:'', context:'', freeInput:'' };
   _activeQCard = null;
   appendQCard();
 }
@@ -5395,7 +5405,7 @@ function appendQCard() {
       btn.onclick = function() { selectQSub(sub, card); };
       btnsDiv.appendChild(btn);
     });
-  } else {
+  } else if (!consultState.timeOrTarget) {
     var step3 = QSTEP3[consultState.category];
     if (!step3) { sendQPanel(); return; }
     labelEl.textContent = step3.label;
@@ -5405,6 +5415,18 @@ function appendQCard() {
       btn.className = 'qbtn';
       btn.textContent = item;
       btn.onclick = function() { selectQStep3(item, card); };
+      btnsDiv.appendChild(btn);
+    });
+  } else {
+    var step4 = QSTEP4[consultState.category];
+    if (!step4) { sendQPanel(); return; }
+    labelEl.textContent = step4.label;
+    btnsDiv.classList.add('flex-wrap');
+    step4.items.forEach(function(item) {
+      var btn = document.createElement('button');
+      btn.className = 'qbtn';
+      btn.textContent = item;
+      btn.onclick = function() { selectQStep4(item, card); };
       btnsDiv.appendChild(btn);
     });
   }
@@ -5468,6 +5490,14 @@ function selectQStep3(item, card) {
   appendUserBubble(item);
   consultState.timeOrTarget = item;
   _activeQCard = null;
+  appendQCard();
+}
+
+function selectQStep4(item, card) {
+  collapseCard(card, item);
+  appendUserBubble(item);
+  consultState.context = item;
+  _activeQCard = null;
   sendQPanel();
 }
 
@@ -5497,6 +5527,7 @@ function buildConsultPrompt() {
   if (s.category) parts.push('상담주제: ' + QCAT_LABEL[s.category]);
   if (s.question) parts.push('세부질문: ' + s.question);
   if (s.timeOrTarget) parts.push('시점/대상: ' + s.timeOrTarget);
+  if (s.context) parts.push('현재마음/상황: ' + s.context);
   parts.push('추가입력: ' + (s.freeInput || '없음'));
   if (iljin) parts.push('오늘일진: ' + iljin);
   if (ilgan) parts.push('일간: ' + ilgan);
@@ -5510,6 +5541,7 @@ function buildDisplayText() {
   if (s.question) parts.push(s.question);
   else if (s.category) parts.push(QCAT_LABEL[s.category]);
   if (s.timeOrTarget) parts.push(s.timeOrTarget);
+  if (s.context) parts.push(s.context);
   if (s.freeInput) parts.push(s.freeInput);
   return parts.join(' · ') || s.freeInput;
 }
@@ -5533,7 +5565,7 @@ async function sendQPanel() {
 
   var input = document.getElementById('chatInput');
   input.value = promptText;
-  consultState = { category:'', question:'', timeOrTarget:'', freeInput:'' };
+  consultState = { category:'', question:'', timeOrTarget:'', context:'', freeInput:'' };
   await sendMessage(displayText);
   input.value = '';
   autoResize(input);
