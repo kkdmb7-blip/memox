@@ -1249,7 +1249,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.42.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.42.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4069,8 +4069,11 @@ function showWelcome() {
   var sun = astro.sun || '';
   var pillars = saju.saju_pillars || '';
   var ilgan = '';
-  if (pillars && pillars.day) {
-    ilgan = pillars.day.split('')[0] || '';
+  if (pillars && typeof pillars === 'string') {
+    var _wm = pillars.match(/(\S+)일/);
+    ilgan = _wm ? _wm[1][0] : '';
+  } else if (pillars && pillars.day) {
+    ilgan = (pillars.day || '')[0] || '';
   }
   var welcome = name + '님, 안녕하세요! 🔮\n\n' +
     (ilgan ? name + '님은 **' + ilgan + '일간** — ' : '') +
@@ -5438,9 +5441,12 @@ function buildConsultPrompt() {
   } catch(e) {}
   console.log('[일간추출] buildConsultPrompt ilgan:', ilgan);
   var yongsin = '';
-  try { yongsin = convertChanja((profile.saju_data && profile.saju_data.yongshin && profile.saju_data.yongshin.primary) || ''); } catch(e) {}
+  try {
+    var _sd = profile.saju_data || {};
+    yongsin = convertChanja(_sd.saju_yongshin_primary || (_sd.saju_yongshin_full && _sd.saju_yongshin_full.primary_kor) || (_sd.yongshin && _sd.yongshin.primary_kor) || '');
+  } catch(e) {}
   var iljin = '';
-  try { iljin = window._todayGanji || ''; } catch(e) {}
+  try { iljin = (typeof getTodayGanji === 'function' ? getTodayGanji() : '') || window._todayGanji || ''; } catch(e) {}
 
   var s = consultState;
   var parts = [];
