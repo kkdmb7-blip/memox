@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6482,6 +6482,11 @@ for (var i = 1; i <= 6; i++) {
         yongshin_secondary: _fcElKo((saju.saju_johu && saju.saju_johu.needs_kor && saju.saju_johu.needs_kor[1]) || (saju.saju_yongshin_full && saju.saju_yongshin_full.secondary_kor) || saju.saju_yongshin_secondary),
         five_pct: fivePct, strength_level: saju.saju_strength_level_5 || saju.saju_strength || '',
         gender: _fcGender, category: _fcCat, time_kst: new Date().getHours(),
+        geokguk:          saju.saju_geokguk || null,
+        pattern:          saju.saju_pattern || null,
+        gongmang:         saju.saju_gongmang || null,
+        branch_relations: saju.saju_branch_relations || null,
+        ten_gods_map:     saju.saju_ten_gods_map || null,
       };
       if (_fcLuckStemIdx>=0)   _fcBody.current_luck_stem_idx   = _fcLuckStemIdx;
       if (_fcLuckBranchIdx>=0) _fcBody.current_luck_branch_idx = _fcLuckBranchIdx;
