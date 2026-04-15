@@ -1276,7 +1276,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.43.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.43.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6611,14 +6611,26 @@ for (var i = 1; i <= 6; i++) {
   }
   // === Phase 2 끝 ===
 
-  // ── fortune-calc 결과 주입: TODAY_GANJI 중복 라인 제거 후 앞에 삽입 ──
+  // ── fortune-calc 결과 주입: 중복·댕글링 참조 정리 후 앞에 삽입 ──
   if (_precalc && _precalc.summary_for_claude) {
     systemPrompt = systemPrompt
+      // TODAY_GANJI: 연/월/일주 → fortune-calc가 더 정확하게 커버
+      .replace(/TODAY_DATE:.*\n/, '')
       .replace(/TODAY_YEAR_GANJI:.*\n/, '')
       .replace(/TODAY_MONTH_GANJI:.*\n/, '')
-      .replace(/TODAY_DAY_PILLAR:.*\n/, '');
+      .replace(/TODAY_DAY_PILLAR:.*\n/, '')
+      // ⚠️ 경고: TODAY_DAY_PILLAR 삭제 후 댕글링됨
+      .replace(/⚠️ TODAY_DAY_PILLAR는[^\n]*\n/, '')
+      .replace(/⚠️ 이 값은 시스템이 계산한[^\n]*\n/, '')
+      // 혼동 금지 규칙: TODAY_DAY_PILLAR 참조 3줄 제거 (변수 삭제됨)
+      .replace(/- TODAY_DAY_PILLAR = [^\n]*\n/, '')
+      .replace(/- 오늘 운세·오늘 기운 → TODAY_DAY_PILLAR[^\n]*\n/, '')
+      .replace(/- TODAY_DAY_PILLAR를 [^\n]*\n/, '')
+      // USER_SAJU: 용신·신강도 → fortune-calc summary_for_claude에 포함
+      .replace(/USER_YONGSHIN\([^)]+\):[^\n]*\n/, '')
+      .replace(/신강\/신약:[^\n]*\n/, '');
     systemPrompt = _precalc.summary_for_claude + '\n\n' + systemPrompt;
-    console.log('[fortune-calc] 주입 완료 — 오늘:', _precalc.today && _precalc.today.pillar, '운:', _precalc.today && _precalc.today.status);
+    console.log('[fortune-calc] 주입 완료 — 오늘:', _precalc.today && _precalc.today.pillar, '운:', _precalc.today && _precalc.today.status, '길이:', systemPrompt.length);
   }
 
   console.log('[systemPrompt 길이]', systemPrompt.length);
