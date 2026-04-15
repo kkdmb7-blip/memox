@@ -6569,8 +6569,12 @@ for (var i = 1; i <= 6; i++) {
       if (Array.isArray(bigLuck)) {
         bigLuck.forEach(function(bl){ var r=(bl.year_range||'').split(/[-–~]/); var s=parseInt(r[0]),e=parseInt(r[1]); if(!isNaN(s)&&!isNaN(e)&&currentYear>=s&&currentYear<=e){ if(bl.stem_kor)_fcLuckStemIdx=_FC_STEMS.indexOf(bl.stem_kor); if(bl.branch_kor)_fcLuckBranchIdx=_FC_BRANCHES.indexOf(bl.branch_kor); } });
       }
-      var _fcCatMap = {'재물투자':'money','연애결혼':'love','직업커리어':'career','건강':'health','학업자격':'study'};
-      var _fcCat = (_classified && _fcCatMap[_classified.topic]) || 'general';
+      // 카테고리 우선순위: 1) 버튼 선택 2) 텍스트 자동분류 3) 채팅모드 4) general
+      var _fcBtnMap = {money:'money',career:'career',love:'love',family:'general',relation:'general',health:'health',invest:'money',total:'general',study:'study'};
+      var _fcAutoMap = {'재물투자':'money','연애결혼':'love','직업커리어':'career','건강':'health','학업자격':'study','오늘운세':'general','인생운명':'general','가족인간관계':'general'};
+      var _fcCat = _fcBtnMap[consultState && consultState.category]
+               || (_classified && _fcAutoMap[_classified.topic])
+               || (_chatMode === 'saju' ? 'general' : 'general');
       var _fcGender = (profile.gender==='F'||profile.gender==='female') ? '여' : '남';
       var _fcBody = {
         user_day_stem_idx:     _fcDayStemIdx,
