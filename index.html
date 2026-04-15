@@ -475,12 +475,40 @@
   .chat-textarea:focus { border-color:var(--accent2); }
   .chat-textarea::placeholder { color:var(--text3); }
 
-  /* ── 버튼 선택 UX ── */
+  /* ── 3단계 드릴다운 UX ── */
   .qpanel {
     background:var(--surface); border-top:1px solid var(--border);
-    flex-shrink:0; padding:8px 12px 12px;
+    flex-shrink:0;
   }
-  .qpanel-input-row { display:flex; gap:6px; align-items:flex-end; }
+  .qpanel-buttons {
+    padding:10px 12px 4px; display:flex; flex-direction:column; gap:6px;
+  }
+  .qpanel-breadcrumb {
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-height:24px;
+  }
+  .qpanel-tag {
+    display:inline-flex; align-items:center; gap:4px;
+    background:rgba(201,168,76,0.12); border:1px solid rgba(201,168,76,0.3);
+    border-radius:14px; padding:3px 10px; font-size:11px; color:#d4af37;
+    font-weight:600; cursor:pointer; white-space:nowrap;
+  }
+  .qpanel-tag-sep { font-size:11px; color:var(--text3); }
+  .qbtn-row {
+    display:flex; flex-wrap:wrap; gap:6px;
+  }
+  .qbtn {
+    padding:10px 14px; border-radius:22px; border:1px solid rgba(255,255,255,0.1);
+    background:var(--surface2); color:var(--text); font-size:13px;
+    font-family:'Noto Sans KR',sans-serif; cursor:pointer; transition:all 0.15s;
+    white-space:nowrap; line-height:1; min-height:40px;
+  }
+  .qbtn:active { transform:scale(0.95); }
+  .qbtn.selected {
+    background:rgba(201,168,76,0.18); border-color:rgba(201,168,76,0.55); color:#d4af37; font-weight:600;
+  }
+  .qpanel-input-row {
+    display:flex; gap:6px; align-items:flex-end; padding:6px 12px 12px;
+  }
   .qpanel-textarea {
     flex:1; background:var(--surface2); border:1px solid var(--border);
     border-radius:20px; padding:9px 16px; color:var(--text); font-size:14px;
@@ -489,35 +517,9 @@
   }
   .qpanel-textarea:focus { border-color:var(--accent2); }
   .qpanel-textarea::placeholder { color:var(--text3); }
-
-  /* 채팅 내 카테고리 카드 */
-  .qcard {
-    margin:8px 12px 4px; padding:14px;
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:18px; animation:msgIn 0.25s ease;
+  .qpanel-step-label {
+    font-size:11px; color:var(--text3); padding:0 2px 2px;
   }
-  .qcard-label {
-    font-size:11px; color:var(--text3); margin-bottom:10px; letter-spacing:0.02em;
-  }
-  .qcard-tag {
-    display:inline-flex; align-items:center; gap:5px;
-    background:rgba(201,168,76,0.12); border:1px solid rgba(201,168,76,0.3);
-    border-radius:20px; padding:3px 10px; font-size:12px; color:#d4af37;
-    font-weight:600; margin-bottom:10px; cursor:pointer;
-  }
-  .qcard-grid { display:flex; flex-wrap:wrap; gap:6px; }
-  .qbtn {
-    padding:8px 13px; border-radius:20px; border:1px solid rgba(255,255,255,0.1);
-    background:var(--surface2); color:var(--text); font-size:13px;
-    font-family:'Noto Sans KR',sans-serif; cursor:pointer; transition:all 0.15s;
-    white-space:nowrap; line-height:1;
-  }
-  .qbtn:active { transform:scale(0.95); }
-  .qbtn.selected {
-    background:rgba(201,168,76,0.18); border-color:rgba(201,168,76,0.6); color:#d4af37;
-  }
-  .qbtn.sub { font-size:13px; }
-  .qbtn-panel-tag { display:none; }
   .send-btn {
     height:44px; padding:0 16px; border-radius:22px; border:none;
     background:linear-gradient(135deg,#6a0dad,#c9a84c);
@@ -1051,9 +1053,14 @@
   </div>
 
   <div class="qpanel" id="qpanel">
+    <div class="qpanel-buttons" id="qpanelButtons">
+      <div class="qpanel-breadcrumb" id="qpanelBreadcrumb"></div>
+      <div class="qpanel-step-label" id="qpanelStepLabel">어떤 주제로 상담할까요?</div>
+      <div class="qbtn-row" id="qpanelBtnRow"></div>
+    </div>
     <div class="qpanel-input-row">
       <textarea class="qpanel-textarea" id="chatInput" placeholder="🔮 무엇이든 물어보세요..." rows="1"
-        oninput="autoResize(this)"
+        oninput="autoResize(this);onQFreeInput(this.value)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendQPanel()"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendQPanel()">전송</button>
     </div>
@@ -1244,7 +1251,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.39.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.40.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5241,10 +5248,22 @@ function getBranchInstruction(branch) {
   return map[branch] || '';
 }
 
-// ── 채팅 내 카테고리 카드 UX ─────────────────────────────────
-var _qCat = null;
-var _qSub = null;
-var _qCardEl = null; // 현재 표시 중인 qcard DOM
+// ── 3단계 드릴다운 UX ─────────────────────────────────────────
+const CHANJA_MAP = {
+  '甲':'갑목(양목)','乙':'을목(음목)','丙':'병화(양화)','丁':'정화(음화)',
+  '戊':'무토(양토)','己':'기토(음토)','庚':'경금(양금)','辛':'신금(음금)',
+  '壬':'임수(양수)','癸':'계수(음수)',
+  '子':'자(수)','丑':'축(토)','寅':'인(목)','卯':'묘(목)',
+  '辰':'진(토)','巳':'사(화)','午':'오(화)','未':'미(토)',
+  '申':'신(금)','酉':'유(금)','戌':'술(토)','亥':'해(수)'
+};
+
+function convertChanja(str) {
+  if (!str) return str;
+  return String(str).split('').map(function(c){ return CHANJA_MAP[c] || c; }).join('');
+}
+
+var consultState = { category:'', question:'', timeOrTarget:'', freeInput:'' };
 
 var QCAT = [
   { id:'money',    label:'💰 재물/돈' },
@@ -5266,111 +5285,224 @@ var QSUB = {
   invest:   ['지금 살까 팔까?','이 종목 괜찮아?','손절해야 해?','언제 반등해?','부동산 타이밍은?'],
   total:    ['오늘 운세는?','이번 달 운세는?','올해 운세는?','지금 내 운의 흐름은?'],
 };
+var QSTEP3 = {
+  money:    { label:'시점은?', items:['지금 당장','이번 주','이번 달','올해'] },
+  career:   { label:'시점은?', items:['이번 주','이번 달','올해'] },
+  love:     { label:'대상은?', items:['썸','연인','전 애인','짝사랑'] },
+  family:   { label:'대상은?', items:['부모님','배우자','자녀','형제자매'] },
+  relation: { label:'대상은?', items:['직장동료','친구','지인','가족'] },
+  health:   { label:'시점은?', items:['지금','이번 주','이번 달'] },
+  invest:   { label:'시점은?', items:['오늘','이번 주','이번 달'] },
+  total:    null, // 2단계에서 바로 전송
+};
 var QCAT_LABEL = {};
 QCAT.forEach(function(c){ QCAT_LABEL[c.id] = c.label; });
 
+// 직접입력 키워드 → 카테고리 매핑
+var QKEYWORD = {
+  money:    ['돈','재물','월급','수입','부자','빚','대출','저축','경제'],
+  career:   ['직장','일','회사','이직','취업','사업','창업','승진','퇴직','커리어'],
+  love:     ['연애','사랑','남친','여친','짝사랑','썸','결혼','이별','헤어'],
+  family:   ['가족','부모','엄마','아빠','자녀','아이','형제','자매','배우자'],
+  relation: ['친구','동료','인간관계','갈등','싸움','화해','믿','지인'],
+  health:   ['건강','몸','아프','컨디션','피로','병','수술','에너지'],
+  invest:   ['주식','투자','코인','부동산','종목','매수','매도','손절','반등'],
+  total:    ['운세','운','흐름','전체','오늘','이번달','올해','사주'],
+};
+
+var _freeInputTimer = null;
+function onQFreeInput(val) {
+  consultState.freeInput = val;
+  clearTimeout(_freeInputTimer);
+  if (!val.trim() || consultState.question) return;
+  // 2초 후 키워드 매핑 제안
+  _freeInputTimer = setTimeout(function() {
+    if (!val.trim() || consultState.question) return;
+    suggestFromFreeInput(val);
+  }, 800);
+}
+
+function suggestFromFreeInput(val) {
+  var scores = {};
+  Object.keys(QKEYWORD).forEach(function(cat) {
+    scores[cat] = 0;
+    QKEYWORD[cat].forEach(function(kw) {
+      if (val.indexOf(kw) !== -1) scores[cat]++;
+    });
+  });
+  var sorted = Object.keys(scores).filter(function(k){ return scores[k] > 0; })
+    .sort(function(a,b){ return scores[b]-scores[a]; }).slice(0,3);
+  if (sorted.length === 0) return;
+  // 매핑된 카테고리 버튼 표시
+  var label = document.getElementById('qpanelStepLabel');
+  var row = document.getElementById('qpanelBtnRow');
+  if (label) label.textContent = '이런 주제인가요?';
+  if (row) {
+    row.innerHTML = '';
+    sorted.forEach(function(catId) {
+      var btn = document.createElement('button');
+      btn.className = 'qbtn';
+      btn.textContent = QCAT_LABEL[catId];
+      btn.onclick = function() { selectQCat(catId); };
+      row.appendChild(btn);
+    });
+  }
+}
+
 function initQPanel() {
-  _qCat = null; _qSub = null; _qCardEl = null;
-  showQCard();
+  consultState = { category:'', question:'', timeOrTarget:'', freeInput:'' };
+  renderQPanel();
 }
 
-// 채팅창 안에 카테고리 카드 삽입
-function showQCard() {
-  removeQCard();
-  _qCat = null; _qSub = null;
-  var container = document.getElementById('chatMessages');
-  var card = document.createElement('div');
-  card.className = 'qcard';
-  card.id = 'qcard';
-  card.innerHTML = '<div class="qcard-label">어떤 주제로 상담할까요?</div><div class="qcard-grid" id="qcardGrid"></div>';
-  container.appendChild(card);
-  _qCardEl = card;
-  renderQCardGrid();
-  scrollToBottom();
-}
+function renderQPanel() {
+  var breadcrumb = document.getElementById('qpanelBreadcrumb');
+  var stepLabel = document.getElementById('qpanelStepLabel');
+  var btnRow = document.getElementById('qpanelBtnRow');
+  if (!breadcrumb || !stepLabel || !btnRow) return;
 
-function removeQCard() {
-  var existing = document.getElementById('qcard');
-  if (existing) existing.remove();
-  _qCardEl = null;
-}
+  // 브레드크럼 구성
+  breadcrumb.innerHTML = '';
+  if (consultState.category) {
+    var t1 = document.createElement('span');
+    t1.className = 'qpanel-tag';
+    t1.textContent = QCAT_LABEL[consultState.category];
+    t1.onclick = function() { consultState.category=''; consultState.question=''; consultState.timeOrTarget=''; renderQPanel(); };
+    breadcrumb.appendChild(t1);
+  }
+  if (consultState.question) {
+    var sep = document.createElement('span');
+    sep.className = 'qpanel-tag-sep'; sep.textContent = '›';
+    breadcrumb.appendChild(sep);
+    var t2 = document.createElement('span');
+    t2.className = 'qpanel-tag';
+    t2.textContent = consultState.question;
+    t2.onclick = function() { consultState.question=''; consultState.timeOrTarget=''; renderQPanel(); };
+    breadcrumb.appendChild(t2);
+  }
 
-function renderQCardGrid() {
-  var grid = document.getElementById('qcardGrid');
-  if (!grid) return;
-  grid.innerHTML = '';
+  btnRow.innerHTML = '';
 
-  if (!_qCat) {
+  if (!consultState.category) {
+    // 1단계
+    stepLabel.textContent = '어떤 주제로 상담할까요?';
     QCAT.forEach(function(cat) {
       var btn = document.createElement('button');
       btn.className = 'qbtn';
       btn.textContent = cat.label;
-      btn.onclick = function() { selectQCat(cat.id, card); };
-      grid.appendChild(btn);
+      btn.onclick = function() { selectQCat(cat.id); };
+      btnRow.appendChild(btn);
+    });
+  } else if (!consultState.question) {
+    // 2단계
+    stepLabel.textContent = '어떤 게 궁금하세요?';
+    (QSUB[consultState.category] || []).forEach(function(sub) {
+      var btn = document.createElement('button');
+      btn.className = 'qbtn';
+      btn.textContent = sub;
+      btn.onclick = function() { selectQSub(sub); };
+      btnRow.appendChild(btn);
     });
   } else {
-    // 2단계: 태그 + 세부 버튼
-    var card = document.getElementById('qcard');
-    var labelEl = card ? card.querySelector('.qcard-label') : null;
-    if (labelEl) {
-      labelEl.innerHTML = '<span class="qcard-tag" onclick="resetQCat()">' + QCAT_LABEL[_qCat] + ' <span style="opacity:0.5;font-size:11px;">✕</span></span>';
+    // 3단계
+    var step3 = QSTEP3[consultState.category];
+    if (!step3) {
+      // total 등 바로 전송
+      sendQPanel(); return;
     }
-    (QSUB[_qCat] || []).forEach(function(sub) {
+    stepLabel.textContent = step3.label;
+    step3.items.forEach(function(item) {
       var btn = document.createElement('button');
-      btn.className = 'qbtn sub';
-      btn.textContent = sub;
-      btn.onclick = function() { selectQSub(sub, btn); };
-      grid.appendChild(btn);
+      btn.className = 'qbtn' + (consultState.timeOrTarget === item ? ' selected' : '');
+      btn.textContent = item;
+      btn.onclick = function() { selectQStep3(item); };
+      btnRow.appendChild(btn);
     });
   }
 }
 
 function selectQCat(catId) {
-  _qCat = catId; _qSub = null;
-  renderQCardGrid();
-  document.getElementById('chatInput').placeholder = '더 구체적으로 말할게...';
+  consultState.category = catId;
+  consultState.question = '';
+  consultState.timeOrTarget = '';
+  renderQPanel();
 }
 
-function selectQSub(sub, btn) {
-  _qSub = sub;
-  document.querySelectorAll('#qcardGrid .qbtn').forEach(function(b){ b.classList.remove('selected'); });
-  btn.classList.add('selected');
-  var extra = document.getElementById('chatInput').value.trim();
-  if (!extra) sendQPanel();
+function selectQSub(sub) {
+  consultState.question = sub;
+  consultState.timeOrTarget = '';
+  var step3 = QSTEP3[consultState.category];
+  if (!step3) { sendQPanel(); return; }
+  renderQPanel();
 }
 
-function resetQCat() {
-  _qCat = null; _qSub = null;
-  var card = document.getElementById('qcard');
-  var labelEl = card ? card.querySelector('.qcard-label') : null;
-  if (labelEl) labelEl.textContent = '어떤 주제로 상담할까요?';
-  document.getElementById('chatInput').placeholder = '🔮 무엇이든 물어보세요...';
-  renderQCardGrid();
+function selectQStep3(item) {
+  consultState.timeOrTarget = item;
+  renderQPanel();
+  // 직접입력 없으면 바로 전송
+  if (!document.getElementById('chatInput').value.trim()) {
+    sendQPanel();
+  }
 }
 
-function buildQPanelText() {
-  var extra = document.getElementById('chatInput').value.trim();
-  if (!_qCat && !extra) return '';
-  if (!_qCat) return extra;
-  var parts = ['[상담주제: ' + QCAT_LABEL[_qCat] + ']'];
-  if (_qSub) parts.push('[세부질문: ' + _qSub + ']');
-  if (extra) parts.push('[추가: ' + extra + ']');
-  return parts.join(' ');
+function buildConsultPrompt() {
+  var profile = userProfile || {};
+  // 일간 추출
+  var ilgan = '';
+  try {
+    var pillars = profile.saju_data && profile.saju_data.saju_pillars;
+    if (pillars && typeof pillars === 'object' && pillars.day) {
+      ilgan = convertChanja(pillars.day.charAt(0));
+    } else if (typeof pillars === 'string' && pillars.length >= 2) {
+      ilgan = convertChanja(pillars.charAt(0));
+    }
+  } catch(e) {}
+  // 용신
+  var yongsin = '';
+  try { yongsin = convertChanja((profile.saju_data && profile.saju_data.yongshin && profile.saju_data.yongshin.primary) || ''); } catch(e) {}
+  // 일진
+  var iljin = '';
+  try { iljin = window._todayGanji || ''; } catch(e) {}
+
+  var s = consultState;
+  var parts = [];
+  if (s.category) parts.push('상담주제: ' + QCAT_LABEL[s.category]);
+  if (s.question) parts.push('세부질문: ' + s.question);
+  if (s.timeOrTarget) parts.push('시점/대상: ' + s.timeOrTarget);
+  parts.push('추가입력: ' + (s.freeInput || '없음'));
+  if (iljin) parts.push('오늘일진: ' + iljin);
+  if (ilgan) parts.push('일간: ' + ilgan);
+  if (yongsin) parts.push('용신: ' + yongsin);
+  return parts.join('\n');
+}
+
+function buildDisplayText() {
+  var s = consultState;
+  var parts = [];
+  if (s.question) parts.push(s.question);
+  else if (s.category) parts.push(QCAT_LABEL[s.category]);
+  if (s.timeOrTarget) parts.push(s.timeOrTarget);
+  if (s.freeInput) parts.push(s.freeInput);
+  return parts.join(' · ') || s.freeInput;
 }
 
 async function sendQPanel() {
-  var extra = document.getElementById('chatInput').value.trim();
-  var text = buildQPanelText();
-  if (!text) { document.getElementById('chatInput').focus(); return; }
-  var displayText = _qSub || extra || (_qCat ? QCAT_LABEL[_qCat] : '');
+  var freeInput = document.getElementById('chatInput').value.trim();
+  consultState.freeInput = freeInput;
+  var promptText = buildConsultPrompt();
+  var displayText = buildDisplayText();
+  if (!promptText && !freeInput) {
+    document.getElementById('chatInput').focus(); return;
+  }
+  if (!promptText) promptText = freeInput;
+  if (!displayText) displayText = freeInput;
+
   var input = document.getElementById('chatInput');
-  input.value = text;
-  _qCat = null; _qSub = null;
-  removeQCard();
+  input.value = promptText;
+  consultState = { category:'', question:'', timeOrTarget:'', freeInput:'' };
   await sendMessage(displayText);
   input.value = '';
   autoResize(input);
-  showQCard();
+  renderQPanel();
 }
 
 async function sendMessage(displayText) {
