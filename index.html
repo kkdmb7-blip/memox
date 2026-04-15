@@ -509,15 +509,16 @@
     border-radius:14px; padding:3px 10px; font-size:12px; color:#d4af37; font-weight:600;
   }
   .qbtn {
-    padding:8px 15px; border-radius:22px;
+    padding:8px 10px; border-radius:22px;
     border:1px solid rgba(212,175,55,0.2);
     background:linear-gradient(135deg,rgba(42,26,78,0.7),rgba(26,13,48,0.9));
-    color:rgba(255,255,255,0.82); font-size:12.5px;
+    color:rgba(255,255,255,0.82); font-size:11.5px;
     font-family:'Noto Sans KR',sans-serif; cursor:pointer;
     transition:all 0.22s cubic-bezier(0.34,1.56,0.64,1);
-    white-space:normal; min-height:36px; line-height:1.4; word-break:keep-all;
+    white-space:normal; min-height:36px; line-height:1.5; word-break:keep-all;
+    overflow-wrap:break-word; text-align:center;
     box-shadow:0 2px 8px rgba(0,0,0,0.25);
-    letter-spacing:0.2px;
+    letter-spacing:0.1px;
   }
   .qbtn:hover {
     background:linear-gradient(135deg,rgba(212,175,55,0.18),rgba(160,127,212,0.2));
@@ -1279,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.43.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.44.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
