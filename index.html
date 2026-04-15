@@ -532,16 +532,23 @@
     box-shadow:0 0 12px rgba(212,175,55,0.25);
   }
   .qpanel-input-row {
-    display:flex; gap:6px; align-items:flex-end; padding:6px 12px 12px;
+    display:flex; gap:6px; align-items:flex-end; padding:4px 12px 12px;
   }
+  .qpanel-input-hint {
+    text-align:center; font-size:11px; color:var(--text3); padding:4px 16px 0;
+    letter-spacing:0.3px; opacity:0.7;
+  }
+  .qpanel-input-hint::before { content:'— '; } .qpanel-input-hint::after { content:' —'; }
   .qpanel-textarea {
     flex:1; background:var(--surface2); border:1px solid var(--border);
     border-radius:20px; padding:9px 16px; color:var(--text); font-size:14px;
     font-family:'Noto Sans KR',sans-serif; resize:none; outline:none;
-    max-height:80px; min-height:42px; line-height:1.5; transition:border-color 0.2s;
+    max-height:80px; min-height:42px; line-height:1.5;
+    transition:border-color 0.2s, opacity 0.2s;
+    opacity:0.6;
   }
-  .qpanel-textarea:focus { border-color:var(--accent2); }
-  .qpanel-textarea::placeholder { color:var(--text3); }
+  .qpanel-textarea:focus { border-color:var(--accent2); opacity:1; }
+  .qpanel-textarea::placeholder { color:var(--text3); font-size:13px; }
   .send-btn {
     height:44px; padding:0 16px; border-radius:22px; border:none;
     background:linear-gradient(135deg,#6a0dad,#c9a84c);
@@ -1075,8 +1082,9 @@
   </div>
 
   <div class="qpanel" id="qpanel">
+    <div class="qpanel-input-hint">또는 직접 입력</div>
     <div class="qpanel-input-row">
-      <textarea class="qpanel-textarea" id="chatInput" placeholder="🔮 무엇이든 물어보세요..." rows="1"
+      <textarea class="qpanel-textarea" id="chatInput" placeholder="추가 메모 (선택사항)" rows="1"
         oninput="autoResize(this);onQFreeInput(this.value)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendQPanel()"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendQPanel()">전송</button>
