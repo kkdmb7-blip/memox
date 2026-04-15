@@ -1249,7 +1249,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.42.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.42.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6069,6 +6069,18 @@ async function callClaude(userMsg, apiKey) {
   var monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1, _nowKST.getUTCDate());
   var yearGanji = getYearGanji();
   var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+  var _weekDaysShort = ['일','월','화','수','목','금','토'];
+  // ── 이번 주/다음 주 실제 날짜 계산 (월~일 기준) ──
+  var _todayBase = new Date(Date.UTC(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth(), _nowKST.getUTCDate()));
+  var _dow = _todayBase.getUTCDay(); // 0=일
+  var _daysToMon = (_dow === 0) ? -6 : 1 - _dow;
+  var _thisMon = new Date(_todayBase.getTime() + _daysToMon * 86400000);
+  var _thisSun = new Date(_thisMon.getTime() + 6 * 86400000);
+  var _nextMon = new Date(_thisMon.getTime() + 7 * 86400000);
+  var _nextSun = new Date(_nextMon.getTime() + 6 * 86400000);
+  function _fmtWD(d) { return (d.getUTCMonth()+1) + '/' + d.getUTCDate() + '(' + _weekDaysShort[d.getUTCDay()] + ')'; }
+  var _weekRangeInfo = '이번 주: ' + _fmtWD(_thisMon) + ' ~ ' + _fmtWD(_thisSun) + '\n'
+    + '다음 주: ' + _fmtWD(_nextMon) + ' ~ ' + _fmtWD(_nextSun);
 var pastGanji = '';
 for (var i = 3; i >= 1; i--) { var _pd = new Date(new Date().getTime() - i * 86400000); var _pdKST = new Date(_pd.getTime() + 9 * 60 * 60 * 1000); var _pdDay = _weekDays[_pdKST.getUTCDay()]; pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _pdDay + '): ' + getTodayGanji(_pd) + '일\n'; }
 var futureGanji = '';
@@ -6260,8 +6272,10 @@ for (var i = 1; i <= 6; i++) {
   + 'TODAY_YEAR_GANJI: ' + yearGanji + '년\n'
   + 'TODAY_MONTH_GANJI: ' + monthGanji + '월\n'
   + 'TODAY_DAY_PILLAR: ' + todayGanji + '일\n'
+  + 'WEEK_RANGE:\n' + _weekRangeInfo + '\n'
   + '⚠️ TODAY_DAY_PILLAR는 오늘 날의 기운이다. USER_DAY_PILLAR(사용자 일주)와 절대 혼동 금지.\n'
-  + '⚠️ 이 값은 시스템이 계산한 확정값. 스스로 계산·추측 금지.\n\n'
+  + '⚠️ 이 값은 시스템이 계산한 확정값. 스스로 계산·추측 금지.\n'
+  + '⚠️ 주(週) 범위를 언급할 때는 반드시 위 WEEK_RANGE 기준으로만 표기. 임의 날짜 범위 생성 절대 금지.\n\n'
   + '【향후 6개월 월건 - 월운 질문 시 반드시 이 표를 참고하라】\n' + futureMonthGanji + '\n'
   + '【과거 3일 일진】\n' + pastGanji + '\n'
   + '【향후 3일 일진 - 내일부터 시작, 오늘(' + dateStr + ')은 위 TODAY_DAY_PILLAR 참고】\n' + futureGanji + '\n'
