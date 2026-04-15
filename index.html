@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6242,23 +6242,40 @@ for (var i = 1; i <= 6; i++) {
   // 사주는 항상 포함. 주제에 따라 최적 시스템 1개 추가
   var _autoTopic = (_classified && _classified.topic) || '오늘운세';
   var _sys2; // 두 번째 시스템
-  if (_autoTopic === '재물투자' || _autoTopic === '직업커리어') {
-    _sys2 = 'ziwei'; // 재백궁·관록궁
-  } else if (_autoTopic === '연애결혼' || _autoTopic === '가족인간관계') {
-    _sys2 = 'astro'; // 금성·7하우스·달
-  } else if (_autoTopic === '건강' || _autoTopic === '인생운명') {
-    _sys2 = 'vedic'; // 6하우스·다샤·카르마
+  // 각 시스템 특성:
+  // 서양점성: 금성(연애), 달(감정), 7하우스(파트너십), 목성(확장), 오늘 행성 흐름
+  // 자미두수: 재백궁(재물), 관록궁(직업), 부처궁(배우자), 부모궁·형제궁·자녀궁(가족), 문창성(학업)
+  // 베딕: 다샤(타이밍), 낙샤트라(카르마·기질), 6하우스(건강), 8하우스(변환), 인생 흐름
+  if (_autoTopic === '재물투자') {
+    _sys2 = 'ziwei';  // 재백궁·전택궁
+  } else if (_autoTopic === '직업커리어') {
+    _sys2 = 'ziwei';  // 관록궁
+  } else if (_autoTopic === '연애결혼') {
+    _sys2 = 'astro';  // 금성·7하우스·달
+  } else if (_autoTopic === '가족인간관계') {
+    _sys2 = 'ziwei';  // 부모궁·형제궁·자녀궁·교우궁 (astro보다 정확)
+  } else if (_autoTopic === '건강') {
+    _sys2 = 'vedic';  // 6하우스·다샤
+  } else if (_autoTopic === '인생운명') {
+    _sys2 = 'vedic';  // 카르마·다샤·낙샤트라
+  } else if (_autoTopic === '학업자격') {
+    _sys2 = 'ziwei';  // 문창성·화과성
   } else {
-    _sys2 = 'astro'; // 오늘운세·기타 → 점성
+    _sys2 = 'astro';  // 오늘운세·기타 → 오늘 행성 흐름
   }
-  var _modeDataBlock = _sajuDataBlock + _iljuBlock;
+
+  // 2nd 시스템 데이터만 별도 추출 (prebuilt_text 모드에서도 사용)
+  var _sys2DataBlock = '';
   if (_sys2 === 'astro') {
-    _modeDataBlock += _astroDataBlock;
+    _sys2DataBlock = _astroDataBlock;
   } else if (_sys2 === 'ziwei') {
-    _modeDataBlock += _ziweiBlock ? '\n\n【자미두수 데이터】\n' + _ziweiBlock + '\n' : '';
+    _sys2DataBlock = _ziweiBlock ? '【자미두수 데이터】\n' + _ziweiBlock + '\n' : '';
   } else if (_sys2 === 'vedic') {
-    _modeDataBlock += (_nakshatraBlock ? '\n\n' + _nakshatraBlock : '') + (_vedicBlock ? '\n\n【베딕 점성술 데이터】\n' + _vedicBlock + '\n' : '');
+    _sys2DataBlock = (_nakshatraBlock ? _nakshatraBlock : '') + (_vedicBlock ? '【베딕 점성술 데이터】\n' + _vedicBlock + '\n' : '');
   }
+
+  var _modeDataBlock = _sajuDataBlock + _iljuBlock;
+  if (_sys2DataBlock) _modeDataBlock += '\n\n' + _sys2DataBlock;
   console.log('[자동 시스템 선택]', _autoTopic, '→ 사주 +', _sys2);
 
   var _modeCombRule = '【사용 시스템: 사주 + ' + (_sys2==='astro'?'서양점성술':_sys2==='ziwei'?'자미두수':'베딕점성술') + '】\n'
@@ -6609,9 +6626,14 @@ for (var i = 1; i <= 6; i++) {
       + '[현재 시간] ' + currentHour + '시 (' + timeZoneLabel + ')\n\n'
       + _classBlock
       + _ctxBlock
-      + '━━━ [운세 데이터 — 서버 계산 완료, 이 내용만 기반으로 답변] ━━━\n'
+      + '━━━ [사주 운세 데이터 — 서버 계산 완료, 판정 변경 금지] ━━━\n'
       + _precalc.prebuilt_text
       + '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+      + (_sys2DataBlock
+        ? '━━━ [' + (_sys2==='astro'?'서양점성술':_sys2==='ziwei'?'자미두수':'베딕점성술') + ' 데이터 — 1~2문장 인사이트 추가 가능] ━━━\n'
+          + _sys2DataBlock
+          + '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+        : '')
       + '[데이터 섹션별 활용 방법]\n'
       + '- [오늘/이달/올해]: 시간 흐름 순으로 자연스럽게 연결하여 전달\n'
       + '- [재물운/직업운 등]: 주제의 핵심 방향으로 활용\n'
@@ -6620,7 +6642,8 @@ for (var i = 1; i <= 6; i++) {
       + '- [오행 보충]: 실생활 팁으로 한 문장 활용\n'
       + '- [격국] / [특수격] / [사주 구조]: 직접 용어 언급 금지. 방향성·성향에만 간접 반영\n'
       + '- [공망 주의]: "오늘은 마무리·정리에 좋은 날" 식으로 용어 없이 전달\n'
-      + '- [⚠️ 없는 오행]: 해당 오행 관련 표현 절대 사용 금지\n\n'
+      + '- [⚠️ 없는 오행]: 해당 오행 관련 표현 절대 사용 금지\n'
+      + '- ' + (_sys2==='astro'?'서양점성술':'자미두수'===_sys2?'자미두수':'베딕점성술') + ' 데이터: 사주 판정과 같은 방향이면 강조, 엇갈리면 "복합적인 시기"로 처리\n\n'
       + '[대화 규칙]\n'
       + '- 첫 문장은 반드시 사용자 감정·상황에 공감으로 시작\n'
       + '- 사주 근거는 문장 안에 자연스럽게 녹일 것. 독립 항목으로 나열 금지\n'
