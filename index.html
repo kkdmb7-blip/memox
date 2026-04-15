@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6548,11 +6548,12 @@ for (var i = 1; i <= 6; i++) {
 
   // ── fortune-calc 결과 주입 ──
   if (_precalc && _precalc.prebuilt_text) {
-    // prebuilt_text 방식: 팩트 기반 사전 생성 문장 → 간소화 시스템 프롬프트
     var _pName = (profile && profile.name) || '사용자';
     var _pGender = profile && profile.gender === 'M' ? '남성' : '여성';
     var _pBirth = (profile && profile.birth_date) || '미상';
     var _pTime = (profile && profile.birth_time) || '미상';
+
+    // ① 이전 맥락
     var _ctxBlock = '';
     if (_userCtx) {
       _ctxBlock = '[이전 맥락]\n';
@@ -6560,30 +6561,51 @@ for (var i = 1; i <= 6; i++) {
       if (_userCtx.situations && _userCtx.situations.length) _ctxBlock += '- 진행 중인 상황: ' + _userCtx.situations.join(', ') + '\n';
       if (_userCtx.concerns && _userCtx.concerns.length) _ctxBlock += '- 자주 걱정하는 것: ' + _userCtx.concerns.join(', ') + '\n';
       if (_userCtx.last_topics && _userCtx.last_topics.length) _ctxBlock += '- 최근 주제: ' + _userCtx.last_topics.slice(-5).join(', ') + '\n';
-      _ctxBlock += '관련될 때만 자연스럽게 연결할 것.\n\n';
+      _ctxBlock += '\n';
     }
+
+    // ② 질문 분류 블록
+    var _classBlock = '';
+    if (_classified) {
+      _classBlock = '[이번 질문] 주제: ' + _classified.topic + ' / 세부상황: ' + _classified.situation + '\n';
+    }
+    if (outputControl) _classBlock += outputControl + '\n';
+    _classBlock += '[답변 패턴] ' + _responsePattern + '\n\n';
+
     systemPrompt = personaPrompts.fortuna
-      + '\n\n[사용자] ' + _pName + ' | ' + _pGender + ' | ' + _pBirth + ' | 출생시 ' + _pTime + '\n\n'
+      + '\n\n[사용자] ' + _pName + ' | ' + _pGender + ' | ' + _pBirth + ' | 출생시 ' + _pTime + '\n'
+      + '[현재 시간] ' + currentHour + '시 (' + timeZoneLabel + ')\n\n'
+      + _classBlock
       + _ctxBlock
-      + '━━━ [오늘 운세 데이터 — 이 내용만 기반으로 답변] ━━━\n'
+      + '━━━ [운세 데이터 — 서버 계산 완료, 이 내용만 기반으로 답변] ━━━\n'
       + _precalc.prebuilt_text
-      + '\n\n[현재 시간] ' + currentHour + '시 (' + timeZoneLabel + ')\n\n'
-      + '[답변 규칙]\n'
-      + '- 위 [오늘 운세 데이터]의 문장을 그대로 사용하되, 문체만 자연스럽고 따뜻하게 다듬을 것\n'
-      + '- 데이터 문장의 사실·판정(용신/불리/유리 등)은 절대 변경 금지. 오직 어조·연결만 조정\n'
-      + '- 데이터에 없는 내용(한자, 설명, 해석, 추가 정보) 추가 절대 금지\n'
-      + '- 수치(%, 점수, 0.x) 언급 절대 금지\n'
-      + '- 한국어만 사용. 영어 단어 금지\n'
-      + '- 표(table) | 기호 절대 금지\n'
-      + '- HTML 태그 금지\n'
+      + '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+      + '[데이터 섹션별 활용 방법]\n'
+      + '- [오늘/이달/올해]: 시간 흐름 순으로 자연스럽게 연결하여 전달\n'
+      + '- [재물운/직업운 등]: 주제의 핵심 방향으로 활용\n'
+      + '- [현재 대운]: "지금 이 시기" 맥락으로 자연스럽게 녹임\n'
+      + '- [일주 기질]: "~하신 분입니다" 식으로 성격·체질 묘사에 활용\n'
+      + '- [오행 보충]: 실생활 팁으로 한 문장 활용\n'
+      + '- [격국] / [특수격] / [사주 구조]: 직접 용어 언급 금지. 방향성·성향에만 간접 반영\n'
+      + '- [공망 주의]: "오늘은 마무리·정리에 좋은 날" 식으로 용어 없이 전달\n'
+      + '- [⚠️ 없는 오행]: 해당 오행 관련 표현 절대 사용 금지\n\n'
+      + '[대화 규칙]\n'
+      + '- 첫 문장은 반드시 사용자 감정·상황에 공감으로 시작\n'
+      + '- 사주 근거는 문장 안에 자연스럽게 녹일 것. 독립 항목으로 나열 금지\n'
+      + '- 월건(임진월 등) / 일진(기미일 등) 직접 언급 금지 — 틀릴 수 있음\n'
+      + '- 십신(편재, 정관 등) 용어 직접 쓰지 말 것. 뜻만 풀어서\n'
+      + '- 격국·용신·기신 용어 직접 쓰지 말 것\n'
+      + '- 수치(%, 점수) / 한자 병기 / 영어 단어 / 표(|) / HTML 태그 금지\n'
+      + '- 특정 날짜·월에 "좋다/나쁘다" 예언 금지\n'
+      + '- 자미두수·베딕·서양점성 체계 이름 언급 금지\n'
+      + '- 데이터에 없는 내용 추가·추측 절대 금지\n'
+      + '- 마지막 문장은 반드시 희망적으로\n'
+      + '- 볼드(**) 핵심 키워드 3~5개 허용\n'
       + (_isDeepQuestion
-        ? '- 길이: 800~1200자. ## 헤더 2~3개 허용\n'
-        + '- 구조: 공감 → 사주 근거 → 현실 조언 → 행동\n'
-        : '- 길이: 400~600자. 헤더 금지\n'
-        + '- 구조: ①공감 한 줄 → ②사주 근거 → ③현실 연결 → ④행동 한 줄\n')
-      + '- 마지막 문장 반드시 희망적으로\n'
-      + '- ** 볼드는 핵심 키워드에 3~5개 허용\n';
-    console.log('[fortune-calc prebuilt_text] 간소화 프롬프트 적용 — 길이:', systemPrompt.length);
+        ? '- 길이: 800~1200자 / ## 헤더 2~3개 허용 / 구조: 공감 → 근거 → 조언 → 행동\n'
+        : '- 길이: 400~600자 / 헤더 금지 / 구조: ①공감 → ②사주 근거 → ③현실 연결 → ④행동\n')
+      + '- 질문은 3번 중 2번 정도만, 반드시 긍정형으로\n';
+    console.log('[fortune-calc prebuilt_text] 통합 프롬프트 — 길이:', systemPrompt.length);
   } else if (_precalc && _precalc.summary_for_claude) {
     // fallback: 기존 summary_for_claude 방식
     systemPrompt = systemPrompt
