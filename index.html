@@ -1286,7 +1286,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.44.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6623,26 +6623,59 @@ for (var i = 1; i <= 6; i++) {
   }
   // === Phase 2 끝 ===
 
-  // ── fortune-calc 결과 주입: 중복·댕글링 참조 정리 후 앞에 삽입 ──
-  if (_precalc && _precalc.summary_for_claude) {
+  // ── fortune-calc 결과 주입 ──
+  if (_precalc && _precalc.prebuilt_text) {
+    // prebuilt_text 방식: 팩트 기반 사전 생성 문장 → 간소화 시스템 프롬프트
+    var _pName = (profile && profile.name) || '사용자';
+    var _pGender = profile && profile.gender === 'M' ? '남성' : '여성';
+    var _pBirth = (profile && profile.birth_date) || '미상';
+    var _pTime = (profile && profile.birth_time) || '미상';
+    var _ctxBlock = '';
+    if (_userCtx) {
+      _ctxBlock = '[이전 맥락]\n';
+      if (_userCtx.people && _userCtx.people.length) _ctxBlock += '- 언급된 사람: ' + _userCtx.people.map(function(p){return p.name+(p.relation?'('+p.relation+')':'');}).join(', ') + '\n';
+      if (_userCtx.situations && _userCtx.situations.length) _ctxBlock += '- 진행 중인 상황: ' + _userCtx.situations.join(', ') + '\n';
+      if (_userCtx.concerns && _userCtx.concerns.length) _ctxBlock += '- 자주 걱정하는 것: ' + _userCtx.concerns.join(', ') + '\n';
+      if (_userCtx.last_topics && _userCtx.last_topics.length) _ctxBlock += '- 최근 주제: ' + _userCtx.last_topics.slice(-5).join(', ') + '\n';
+      _ctxBlock += '관련될 때만 자연스럽게 연결할 것.\n\n';
+    }
+    systemPrompt = personaPrompts.fortuna
+      + '\n\n[사용자] ' + _pName + ' | ' + _pGender + ' | ' + _pBirth + ' | 출생시 ' + _pTime + '\n\n'
+      + _ctxBlock
+      + '━━━ [오늘 운세 데이터 — 이 내용만 기반으로 답변] ━━━\n'
+      + _precalc.prebuilt_text
+      + '\n\n[현재 시간] ' + currentHour + '시 (' + timeZoneLabel + ')\n\n'
+      + '[답변 규칙]\n'
+      + '- 위 데이터 팩트를 자연스럽고 따뜻하게 풀어서 설명할 것\n'
+      + '- 데이터에 없는 내용 추가·추측 절대 금지\n'
+      + '- 수치(%, 점수, 0.x) 언급 절대 금지\n'
+      + '- 한국어만 사용. 영어 단어 금지\n'
+      + '- 표(table) | 기호 절대 금지\n'
+      + '- HTML 태그 금지\n'
+      + (_isDeepQuestion
+        ? '- 길이: 800~1200자. ## 헤더 2~3개 허용\n'
+        + '- 구조: 공감 → 사주 근거 → 현실 조언 → 행동\n'
+        : '- 길이: 400~600자. 헤더 금지\n'
+        + '- 구조: ①공감 한 줄 → ②사주 근거 → ③현실 연결 → ④행동 한 줄\n')
+      + '- 마지막 문장 반드시 희망적으로\n'
+      + '- ** 볼드는 핵심 키워드에 3~5개 허용\n';
+    console.log('[fortune-calc prebuilt_text] 간소화 프롬프트 적용 — 길이:', systemPrompt.length);
+  } else if (_precalc && _precalc.summary_for_claude) {
+    // fallback: 기존 summary_for_claude 방식
     systemPrompt = systemPrompt
-      // TODAY_GANJI: 연/월/일주 → fortune-calc가 더 정확하게 커버
       .replace(/TODAY_DATE:.*\n/, '')
       .replace(/TODAY_YEAR_GANJI:.*\n/, '')
       .replace(/TODAY_MONTH_GANJI:.*\n/, '')
       .replace(/TODAY_DAY_PILLAR:.*\n/, '')
-      // ⚠️ 경고: TODAY_DAY_PILLAR 삭제 후 댕글링됨
       .replace(/⚠️ TODAY_DAY_PILLAR는[^\n]*\n/, '')
       .replace(/⚠️ 이 값은 시스템이 계산한[^\n]*\n/, '')
-      // 혼동 금지 규칙: TODAY_DAY_PILLAR 참조 3줄 제거 (변수 삭제됨)
       .replace(/- TODAY_DAY_PILLAR = [^\n]*\n/, '')
       .replace(/- 오늘 운세·오늘 기운 → TODAY_DAY_PILLAR[^\n]*\n/, '')
       .replace(/- TODAY_DAY_PILLAR를 [^\n]*\n/, '')
-      // USER_SAJU: 용신·신강도 → fortune-calc summary_for_claude에 포함
       .replace(/USER_YONGSHIN\([^)]+\):[^\n]*\n/, '')
       .replace(/신강\/신약:[^\n]*\n/, '');
     systemPrompt = _precalc.summary_for_claude + '\n\n' + systemPrompt;
-    console.log('[fortune-calc] 주입 완료 — 오늘:', _precalc.today && _precalc.today.pillar, '운:', _precalc.today && _precalc.today.status, '길이:', systemPrompt.length);
+    console.log('[fortune-calc fallback] 주입 완료 — 길이:', systemPrompt.length);
   }
 
   console.log('[systemPrompt 길이]', systemPrompt.length);
