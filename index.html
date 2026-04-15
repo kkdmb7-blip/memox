@@ -6611,68 +6611,15 @@ for (var i = 1; i <= 6; i++) {
   }
   // === Phase 2 끝 ===
 
-  // ── fortune-calc 호출: 사전 계산 데이터 → Claude 주입 ──────────────
-  try {
-    var _FC_STEMS    = ['갑','을','병','정','무','기','경','신','임','계'];
-    var _FC_BRANCHES = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
-    var _fcPillars = saju.saju_pillars || saju.pillars || {};
-    var _fcPArr = ['','','',''];
-    if (typeof _fcPillars === 'object' && !Array.isArray(_fcPillars)) {
-      _fcPArr = [_fcPillars.year||'', _fcPillars.month||'', _fcPillars.day||'', _fcPillars.hour||''];
-    } else if (typeof _fcPillars === 'string') {
-      var _pM = _fcPillars.match(/([가-힣]{2})[년\s][\s\S]*?([가-힣]{2})[월\s][\s\S]*?([가-힣]{2})[일\s][\s\S]*?([가-힣]{2})[시\s]?/);
-      if (_pM) _fcPArr = [_pM[1],_pM[2],_pM[3],_pM[4]];
-      else { var _pPts = _fcPillars.split(/\s*[\/,]\s*/); if (_pPts.length>=4) _fcPArr = _pPts.slice(0,4).map(function(s){return s.trim().slice(0,2);}); }
-    }
-    var _fcDayStemIdx = _FC_STEMS.indexOf((_fcPArr[2]||'')[0]||'');
-    if (_fcDayStemIdx >= 0) {
-      function _fcElKo(s) { var m=String(s||'').match(/^([목화토금수])/); return m?m[1]:''; }
-      var _fcLuckStemIdx=-1, _fcLuckBranchIdx=-1;
-      if (Array.isArray(bigLuck)) {
-        bigLuck.forEach(function(bl){ var r=(bl.year_range||'').split(/[-–~]/); var s=parseInt(r[0]),e=parseInt(r[1]); if(!isNaN(s)&&!isNaN(e)&&currentYear>=s&&currentYear<=e){ if(bl.stem_kor)_fcLuckStemIdx=_FC_STEMS.indexOf(bl.stem_kor); if(bl.branch_kor)_fcLuckBranchIdx=_FC_BRANCHES.indexOf(bl.branch_kor); } });
-      }
-      // 카테고리 우선순위: 1) 버튼 선택 2) 텍스트 자동분류 3) 채팅모드 4) general
-      var _fcBtnMap = {money:'money',career:'career',love:'love',family:'general',relation:'general',health:'health',invest:'money',total:'general',study:'study'};
-      var _fcAutoMap = {'재물투자':'money','연애결혼':'love','직업커리어':'career','건강':'health','학업자격':'study','오늘운세':'general','인생운명':'general','가족인간관계':'general'};
-      var _fcCat = _fcBtnMap[consultState && consultState.category]
-               || (_classified && _fcAutoMap[_classified.topic])
-               || (_chatMode === 'saju' ? 'general' : 'general');
-      var _fcGender = (profile.gender==='F'||profile.gender==='female') ? '여' : '남';
-      var _fcBody = {
-        user_day_stem_idx:     _fcDayStemIdx,
-        user_year_branch_idx:  Math.max(0, _FC_BRANCHES.indexOf((_fcPArr[0]||'')[1]||'')),
-        user_month_branch_idx: Math.max(0, _FC_BRANCHES.indexOf((_fcPArr[1]||'')[1]||'')),
-        user_day_branch_idx:   Math.max(0, _FC_BRANCHES.indexOf((_fcPArr[2]||'')[1]||'')),
-        user_hour_branch_idx:  Math.max(0, _FC_BRANCHES.indexOf((_fcPArr[3]||'')[1]||'')),
-        yongshin_primary:   _fcElKo(saju.saju_yongshin_primary),
-        yongshin_secondary: _fcElKo(saju.saju_yongshin_secondary),
-        five_pct:       fivePct,
-        strength_level: saju.saju_strength_level_5 || saju.saju_strength || '',
-        gender:   _fcGender,
-        category: _fcCat,
-        time_kst: new Date().getHours(),
-      };
-      if (_fcLuckStemIdx>=0)   _fcBody.current_luck_stem_idx   = _fcLuckStemIdx;
-      if (_fcLuckBranchIdx>=0) _fcBody.current_luck_branch_idx = _fcLuckBranchIdx;
-      var _fcCtrl = new AbortController();
-      var _fcTmr  = setTimeout(function(){_fcCtrl.abort();}, 5000);
-      var _fcRes  = await fetch('https://fortuna.kkdmb7.workers.dev/fortune-calc', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(_fcBody), signal: _fcCtrl.signal
-      });
-      clearTimeout(_fcTmr);
-      if (_fcRes.ok) {
-        var _fcData = await _fcRes.json();
-        if (_fcData && _fcData.summary_for_claude) {
-          systemPrompt = _fcData.summary_for_claude + '\n\n' + systemPrompt;
-          console.log('[fortune-calc] 주입 완료 — 오늘:', _fcData.today && _fcData.today.pillar, '운:', _fcData.today && _fcData.today.status);
-        }
-      }
-    }
-  } catch(_fcErr) {
-    console.warn('[fortune-calc 실패]', _fcErr.message);
+  // ── fortune-calc 결과 주입: TODAY_GANJI 중복 라인 제거 후 앞에 삽입 ──
+  if (_precalc && _precalc.summary_for_claude) {
+    systemPrompt = systemPrompt
+      .replace(/TODAY_YEAR_GANJI:.*\n/, '')
+      .replace(/TODAY_MONTH_GANJI:.*\n/, '')
+      .replace(/TODAY_DAY_PILLAR:.*\n/, '');
+    systemPrompt = _precalc.summary_for_claude + '\n\n' + systemPrompt;
+    console.log('[fortune-calc] 주입 완료 — 오늘:', _precalc.today && _precalc.today.pillar, '운:', _precalc.today && _precalc.today.status);
   }
-  // ── fortune-calc 끝 ─────────────────────────────────────────────
 
   console.log('[systemPrompt 길이]', systemPrompt.length);
   var res;
