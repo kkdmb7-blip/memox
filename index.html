@@ -478,18 +478,34 @@
   /* ── 버튼 선택 UX ── */
   .qpanel {
     background:var(--surface); border-top:1px solid var(--border);
-    flex-shrink:0; padding:10px 12px 12px;
+    flex-shrink:0; padding:8px 12px 12px;
   }
-  .qpanel-tag {
-    display:inline-flex; align-items:center; gap:6px;
+  .qpanel-input-row { display:flex; gap:6px; align-items:flex-end; }
+  .qpanel-textarea {
+    flex:1; background:var(--surface2); border:1px solid var(--border);
+    border-radius:20px; padding:9px 16px; color:var(--text); font-size:14px;
+    font-family:'Noto Sans KR',sans-serif; resize:none; outline:none;
+    max-height:80px; min-height:42px; line-height:1.5; transition:border-color 0.2s;
+  }
+  .qpanel-textarea:focus { border-color:var(--accent2); }
+  .qpanel-textarea::placeholder { color:var(--text3); }
+
+  /* 채팅 내 카테고리 카드 */
+  .qcard {
+    margin:8px 12px 4px; padding:14px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:18px; animation:msgIn 0.25s ease;
+  }
+  .qcard-label {
+    font-size:11px; color:var(--text3); margin-bottom:10px; letter-spacing:0.02em;
+  }
+  .qcard-tag {
+    display:inline-flex; align-items:center; gap:5px;
     background:rgba(201,168,76,0.12); border:1px solid rgba(201,168,76,0.3);
-    border-radius:20px; padding:4px 10px; font-size:12px; color:#d4af37;
-    font-weight:600; margin-bottom:8px; cursor:pointer;
+    border-radius:20px; padding:3px 10px; font-size:12px; color:#d4af37;
+    font-weight:600; margin-bottom:10px; cursor:pointer;
   }
-  .qpanel-tag .qpanel-tag-x { opacity:0.6; font-size:11px; }
-  .qbtn-grid {
-    display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;
-  }
+  .qcard-grid { display:flex; flex-wrap:wrap; gap:6px; }
   .qbtn {
     padding:8px 13px; border-radius:20px; border:1px solid rgba(255,255,255,0.1);
     background:var(--surface2); color:var(--text); font-size:13px;
@@ -498,22 +514,10 @@
   }
   .qbtn:active { transform:scale(0.95); }
   .qbtn.selected {
-    background:rgba(201,168,76,0.15); border-color:rgba(201,168,76,0.5); color:#d4af37;
+    background:rgba(201,168,76,0.18); border-color:rgba(201,168,76,0.6); color:#d4af37;
   }
-  .qbtn.cat { font-size:12px; }
-  .qbtn.direct {
-    background:transparent; border-color:rgba(255,255,255,0.08);
-    color:var(--text3); font-size:12px;
-  }
-  .qpanel-input-row { display:flex; gap:6px; align-items:flex-end; margin-top:2px; }
-  .qpanel-textarea {
-    flex:1; background:var(--surface2); border:1px solid var(--border);
-    border-radius:20px; padding:9px 16px; color:var(--text); font-size:13px;
-    font-family:'Noto Sans KR',sans-serif; resize:none; outline:none;
-    max-height:80px; min-height:38px; line-height:1.5; transition:border-color 0.2s;
-  }
-  .qpanel-textarea:focus { border-color:var(--accent2); }
-  .qpanel-textarea::placeholder { color:var(--text3); font-size:12px; }
+  .qbtn.sub { font-size:13px; }
+  .qbtn-panel-tag { display:none; }
   .send-btn {
     height:44px; padding:0 16px; border-radius:22px; border:none;
     background:linear-gradient(135deg,#6a0dad,#c9a84c);
@@ -1047,13 +1051,8 @@
   </div>
 
   <div class="qpanel" id="qpanel">
-    <!-- 1단계 선택 태그 표시 -->
-    <div id="qpanelTag" style="display:none;"></div>
-    <!-- 버튼 그리드 -->
-    <div class="qbtn-grid" id="qbtnGrid"></div>
-    <!-- 직접 입력 + 전송 -->
     <div class="qpanel-input-row">
-      <textarea class="qpanel-textarea" id="chatInput" placeholder="더 구체적으로 말할게..." rows="1"
+      <textarea class="qpanel-textarea" id="chatInput" placeholder="🔮 무엇이든 물어보세요..." rows="1"
         oninput="autoResize(this)"
         onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')sendQPanel()"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendQPanel()">전송</button>
@@ -1245,7 +1244,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.39.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.39.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5242,9 +5241,10 @@ function getBranchInstruction(branch) {
   return map[branch] || '';
 }
 
-// ── 버튼 선택 UX (QPanel) ────────────────────────────────────
-var _qCat = null; // 선택된 1단계 카테고리
-var _qSub = null; // 선택된 2단계 세부항목
+// ── 채팅 내 카테고리 카드 UX ─────────────────────────────────
+var _qCat = null;
+var _qSub = null;
+var _qCardEl = null; // 현재 표시 중인 qcard DOM
 
 var QCAT = [
   { id:'money',    label:'💰 재물/돈' },
@@ -5270,46 +5270,54 @@ var QCAT_LABEL = {};
 QCAT.forEach(function(c){ QCAT_LABEL[c.id] = c.label; });
 
 function initQPanel() {
-  _qCat = null; _qSub = null;
-  renderQPanel();
+  _qCat = null; _qSub = null; _qCardEl = null;
+  showQCard();
 }
 
-function renderQPanel() {
-  var tagEl = document.getElementById('qpanelTag');
-  var grid = document.getElementById('qbtnGrid');
-  if (!tagEl || !grid) return;
+// 채팅창 안에 카테고리 카드 삽입
+function showQCard() {
+  removeQCard();
+  _qCat = null; _qSub = null;
+  var container = document.getElementById('chatMessages');
+  var card = document.createElement('div');
+  card.className = 'qcard';
+  card.id = 'qcard';
+  card.innerHTML = '<div class="qcard-label">어떤 주제로 상담할까요?</div><div class="qcard-grid" id="qcardGrid"></div>';
+  container.appendChild(card);
+  _qCardEl = card;
+  renderQCardGrid();
+  scrollToBottom();
+}
 
-  // 태그 표시
-  if (_qCat) {
-    tagEl.style.display = 'block';
-    tagEl.innerHTML = '<span class="qpanel-tag" onclick="resetQCat()">' +
-      QCAT_LABEL[_qCat] + ' <span class="qpanel-tag-x">✕</span></span>';
-  } else {
-    tagEl.style.display = 'none';
-  }
+function removeQCard() {
+  var existing = document.getElementById('qcard');
+  if (existing) existing.remove();
+  _qCardEl = null;
+}
 
+function renderQCardGrid() {
+  var grid = document.getElementById('qcardGrid');
+  if (!grid) return;
   grid.innerHTML = '';
 
   if (!_qCat) {
-    // 1단계: 카테고리 버튼
     QCAT.forEach(function(cat) {
       var btn = document.createElement('button');
-      btn.className = 'qbtn cat';
+      btn.className = 'qbtn';
       btn.textContent = cat.label;
-      btn.onclick = function() { selectQCat(cat.id); };
+      btn.onclick = function() { selectQCat(cat.id, card); };
       grid.appendChild(btn);
     });
-    // 직접 입력 버튼
-    var directBtn = document.createElement('button');
-    directBtn.className = 'qbtn direct';
-    directBtn.textContent = '✏️ 직접 입력';
-    directBtn.onclick = function() { document.getElementById('chatInput').focus(); };
-    grid.appendChild(directBtn);
   } else {
-    // 2단계: 세부 버튼
+    // 2단계: 태그 + 세부 버튼
+    var card = document.getElementById('qcard');
+    var labelEl = card ? card.querySelector('.qcard-label') : null;
+    if (labelEl) {
+      labelEl.innerHTML = '<span class="qcard-tag" onclick="resetQCat()">' + QCAT_LABEL[_qCat] + ' <span style="opacity:0.5;font-size:11px;">✕</span></span>';
+    }
     (QSUB[_qCat] || []).forEach(function(sub) {
       var btn = document.createElement('button');
-      btn.className = 'qbtn' + (_qSub === sub ? ' selected' : '');
+      btn.className = 'qbtn sub';
       btn.textContent = sub;
       btn.onclick = function() { selectQSub(sub, btn); };
       grid.appendChild(btn);
@@ -5319,55 +5327,50 @@ function renderQPanel() {
 
 function selectQCat(catId) {
   _qCat = catId; _qSub = null;
-  renderQPanel();
+  renderQCardGrid();
   document.getElementById('chatInput').placeholder = '더 구체적으로 말할게...';
 }
 
 function selectQSub(sub, btn) {
   _qSub = sub;
-  // 선택 강조
-  document.querySelectorAll('#qbtnGrid .qbtn').forEach(function(b){ b.classList.remove('selected'); });
+  document.querySelectorAll('#qcardGrid .qbtn').forEach(function(b){ b.classList.remove('selected'); });
   btn.classList.add('selected');
-  // 바로 전송 (직접입력 없으면)
   var extra = document.getElementById('chatInput').value.trim();
-  if (!extra) {
-    sendQPanel();
-  }
+  if (!extra) sendQPanel();
 }
 
 function resetQCat() {
   _qCat = null; _qSub = null;
-  document.getElementById('chatInput').value = '';
-  renderQPanel();
+  var card = document.getElementById('qcard');
+  var labelEl = card ? card.querySelector('.qcard-label') : null;
+  if (labelEl) labelEl.textContent = '어떤 주제로 상담할까요?';
+  document.getElementById('chatInput').placeholder = '🔮 무엇이든 물어보세요...';
+  renderQCardGrid();
 }
 
 function buildQPanelText() {
   var extra = document.getElementById('chatInput').value.trim();
   if (!_qCat && !extra) return '';
-  if (!_qCat && extra) return extra; // 순수 직접입력
-
-  var catLabel = QCAT_LABEL[_qCat] || _qCat;
-  var parts = [];
-  parts.push('[상담주제: ' + catLabel + ']');
+  if (!_qCat) return extra;
+  var parts = ['[상담주제: ' + QCAT_LABEL[_qCat] + ']'];
   if (_qSub) parts.push('[세부질문: ' + _qSub + ']');
   if (extra) parts.push('[추가: ' + extra + ']');
   return parts.join(' ');
 }
 
 async function sendQPanel() {
+  var extra = document.getElementById('chatInput').value.trim();
   var text = buildQPanelText();
-  if (!text) {
-    document.getElementById('chatInput').focus();
-    return;
-  }
-  var displayText = _qSub || (document.getElementById('chatInput').value.trim()) || (_qCat ? QCAT_LABEL[_qCat] : '');
+  if (!text) { document.getElementById('chatInput').focus(); return; }
+  var displayText = _qSub || extra || (_qCat ? QCAT_LABEL[_qCat] : '');
   var input = document.getElementById('chatInput');
   input.value = text;
   _qCat = null; _qSub = null;
+  removeQCard();
   await sendMessage(displayText);
-  renderQPanel();
   input.value = '';
   autoResize(input);
+  showQCard();
 }
 
 async function sendMessage(displayText) {
