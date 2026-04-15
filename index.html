@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5968,6 +5968,9 @@ async function callClaude(userMsg, apiKey) {
       outputControl = '【현재 감정 상태】 ' + _currentEmotion + ' - ' + EMOTION_TONE[_currentEmotion];
     }
 
+  // ── 질문 주제 분류 (데이터블록 선택에 먼저 필요) ─────────────
+  var _classified = USE_SMART_CHAT ? _smartClassifyTopic(userMsg) : null;
+
   // ── 자미두수 데이터 패치 (캐시 사용) ────────────────────
   var _ziweiBlock = '';
   try {
@@ -6411,13 +6414,9 @@ for (var i = 1; i <= 6; i++) {
   console.log('[callClaude ilgan]', _ilgan);
   var _daeun = currentBigLuck || '현재 대운';
 
-  // 5. [SMART] 질문 주제 자동 분류 → 시스템 프롬프트에 주입
-  var _classified = null;
-  if (USE_SMART_CHAT) {
-    _classified = _smartClassifyTopic(userMsg);
-    if (_classified) {
-      systemPrompt = '[질문 분류] 주제: ' + _classified.topic + ' > 상황: ' + _classified.situation + '\n이 분류를 참고하여 해당 주제에 집중한 답변을 제공하세요.\n\n' + systemPrompt;
-    }
+  // 5. [SMART] 질문 분류 주입 (_classified는 이미 상단에서 세팅됨)
+  if (_classified) {
+    systemPrompt = '[질문 분류] 주제: ' + _classified.topic + ' > 상황: ' + _classified.situation + '\n이 분류를 참고하여 해당 주제에 집중한 답변을 제공하세요.\n\n' + systemPrompt;
   }
 
   // 6. 답변 패턴 자동 선택 → 감정 우선, 토픽 기반 매핑
