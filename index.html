@@ -245,10 +245,12 @@
   @keyframes msgIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
   .msg.user { align-self:flex-end; flex-direction:row-reverse; }
   .msg-avatar {
-    width:30px; height:30px; border-radius:50%; flex-shrink:0;
-    background:linear-gradient(135deg,var(--accent2),var(--accent));
+    width:36px; height:36px; border-radius:50%; flex-shrink:0;
+    background:linear-gradient(145deg,#2a1a4e,#1a0d30);
+    border:1.5px solid rgba(212,175,55,0.45);
+    box-shadow:0 0 10px rgba(212,175,55,0.18), inset 0 0 8px rgba(212,175,55,0.08);
     display:flex; align-items:center; justify-content:center; font-size:14px;
-    align-self:flex-end;
+    align-self:flex-start;
   }
   .user-avatar {
     width:32px; height:32px; border-radius:50%;
@@ -482,17 +484,18 @@
   }
   .qcard-msg {
     display:flex; flex-direction:row; align-items:flex-start;
-    gap:10px; padding:4px 14px 2px;
+    gap:10px; padding:6px 14px 4px;
   }
   .qcard {
-    background:var(--surface2); border:1px solid var(--border);
-    border-radius:4px 16px 16px 16px; padding:12px 14px;
+    background:linear-gradient(145deg,rgba(36,20,65,0.95),rgba(20,10,38,0.98));
+    border:1px solid rgba(212,175,55,0.18);
+    border-radius:4px 16px 16px 16px; padding:14px 16px;
     max-width:290px; display:flex; flex-direction:column; gap:8px;
     transition:opacity 0.2s;
   }
   .qcard.answered { opacity:0.45; pointer-events:none; }
   .qcard-label {
-    font-size:12px; color:var(--text2); font-weight:500; line-height:1.4;
+    font-size:12.5px; color:rgba(212,175,55,0.75); font-weight:500; line-height:1.4; letter-spacing:0.3px;
   }
   .qcard-btns {
     display:flex; flex-wrap:wrap; gap:6px;
@@ -503,14 +506,28 @@
     border-radius:14px; padding:3px 10px; font-size:12px; color:#d4af37; font-weight:600;
   }
   .qbtn {
-    padding:7px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.12);
-    background:var(--surface); color:var(--text); font-size:12px;
-    font-family:'Noto Sans KR',sans-serif; cursor:pointer; transition:all 0.15s;
-    white-space:nowrap; min-height:34px; line-height:1;
+    padding:8px 15px; border-radius:22px;
+    border:1px solid rgba(212,175,55,0.2);
+    background:linear-gradient(135deg,rgba(42,26,78,0.7),rgba(26,13,48,0.9));
+    color:rgba(255,255,255,0.82); font-size:12.5px;
+    font-family:'Noto Sans KR',sans-serif; cursor:pointer;
+    transition:all 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    white-space:nowrap; min-height:36px; line-height:1;
+    box-shadow:0 2px 8px rgba(0,0,0,0.25);
+    letter-spacing:0.2px;
   }
-  .qbtn:active { transform:scale(0.95); background:rgba(201,168,76,0.18); border-color:rgba(201,168,76,0.5); }
+  .qbtn:hover {
+    background:linear-gradient(135deg,rgba(212,175,55,0.18),rgba(160,127,212,0.2));
+    border-color:rgba(212,175,55,0.5);
+    color:#e8d48a;
+    transform:translateY(-1px);
+    box-shadow:0 4px 14px rgba(212,175,55,0.2);
+  }
+  .qbtn:active { transform:scale(0.95) translateY(0); }
   .qbtn.selected {
-    background:rgba(201,168,76,0.18); border-color:rgba(201,168,76,0.55); color:#d4af37; font-weight:600;
+    background:linear-gradient(135deg,rgba(212,175,55,0.22),rgba(160,127,212,0.18));
+    border-color:rgba(212,175,55,0.6); color:#d4af37; font-weight:600;
+    box-shadow:0 0 12px rgba(212,175,55,0.25);
   }
   .qpanel-input-row {
     display:flex; gap:6px; align-items:flex-end; padding:6px 12px 12px;
@@ -1249,7 +1266,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.42.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.43.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -7552,10 +7569,19 @@ window.addEventListener('appinstalled', function() {
 
 
 function getAvatar() {
-  var persona = (userProfile && userProfile.persona) || 'warm';
-  var avatarMap = AVATAR_MAP;
-  var src = avatarMap[persona] || avatarMap.warm;
-  return '<img src="' + src + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:top;" />';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="36" height="36" style="display:block;flex-shrink:0;">'
+    + '<defs>'
+    + '<radialGradient id="av_bg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#3d2270"/><stop offset="100%" stop-color="#160b2e"/></radialGradient>'
+    + '<radialGradient id="av_glow" cx="50%" cy="40%" r="55%"><stop offset="0%" stop-color="rgba(212,175,55,0.35)"/><stop offset="100%" stop-color="rgba(212,175,55,0)"/></radialGradient>'
+    + '</defs>'
+    + '<circle cx="18" cy="18" r="18" fill="url(#av_bg)"/>'
+    + '<circle cx="18" cy="18" r="18" fill="url(#av_glow)"/>'
+    + '<circle cx="18" cy="18" r="17" fill="none" stroke="rgba(212,175,55,0.5)" stroke-width="0.8"/>'
+    + '<path d="M18 7 L19.2 11.6 L24 11.6 L20.4 14.4 L21.6 19 L18 16.2 L14.4 19 L15.6 14.4 L12 11.6 L16.8 11.6 Z" fill="#d4af37" opacity="0.95"/>'
+    + '<path d="M18 22 Q21 24 21 27 Q18 29 15 27 Q15 24 18 22Z" fill="rgba(212,175,55,0.5)"/>'
+    + '<circle cx="12" cy="26" r="1.2" fill="rgba(212,175,55,0.3)"/>'
+    + '<circle cx="24" cy="26" r="1.2" fill="rgba(212,175,55,0.3)"/>'
+    + '</svg>';
 }
 
 async function setPersona(key) {
