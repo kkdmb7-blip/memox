@@ -1082,12 +1082,6 @@
   <div class="suggest-chips" id="suggestChips" style="display:none;"></div>
 
   <div class="mode-bar" id="modeBar">
-    <button class="mode-btn active" id="modeBtn-default" onclick="selectMode('default')">기본<span class="mode-tooltip" style="left:0;transform:none;"><span style="position:absolute;top:100%;left:14px;transform:none;border:5px solid transparent;border-top-color:rgba(15,5,35,0.96);"></span>사주+점성+자미두수+베딕 통합 분석</span></button>
-    <button class="mode-btn" id="modeBtn-saju" onclick="selectMode('saju')">사주<span class="mode-tooltip">인생 전체의 큰 흐름과 타고난 기질</span></button>
-    <button class="mode-btn" id="modeBtn-astro" onclick="selectMode('astro')">점성<span class="mode-tooltip">우주의 기운으로 보는 성격과 운명</span></button>
-    <button class="mode-btn" id="modeBtn-ziwei" onclick="selectMode('ziwei')">자미두수<span class="mode-tooltip">오늘의 상세한 일진과 구체적인 사건</span></button>
-    <button class="mode-btn" id="modeBtn-vedic" onclick="selectMode('vedic')">베딕<span class="mode-tooltip">정교한 카르마 분석과 미래 예측</span></button>
-    <span class="mode-bar-sep"></span>
     <button class="tarot-btn" id="tarotOpenBtn" onclick="openTarotModal()">🃏 타로</button>
   </div>
 
@@ -1286,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5611,51 +5605,7 @@ async function sendMessage(displayText) {
   }
 }
 
-// ── 모드 선택 ────────────────────────────────────────────
-var _chatMode = 'default';
-
-function selectMode(mode) {
-  _chatMode = mode;
-  // 전용 모드 클릭 시 다음 전송을 심층 분석으로
-  window._isDeepQuestion = (mode !== 'default');
-  document.querySelectorAll('.mode-btn').forEach(function(btn) { btn.classList.remove('active'); });
-  var el = document.getElementById('modeBtn-' + mode);
-  if (el) el.classList.add('active');
-}
-
-// 모드 버튼 툴팁 — 모바일 롱프레스/탭 지원
-(function() {
-  var _longTimer = null;
-  var _shown = null;
-  function hideTooltip(btn) {
-    if (btn) btn.classList.remove('tooltip-show');
-    _shown = null;
-  }
-  document.addEventListener('DOMContentLoaded', function() {});
-  // 이벤트는 modeBar에 위임
-  var bar = document.getElementById('modeBar');
-  if (!bar) return;
-  bar.addEventListener('touchstart', function(e) {
-    var btn = e.target.closest('.mode-btn');
-    if (!btn) return;
-    _longTimer = setTimeout(function() {
-      if (_shown && _shown !== btn) hideTooltip(_shown);
-      btn.classList.add('tooltip-show');
-      _shown = btn;
-    }, 400);
-  }, { passive: true });
-  bar.addEventListener('touchend', function() {
-    clearTimeout(_longTimer);
-    if (_shown) setTimeout(function() { hideTooltip(_shown); }, 1800);
-  }, { passive: true });
-  bar.addEventListener('touchmove', function() {
-    clearTimeout(_longTimer);
-  }, { passive: true });
-  // 다른 곳 탭 시 숨기기
-  document.addEventListener('touchstart', function(e) {
-    if (_shown && !e.target.closest('.mode-btn')) hideTooltip(_shown);
-  }, { passive: true });
-})();
+// ── 모드 선택 제거됨 — 주제 자동 감지로 대체 ─────────────────
 
 function showChargeModal() {
   document.getElementById('chargeModal').style.display = 'flex';
@@ -6253,50 +6203,31 @@ for (var i = 1; i <= 6; i++) {
     '【어스펙트】\n' + (astro.aspects_summary||'미상') + '\n\n';
 
   // ── 모드별 데이터 선택 ──────────────────────────────────
-  var _modeDataBlock;
-  if (_chatMode === 'saju') {
-    _modeDataBlock = _sajuDataBlock + _iljuBlock;
-  } else if (_chatMode === 'astro') {
-    _modeDataBlock = _astroDataBlock;
-  } else if (_chatMode === 'ziwei') {
-    _modeDataBlock = _ziweiBlock ? '【자미두수 데이터】\n' + _ziweiBlock + '\n\n' : '';
-  } else if (_chatMode === 'vedic') {
-    _modeDataBlock = _nakshatraBlock + (_vedicBlock ? '【베딕 점성술 데이터】\n' + _vedicBlock + '\n\n' : '');
+  // ── 주제 기반 자동 시스템 선택 (1~2개) ──────────────────────────────
+  // 사주는 항상 포함. 주제에 따라 최적 시스템 1개 추가
+  var _autoTopic = (_classified && _classified.topic) || '오늘운세';
+  var _sys2; // 두 번째 시스템
+  if (_autoTopic === '재물투자' || _autoTopic === '직업커리어') {
+    _sys2 = 'ziwei'; // 재백궁·관록궁
+  } else if (_autoTopic === '연애결혼' || _autoTopic === '가족인간관계') {
+    _sys2 = 'astro'; // 금성·7하우스·달
+  } else if (_autoTopic === '건강' || _autoTopic === '인생운명') {
+    _sys2 = 'vedic'; // 6하우스·다샤·카르마
   } else {
-    _modeDataBlock = _sajuDataBlock + _iljuBlock + _astroDataBlock +
-      (_ziweiBlock ? '\n\n【자미두수 데이터】\n' + _ziweiBlock + '\n' : '') +
-      (_nakshatraBlock ? '\n\n' + _nakshatraBlock : '') +
-      (_vedicBlock ? '\n\n【베딕 점성술 데이터】\n' + _vedicBlock + '\n' : '');
+    _sys2 = 'astro'; // 오늘운세·기타 → 점성
   }
+  var _modeDataBlock = _sajuDataBlock + _iljuBlock;
+  if (_sys2 === 'astro') {
+    _modeDataBlock += _astroDataBlock;
+  } else if (_sys2 === 'ziwei') {
+    _modeDataBlock += _ziweiBlock ? '\n\n【자미두수 데이터】\n' + _ziweiBlock + '\n' : '';
+  } else if (_sys2 === 'vedic') {
+    _modeDataBlock += (_nakshatraBlock ? '\n\n' + _nakshatraBlock : '') + (_vedicBlock ? '\n\n【베딕 점성술 데이터】\n' + _vedicBlock + '\n' : '');
+  }
+  console.log('[자동 시스템 선택]', _autoTopic, '→ 사주 +', _sys2);
 
-  var _modeCombRule = _chatMode === 'saju'
-    ? '【모드: 사주 전용】\n오직 사주팔자만으로 깊이 해석하세요. 점성술·자미두수·베딕은 절대 언급 금지.\n'
-    + '【심층 분석 지시】\n'
-    + '- 적천수 기반 심층 분석. 일간·대운·격국·용신 전부 활용하세요.\n'
-    + '- ## 헤더 3섹션으로 구분하세요 (예: ## 타고난 기질 / ## 지금 대운의 의미 / ## 앞으로의 방향).\n'
-    + '- 800~1200자. 단정적 톤.\n\n'
-    : _chatMode === 'astro'
-    ? '【모드: 점성술 전용】\n오직 서양점성술만으로 깊이 해석하세요. 사주·자미두수·베딕은 절대 언급 금지.\n'
-    + '【심층 분석 지시】\n'
-    + '- 어센던트·태양·달·행성 포지션 전부 활용하세요.\n'
-    + '- 하우스별 의미를 풀어서 쉽게 설명하세요 (house→궁 번역 필수).\n'
-    + '- ## 헤더 3섹션으로 구분하세요 (예: ## 내 본질 / ## 지금 행성 흐름 / ## 앞으로의 타이밍).\n'
-    + '- 800~1200자. 단정적 톤.\n\n'
-    : _chatMode === 'ziwei'
-    ? '【모드: 자미두수 전용】\n오직 자미두수만으로 깊이 해석하세요. 사주·점성술·베딕은 절대 언급 금지.\n'
-    + '【심층 분석 지시】\n'
-    + '- 명궁·재백궁·관록궁·부처궁 활용하세요.\n'
-    + '- 대한·유년 흐름을 반드시 포함하세요.\n'
-    + '- ## 헤더 3섹션으로 구분하세요 (예: ## 명궁이 보여주는 운명 / ## 지금 대한의 기운 / ## 이 시기에 할 일).\n'
-    + '- 800~1200자. 단정적 톤.\n\n'
-    : _chatMode === 'vedic'
-    ? '【모드: 베딕 전용】\n오직 베딕점성술만으로 깊이 해석하세요. 사주·점성술·자미두수는 절대 언급 금지.\n'
-    + '【심층 분석 지시】\n'
-    + '- 라그나·낙샤트라·다샤 전부 활용하세요.\n'
-    + '- 카르마적 해석을 포함하세요 (전생의 과업, 이번 생의 방향).\n'
-    + '- ## 헤더 3섹션으로 구분하세요 (예: ## 라그나와 낙샤트라 / ## 현재 다샤의 의미 / ## 카르마적 방향).\n'
-    + '- 800~1200자. 단정적 톤.\n\n'
-    : '【질문 유형별 시스템 조합】\n질문 키워드로 아래 2가지 시스템만 선택:\n단기("오늘","지금","이번 주","요즘","당장") → 서양점성술 + 베딕\n중기("올해","이번 달","상반기","하반기") → 자미두수 + 사주\n장기("대운","평생","몇 년","앞으로","미래") → 사주대운 + 자미두수대한\n성격("왜 나는","내 성격","타고난") → 사주일간 + 베딕라그나\n타이밍("언제","몇 월","어느 시기") → 베딕다샤 + 자미두수대한\n복합/기타 → 가장 관련 있는 2가지 자유 선택\n\n';
+  var _modeCombRule = '【사용 시스템: 사주 + ' + (_sys2==='astro'?'서양점성술':_sys2==='ziwei'?'자미두수':'베딕점성술') + '】\n'
+    + '위 두 시스템의 데이터만 활용하세요. 다른 시스템 언급 금지.\n\n';
 
   var systemPrompt = personaPrompt + outputControl + '\n\n【절대 규칙 - 반드시 준수】\n'
   + '--- 날짜 구분 절대 규칙 ---\n'
@@ -6593,30 +6524,18 @@ for (var i = 1; i <= 6; i++) {
       p2 += '신강도: ' + sl5 + ' (' + ss + '점).\n';
     }
 
-    if (_chatMode === 'default' || !_chatMode) {
-      p2 += '\n## 기본 모드 대화 규칙\n';
-      p2 += '- 월건(갑오월, 계사월 등) 직접 언급 금지. 틀립니다.\n';
-      p2 += '- 일진(계축일, 갑인일 등) 직접 언급 금지. 틀립니다.\n';
-      p2 += '- 특정 월이나 날짜에 좋다/나쁘다 예언 금지.\n';
-      p2 += '- 대신 "올해 하반기" "지금 시기" "당분간" 같은 표현 사용.\n';
-      p2 += '- 자미두수, 베딕, 서양점성 체계 이름 언급 금지.\n';
-      p2 += '- 사주 전문 용어(십신, 격국, 용신) 직접 쓰지 마세요.\n';
-      p2 += '- 한자 병기 금지.\n';
-      p2 += '- 첫 문장은 반드시 사용자 감정에 공감으로 시작.\n';
-      p2 += '- 사주 근거는 문장 속에 자연스럽게 녹이세요.\n';
-      p2 += '- 격국 이름(양인격, 정관격 등)을 직접 언급하지 마세요.\n';
-      p2 += '- 부정적 질문("포기하고 싶지 않아요?" "힘들지 않아요?")은 금지. 대신 긍정형으로 물어보세요("어디까지 진행됐어요?" "어떤 부분이 재미있어요?")\n';
-      p2 += '- 답변 길이는 5~8문장이 적당합니다.\n';
-      p2 += '- 마지막에 질문을 넣되, 매번 넣지는 마세요. 3번 중 2번 정도.\n';
-    }
-
-    if (_chatMode === 'saju') {
-      p2 += '\n## 사주 모드 추가 규칙\n';
-      p2 += '- 적천수 기반으로 해석하세요.\n';
-      p2 += '- 사주 용어 사용 가능하되, 쉽게 풀어서 설명하세요.\n';
-      p2 += '- 월건/일진은 시스템이 제공한 데이터만 사용하세요.\n';
-      p2 += '- 데이터에 없는 월건/일진을 추측하지 마세요.\n';
-    }
+    p2 += '\n## 대화 규칙\n';
+    p2 += '- 월건(갑오월, 계사월 등) 직접 언급 금지. 틀립니다.\n';
+    p2 += '- 일진(계축일, 갑인일 등) 직접 언급 금지. 틀립니다.\n';
+    p2 += '- 특정 월이나 날짜에 좋다/나쁘다 예언 금지.\n';
+    p2 += '- 자미두수, 베딕, 서양점성 체계 이름 언급 금지.\n';
+    p2 += '- 사주 전문 용어(십신, 격국, 용신) 직접 쓰지 마세요.\n';
+    p2 += '- 한자 병기 금지.\n';
+    p2 += '- 첫 문장은 반드시 사용자 감정에 공감으로 시작.\n';
+    p2 += '- 사주 근거는 문장 속에 자연스럽게 녹이세요.\n';
+    p2 += '- 부정적 질문 금지. 긍정형으로 물어보세요.\n';
+    p2 += '- 답변 길이는 5~8문장이 적당합니다.\n';
+    p2 += '- 마지막에 질문을 넣되, 매번 넣지는 마세요. 3번 중 2번 정도.\n';
 
     console.log('[Phase2] 적천수 프레임 적용됨:', p2.substring(0, 100));
     systemPrompt += p2;
@@ -6691,7 +6610,7 @@ for (var i = 1; i <= 6; i++) {
           user_id: currentUser.id,
           messages: claudeMessages,
           system_prompt: systemPrompt,
-          mode: _chatMode,
+          mode: 'saju',
           max_tokens: _isDeepQuestion ? 4000 : 2000
         }),
         signal: _ctrl.signal
