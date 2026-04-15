@@ -1268,7 +1268,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.43.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.43.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -7645,19 +7645,7 @@ window.addEventListener('appinstalled', function() {
 
 
 function getAvatar() {
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="36" height="36" style="display:block;flex-shrink:0;">'
-    + '<defs>'
-    + '<radialGradient id="av_bg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#3d2270"/><stop offset="100%" stop-color="#160b2e"/></radialGradient>'
-    + '<radialGradient id="av_glow" cx="50%" cy="40%" r="55%"><stop offset="0%" stop-color="rgba(212,175,55,0.35)"/><stop offset="100%" stop-color="rgba(212,175,55,0)"/></radialGradient>'
-    + '</defs>'
-    + '<circle cx="18" cy="18" r="18" fill="url(#av_bg)"/>'
-    + '<circle cx="18" cy="18" r="18" fill="url(#av_glow)"/>'
-    + '<circle cx="18" cy="18" r="17" fill="none" stroke="rgba(212,175,55,0.5)" stroke-width="0.8"/>'
-    + '<path d="M18 7 L19.2 11.6 L24 11.6 L20.4 14.4 L21.6 19 L18 16.2 L14.4 19 L15.6 14.4 L12 11.6 L16.8 11.6 Z" fill="#d4af37" opacity="0.95"/>'
-    + '<path d="M18 22 Q21 24 21 27 Q18 29 15 27 Q15 24 18 22Z" fill="rgba(212,175,55,0.5)"/>'
-    + '<circle cx="12" cy="26" r="1.2" fill="rgba(212,175,55,0.3)"/>'
-    + '<circle cx="24" cy="26" r="1.2" fill="rgba(212,175,55,0.3)"/>'
-    + '</svg>';
+  return '<img src="goddess.png" style="width:36px;height:36px;border-radius:50%;object-fit:cover;object-position:top;" />';
 }
 
 async function setPersona(key) {
