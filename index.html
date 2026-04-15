@@ -498,7 +498,7 @@
     font-size:12.5px; color:rgba(212,175,55,0.75); font-weight:500; line-height:1.4; letter-spacing:0.3px;
   }
   .qcard-btns {
-    display:flex; flex-wrap:wrap; gap:6px;
+    display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
   }
   .qcard-sel {
     display:inline-flex; align-items:center;
@@ -1276,7 +1276,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.43.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.43.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6503,6 +6503,58 @@ for (var i = 1; i <= 6; i++) {
     .replace(/{일간}/g, _ilgan || '일간')
     .replace(/{대운}/g, _daeun);
 
+  // ── fortune-calc 호출 (Phase 2 전에 먼저 실행) ───────────────────────
+  var _precalc = null;
+  try {
+    var _FC_STEMS    = ['갑','을','병','정','무','기','경','신','임','계'];
+    var _FC_BRANCHES = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+    var _fcPillars = saju.saju_pillars || saju.pillars || {};
+    var _fcPArr = ['','','',''];
+    if (typeof _fcPillars === 'object' && !Array.isArray(_fcPillars)) {
+      _fcPArr = [_fcPillars.year||'', _fcPillars.month||'', _fcPillars.day||'', _fcPillars.hour||''];
+    } else if (typeof _fcPillars === 'string') {
+      var _pM = _fcPillars.match(/([가-힣]{2})[년\s][\s\S]*?([가-힣]{2})[월\s][\s\S]*?([가-힣]{2})[일\s][\s\S]*?([가-힣]{2})[시\s]?/);
+      if (_pM) _fcPArr = [_pM[1],_pM[2],_pM[3],_pM[4]];
+      else { var _pPts = _fcPillars.split(/\s*[\/,]\s*/); if (_pPts.length>=4) _fcPArr = _pPts.slice(0,4).map(function(s){return s.trim().slice(0,2);}); }
+    }
+    var _fcDayStemIdx = _FC_STEMS.indexOf((_fcPArr[2]||'')[0]||'');
+    if (_fcDayStemIdx >= 0) {
+      function _fcElKo(s) { var m=String(s||'').match(/^([목화토금수])/); return m?m[1]:''; }
+      var _fcLuckStemIdx=-1, _fcLuckBranchIdx=-1;
+      if (Array.isArray(bigLuck)) {
+        bigLuck.forEach(function(bl){ var r=(bl.year_range||'').split(/[-–~]/); var s=parseInt(r[0]),e=parseInt(r[1]); if(!isNaN(s)&&!isNaN(e)&&currentYear>=s&&currentYear<=e){ if(bl.stem_kor)_fcLuckStemIdx=_FC_STEMS.indexOf(bl.stem_kor); if(bl.branch_kor)_fcLuckBranchIdx=_FC_BRANCHES.indexOf(bl.branch_kor); } });
+      }
+      var _fcBtnMap = {money:'money',career:'career',love:'love',family:'general',relation:'general',health:'health',invest:'money',total:'general',study:'study'};
+      var _fcAutoMap = {'재물투자':'money','연애결혼':'love','직업커리어':'career','건강':'health','학업자격':'study','오늘운세':'general','인생운명':'general','가족인간관계':'general'};
+      var _fcCat = _fcBtnMap[consultState && consultState.category]
+               || (_classified && _fcAutoMap[_classified.topic])
+               || 'general';
+      var _fcGender = (profile.gender==='F'||profile.gender==='female') ? '여' : '남';
+      var _fcBody = {
+        user_day_stem_idx:     _fcDayStemIdx,
+        user_year_branch_idx:  Math.max(0, _FC_BRANCHES.indexOf((_fcPArr[0]||'')[1]||'')),
+        user_month_branch_idx: Math.max(0, _FC_BRANCHES.indexOf((_fcPArr[1]||'')[1]||'')),
+        user_day_branch_idx:   Math.max(0, _FC_BRANCHES.indexOf((_fcPArr[2]||'')[1]||'')),
+        user_hour_branch_idx:  Math.max(0, _FC_BRANCHES.indexOf((_fcPArr[3]||'')[1]||'')),
+        yongshin_primary:   _fcElKo(saju.saju_yongshin_primary),
+        yongshin_secondary: _fcElKo(saju.saju_yongshin_secondary),
+        five_pct: fivePct, strength_level: saju.saju_strength_level_5 || saju.saju_strength || '',
+        gender: _fcGender, category: _fcCat, time_kst: new Date().getHours(),
+      };
+      if (_fcLuckStemIdx>=0)   _fcBody.current_luck_stem_idx   = _fcLuckStemIdx;
+      if (_fcLuckBranchIdx>=0) _fcBody.current_luck_branch_idx = _fcLuckBranchIdx;
+      var _fcCtrl = new AbortController();
+      var _fcTmr  = setTimeout(function(){_fcCtrl.abort();}, 5000);
+      var _fcRes  = await fetch('https://fortuna.kkdmb7.workers.dev/fortune-calc', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(_fcBody), signal:_fcCtrl.signal
+      });
+      clearTimeout(_fcTmr);
+      if (_fcRes.ok) { _precalc = await _fcRes.json(); }
+    }
+  } catch(_fcErr) { console.warn('[fortune-calc 실패]', _fcErr.message); }
+  // ── fortune-calc 끝 ─────────────────────────────────────────────────
+
   // === Phase 2: 해석 프레임 (사주 데이터 있는 모든 유저) ===
   console.log('[Phase2 debug]', 'saju:', typeof saju, 'five_count:', saju?.saju_five_count, 'pattern:', saju?.saju_pattern);
   if (saju) {
@@ -6519,13 +6571,15 @@ for (var i = 1; i <= 6; i++) {
       p2 += '비겁은 기신이 아닌 희신으로 해석.\n';
     }
 
-    if (fc.fire === 0) p2 += '화(火) 0개. "화를 가지고 있다" 표현 금지.\n';
-    if (fc.metal === 0) p2 += '금(金) 0개. "금을 가지고 있다" 표현 금지.\n';
-    if (fc.earth === 0) p2 += '토(土) 0개. "토를 가지고 있다" 표현 금지.\n';
-    if (fc.water === 0) p2 += '수(水) 0개. "수를 가지고 있다" 표현 금지.\n';
-    if (fc.wood === 0) p2 += '목(木) 0개. "목을 가지고 있다" 표현 금지.\n';
-
-    p2 += '신강도: ' + sl5 + ' (' + ss + '점).\n';
+    // fortune-calc가 금지 오행·신강도를 summary_for_claude에 포함하므로 중복 생략
+    if (!_precalc) {
+      if (fc.fire === 0) p2 += '화(火) 0개. "화를 가지고 있다" 표현 금지.\n';
+      if (fc.metal === 0) p2 += '금(金) 0개. "금을 가지고 있다" 표현 금지.\n';
+      if (fc.earth === 0) p2 += '토(土) 0개. "토를 가지고 있다" 표현 금지.\n';
+      if (fc.water === 0) p2 += '수(水) 0개. "수를 가지고 있다" 표현 금지.\n';
+      if (fc.wood === 0) p2 += '목(木) 0개. "목을 가지고 있다" 표현 금지.\n';
+      p2 += '신강도: ' + sl5 + ' (' + ss + '점).\n';
+    }
 
     if (_chatMode === 'default' || !_chatMode) {
       p2 += '\n## 기본 모드 대화 규칙\n';
