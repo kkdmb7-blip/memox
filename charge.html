@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#09090f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+<script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&display=swap');
@@ -348,37 +348,44 @@ function renderPacks() {
   });
 }
 
-function doPay(pack) {
-  if (typeof IMP === 'undefined') { toast('결제 모듈 로드 중이에요. 잠시 후 다시 시도해주세요.'); return; }
+async function doPay(pack) {
+  if (typeof PortOne === 'undefined') { toast('결제 모듈 로드 중이에요. 잠시 후 다시 시도해주세요.'); return; }
 
   var totalOrb = pack.orb + (pack.firstOnly && isFirstCharge ? (pack.bonus || 0) : 0);
-  var merchantUid = 'ORB-' + pack.id + '-' + Date.now();
+  var paymentId = 'ORB-' + pack.id + '-' + Date.now();
   var packName = '포르투나 ' + totalOrb.toLocaleString() + ' Orb 충전';
 
-  IMP.init('imp63718155');
-  IMP.request_pay({
-    pg: 'html5_inicis.MOI3302087',
-    pay_method: 'card',
-    merchant_uid: merchantUid,
-    name: packName,
-    amount: pack.price,
-    buyer_name: currentUserName || '포르투나 사용자',
-    buyer_email: currentUserEmail || 'user@fortuna.app',
-    m_redirect_url: 'https://kkdmb7-blip.github.io/memox/charge.html',
-  }, async function(rsp) {
-    if (!rsp.success) {
-      var msg = rsp.error_msg || '';
-      if (msg.includes('취소') || msg === '') {
-        toast('결제가 취소되었어요.');
+  showLoading();
+  try {
+    var rsp = await PortOne.requestPayment({
+      storeId: 'imp63718155',
+      channelKey: 'CHANNEL_KEY_HERE',
+      paymentId: paymentId,
+      orderName: packName,
+      totalAmount: pack.price,
+      currency: 'KRW',
+      payMethod: 'CARD',
+      customer: {
+        fullName: currentUserName || '포르투나 사용자',
+        email: currentUserEmail || 'user@fortuna.app',
+      },
+      redirectUrl: 'https://kkdmb7-blip.github.io/memox/charge.html',
+    });
+    hideLoading();
+    if (rsp && rsp.code) {
+      // 오류 또는 취소
+      if (rsp.code === 'FAILURE_TYPE_PG' || rsp.message) {
+        toast('결제 실패: ' + (rsp.message || rsp.code));
       } else {
-        toast('결제 실패: ' + msg);
+        toast('결제가 취소되었어요.');
       }
       console.warn('[결제 실패]', rsp);
       return;
     }
+    // 성공
     showLoading();
     try {
-      await chargeOrb(pack, totalOrb, rsp.imp_uid, merchantUid);
+      await chargeOrb(pack, totalOrb, rsp.paymentId, paymentId);
       hideLoading();
       toast('✅ ' + totalOrb.toLocaleString() + ' Orb 충전 완료!', 3000);
       setTimeout(function() { history.back(); }, 2000);
@@ -386,7 +393,11 @@ function doPay(pack) {
       hideLoading();
       toast('결제는 완료됐으나 저장 중 오류가 발생했어요. 고객센터에 문의해주세요.');
     }
-  });
+  } catch(e) {
+    hideLoading();
+    toast('결제 오류: ' + e.message);
+    console.warn('[결제 오류]', e);
+  }
 }
 
 async function chargeOrb(pack, totalOrb, impUid, merchantUid) {

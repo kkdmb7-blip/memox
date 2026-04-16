@@ -828,7 +828,7 @@
   @keyframes ghFadeIn { from { opacity:0;transform:translateY(6px); } to { opacity:1;transform:translateY(0); } }
 
 </style>
-<script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+<script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
 </head>
 <body>
 
@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.19'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.20'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5728,35 +5728,7 @@ async function handleInviteCharge() {
 
 async function handlePayCharge() {
   if (!currentUser) return;
-  if (typeof IMP === 'undefined') { alert('\uACB0\uC81C \uBAA8\uB4C8\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC774\uC5D0\uC694. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.'); return; }
-  IMP.init('imp63718155');
-  IMP.request_pay({
-    pg: 'html5_inicis.MOI3302087',
-    pay_method: 'card',
-    merchant_uid: 'CHARGE-' + Date.now(),
-    name: '\uD3EC\uB974\uD22C\uB098 \uC9C8\uBB38 10\uAC1C \uCDA9\uC804',
-    amount: 1900,
-    buyer_name: (userProfile && userProfile.name) || '',
-    buyer_email: (currentUser && currentUser.email) || '',
-  }, async function(rsp) {
-    if (rsp.success) {
-      try {
-        await sb.from('question_charges').insert({
-          user_id: currentUser.id,
-          amount: 10,
-          payment_id: rsp.imp_uid,
-          type: 'purchase',
-          created_at: Date.now()
-        });
-        closeChargeModal();
-        alert('10\uAC1C \uCDA9\uC804\uB429\uB2C8\uB2E4! \uD83D\uDD2E');
-      } catch(e) {
-        alert('\uACB0\uC81C\uB294 \uC644\uB8CC\uB418\uC5C8\uC73C\uB098 \uC800\uC7A5 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC5B4\uC694.');
-      }
-    } else {
-      console.warn('\uACB0\uC81C \uC2E4\uD328', rsp.error_msg);
-    }
-  });
+  location.href = 'charge.html';
 }
 
 // ── A/B 가격 테스트 ──────────────────────────────────────
@@ -5789,37 +5761,7 @@ async function logAbTest(userId, ab) {
 
 async function handleSubCharge() {
   if (!currentUser) return;
-  if (typeof IMP === 'undefined') { alert('결제 모듈을 불러오는 중이에요. 잠시 후 다시 시도해주세요.'); return; }
-  var ab = getAbPriceGroup();
-  await logAbTest(currentUser.id, ab);
-  IMP.init('imp63718155');
-  IMP.request_pay({
-    pg: 'html5_inicis.MOI3302087',
-    pay_method: 'card',
-    merchant_uid: 'SUB-' + Date.now(),
-    name: '포르투나 무제한 구독 (월 ' + ab.price.toLocaleString() + '원)',
-    amount: ab.price,
-    buyer_name: (userProfile && userProfile.name) || '',
-    buyer_email: (currentUser && currentUser.email) || '',
-  }, async function(rsp) {
-    if (rsp.success) {
-      try {
-        await sb.from('question_charges').insert({
-          user_id: currentUser.id,
-          amount: 9999,
-          payment_id: rsp.imp_uid,
-          type: 'subscription',
-          created_at: Date.now()
-        });
-        closeChargeModal();
-        alert('무제한 구독이 시작됐어요! ✨');
-      } catch(e) {
-        alert('결제는 완료되었으나 저장 중 오류가 발생했어요. 고객센터에 문의해주세요.');
-      }
-    } else {
-      console.warn('구독 결제 실패', rsp.error_msg);
-    }
-  });
+  location.href = 'charge.html';
 }
 
 async function handleReferralOnLoad() {
