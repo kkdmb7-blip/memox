@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.15'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.16'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4835,6 +4835,11 @@ function sendVedicChip(text) {
 async function _doSendVedicChip(text) {
   window._vedicChipInstruction = _VEDIC_CHIP_INSTRUCTIONS[text] || '';
   window._vedicChipSystem = _VEDIC_CHIP_SYSTEM[text] || '';
+  // 베딕 시스템 사용하는 버튼은 강제로 베딕 데이터 재로드
+  var chipSys = _VEDIC_CHIP_SYSTEM[text] || '';
+  if (chipSys === 'vedic' || chipSys === 'all') {
+    window._vedicFetched = false;
+  }
   if (text === '길일 잡기') {
     await ensureVedicMuhurta();
     var cached = window._vedicCache;
