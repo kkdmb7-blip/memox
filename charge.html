@@ -252,13 +252,18 @@ function toast(msg, dur) {
 function showLoading() { document.getElementById('loadingOverlay').classList.add('show'); }
 function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
 
+var currentUserName = '';
+var currentUserEmail = '';
+
 async function loadUser() {
   // 카카오 로그인 캐시 확인
   var kakaoRaw = localStorage.getItem('fortuna_kakao_user');
   if (kakaoRaw) {
     try {
       var kakaoData = JSON.parse(kakaoRaw);
-      currentUserId = kakaoData.id || kakaoData.profile && kakaoData.profile.id;
+      currentUserId = kakaoData.id || (kakaoData.profile && kakaoData.profile.id);
+      currentUserName = kakaoData.name || (kakaoData.profile && kakaoData.profile.nickname) || '';
+      currentUserEmail = kakaoData.email || '';
     } catch(e) {}
   }
   // Supabase 세션 확인
@@ -266,12 +271,14 @@ async function loadUser() {
     try {
       var session = await sb.auth.getSession();
       if (session.data && session.data.session && session.data.session.user) {
-        currentUserId = session.data.session.user.id;
+        var u = session.data.session.user;
+        currentUserId = u.id;
+        currentUserEmail = u.email || '';
+        currentUserName = (u.user_metadata && u.user_metadata.name) || '';
       }
     } catch(e) {}
   }
   if (!currentUserId) {
-    // 미로그인 → 메인으로
     location.href = './';
     return false;
   }
@@ -355,13 +362,18 @@ function doPay(pack) {
     merchant_uid: merchantUid,
     name: packName,
     amount: pack.price,
-    buyer_name: '',
-    buyer_email: '',
+    buyer_name: currentUserName || '포르투나 사용자',
+    buyer_email: currentUserEmail || 'user@fortuna.app',
+    m_redirect_url: 'https://kkdmb7-blip.github.io/memox/charge.html',
   }, async function(rsp) {
     if (!rsp.success) {
-      if (rsp.error_msg && !rsp.error_msg.includes('취소')) {
+      var msg = rsp.error_msg || '';
+      if (msg.includes('취소') || msg === '') {
         toast('결제가 취소되었어요.');
+      } else {
+        toast('결제 실패: ' + msg);
       }
+      console.warn('[결제 실패]', rsp);
       return;
     }
     showLoading();
