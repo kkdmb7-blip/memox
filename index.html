@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.11'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.12'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5839,8 +5839,11 @@ async function handleReferralOnLoad() {
 
 var FREE_DAILY_PER_SLOT = 20; // 회당 무료 충전량 (orb), 하루 3회 = 총 60
 
+var _loadOrbLock = false;
 async function loadOrbBalance() {
   if (!currentUser) return;
+  if (_loadOrbLock) return; // 동시 호출 방지 (중복 충전 방지)
+  _loadOrbLock = true;
   try {
     var res = await sb.from('orb_balance').select('balance,free_balance,paid_balance,is_first_charge,last_daily_at').eq('user_id', currentUser.id).maybeSingle();
     if (res.data) {
@@ -5923,6 +5926,7 @@ async function loadOrbBalance() {
       _isFirstCharge = true;
     }
   } catch(e) { console.warn('Orb 잔액 로드 실패', e.message); }
+  _loadOrbLock = false;
   updateOrbBadge();
 }
 
