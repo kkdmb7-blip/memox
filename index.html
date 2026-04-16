@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.18'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.45.19'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5880,9 +5880,26 @@ async function loadOrbBalance() {
       var _slot = _hourKST < 8 ? 1 : _hourKST < 16 ? 2 : 3;
       var _slotKey = _todayKST + '-' + _slot; // e.g. "2026-04-11-2"
       var _lastDaily = res.data.last_daily_at || '';
+      var _lastDate = _lastDaily.slice(0, 10);
+
+      // ── 날짜가 바뀌었으면 free_balance 자정 리셋 ──
+      // 무료 Orb는 당일만 유효. paid_balance는 보존, free만 0 초기화
+      if (_lastDate && _lastDate !== _todayKST) {
+        var _resetFreeRes = await sb.from('orb_balance').update({
+          free_balance: 0,
+          updated_at: new Date().toISOString()
+        }).eq('user_id', currentUser.id);
+        if (!_resetFreeRes.error) {
+          _orbFreeBalance = 0;
+          console.log('[Orb] 자정 리셋: free_balance → 0');
+        }
+      }
+
       if (_lastDaily !== _slotKey) {
+        // 하루 최대 60 초과 충전 방지 (슬롯 1→20, 2→40, 3→60)
+        var _todayFreeAccum = (_lastDate === _todayKST ? _orbFreeBalance : 0) + FREE_DAILY_PER_SLOT;
+        var _newFree = Math.min(_todayFreeAccum, FREE_DAILY_PER_SLOT * 3); // 하루 max 60
         var _newTotal = _orbBalance + FREE_DAILY_PER_SLOT;
-        var _newFree = Math.max(0, _newTotal - _orbPaidBalance);
         var _now = new Date().toISOString();
         var _upRes = await sb.from('orb_balance').update({
           free_balance: _newFree,
