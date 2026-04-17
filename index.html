@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.47.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.48.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6535,8 +6535,7 @@ async function callClaude(userMsg, apiKey) {
     }
 
     p2 += '\n## 대화 규칙\n';
-    p2 += '- 월건(갑오월, 계사월 등) 직접 언급 금지. 틀립니다.\n';
-    p2 += '- 일진(계축일, 갑인일 등) 직접 언급 금지. 틀립니다.\n';
+    p2 += '- 월건/일진 언급 시 시스템 자동주입 데이터(TODAY_MONTH_GANJI/TODAY_DAY_PILLAR) 그대로만 사용. 임의 계산·추론 절대 금지.\n';
     p2 += '- 특정 월이나 날짜에 좋다/나쁘다 예언 금지.\n';
     p2 += '- 자미두수, 베딕, 서양점성 체계 이름 언급 금지.\n';
     p2 += '- 사주 전문 용어(십신, 격국, 용신) 직접 쓰지 마세요.\n';
@@ -6583,6 +6582,15 @@ async function callClaude(userMsg, apiKey) {
       + '[현재 시간] ' + currentHour + '시 (' + timeZoneLabel + ')\n\n'
       + _classBlock
       + _ctxBlock
+      + '━━━ [정확 간지 데이터 — Worker NASA 절기DB 계산값, 절대 변경·추론 금지] ━━━\n'
+      + '오늘 날짜: ' + dateStr + '\n'
+      + '올해 년주: ' + yearGanji + '년\n'
+      + '이번 달 월건: ' + monthGanji + '월\n'
+      + '오늘 일진(TODAY_DAY_PILLAR): ' + todayGanji + '일\n'
+      + '사용자 일주(USER_DAY_PILLAR): ' + _userDayPillar + ' ⛔ 오늘 일진과 절대 혼동 금지\n'
+      + (futureGanji ? '\n[향후 3일 일진]\n' + futureGanji : '')
+      + (futureMonthGanji ? '\n[향후 6개월 월건]\n' + futureMonthGanji : '')
+      + '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n'
       + '━━━ [사주 운세 데이터 — 서버 계산 완료, 판정 변경 금지] ━━━\n'
       + _precalc.prebuilt_text
       + '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n'
@@ -6604,7 +6612,7 @@ async function callClaude(userMsg, apiKey) {
       + '[대화 규칙]\n'
       + '- 첫 문장은 반드시 사용자 감정·상황에 공감으로 시작\n'
       + '- 사주 근거는 문장 안에 자연스럽게 녹일 것. 독립 항목으로 나열 금지\n'
-      + '- 월건(임진월 등) / 일진(기미일 등) 직접 언급 금지 — 틀릴 수 있음\n'
+      + '- 월건/일진 언급 시 위 [정확 간지 데이터] 그대로만 사용. 임의 추론·계산 절대 금지 (없으면 언급 자체 금지)\n'
       + '- 십신(편재, 정관 등) 용어 직접 쓰지 말 것. 뜻만 풀어서\n'
       + '- 격국·용신·기신 용어 직접 쓰지 말 것\n'
       + '- 수치(%, 점수) / 한자 병기 / 영어 단어 / 표(|) / HTML 태그 금지\n'
