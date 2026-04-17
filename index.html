@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.46.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.47.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5736,75 +5736,21 @@ async function handleReferralOnLoad() {
 
 // ── Orb 시스템 ────────────────────────────────────────────
 
-var FREE_DAILY_PER_SLOT = 20; // 회당 무료 충전량 (orb), 하루 3회 = 총 60
+// 무료 충전은 Worker 크론이 담당 (KST 1시/9시/17시, 각 20 Orb)
+// 클라이언트는 DB에서 읽기만 수행
 
 var _loadOrbLock = false;
 async function loadOrbBalance() {
   if (!currentUser) return;
-  if (_loadOrbLock) return; // 동시 호출 방지 (중복 충전 방지)
+  if (_loadOrbLock) return;
   _loadOrbLock = true;
   try {
-    var res = await sb.from('orb_balance').select('balance,free_balance,paid_balance,is_first_charge,last_daily_at').eq('user_id', currentUser.id).maybeSingle();
+    var res = await sb.from('orb_balance').select('balance,free_balance,paid_balance,is_first_charge').eq('user_id', currentUser.id).maybeSingle();
     if (res.data) {
       _orbFreeBalance = res.data.free_balance || 0;
       _orbPaidBalance = res.data.paid_balance || 0;
       _orbBalance = res.data.balance || (_orbFreeBalance + _orbPaidBalance);
       _isFirstCharge = res.data.is_first_charge !== false;
-
-      // ── 하루 3회 무료 충전 (00~07시: 1회차, 08~15시: 2회차, 16~23시: 3회차) ──
-      var _nowKST = new Date(Date.now() + 9 * 3600000);
-      var _todayKST = _nowKST.toISOString().slice(0, 10);
-      var _hourKST = _nowKST.getUTCHours();
-      var _slot = _hourKST < 8 ? 1 : _hourKST < 16 ? 2 : 3;
-      var _slotKey = _todayKST + '-' + _slot; // e.g. "2026-04-11-2"
-      var _lastDaily = res.data.last_daily_at || '';
-      var _lastDate = _lastDaily.slice(0, 10);
-
-      // ── 날짜가 바뀌었으면 free_balance 자정 리셋 ──
-      // 무료 Orb는 당일만 유효. paid_balance는 보존, free만 0 초기화
-      if (_lastDate && _lastDate !== _todayKST) {
-        var _resetFreeRes = await sb.from('orb_balance').update({
-          free_balance: 0,
-          updated_at: new Date().toISOString()
-        }).eq('user_id', currentUser.id);
-        if (!_resetFreeRes.error) {
-          _orbFreeBalance = 0;
-          console.log('[Orb] 자정 리셋: free_balance → 0');
-        }
-      }
-
-      if (_lastDaily !== _slotKey) {
-        // 하루 최대 60 초과 충전 방지 (슬롯 1→20, 2→40, 3→60)
-        var _todayFreeAccum = (_lastDate === _todayKST ? _orbFreeBalance : 0) + FREE_DAILY_PER_SLOT;
-        var _newFree = Math.min(_todayFreeAccum, FREE_DAILY_PER_SLOT * 3); // 하루 max 60
-        var _newTotal = _orbBalance + FREE_DAILY_PER_SLOT;
-        var _now = new Date().toISOString();
-        var _upRes = await sb.from('orb_balance').update({
-          free_balance: _newFree,
-          balance: _newTotal,
-          last_daily_at: _slotKey,
-          updated_at: _now
-        }).eq('user_id', currentUser.id);
-        if (_upRes.error) {
-          console.error('[Orb] orb_balance update 실패:', _upRes.error.message, _upRes.error);
-        } else {
-          var _txRes = await sb.from('orb_transactions').insert({
-            user_id: currentUser.id,
-            type: 'daily_charge',
-            amount: FREE_DAILY_PER_SLOT,
-            description: '일일 무료 충전 (' + _slot + '회차)',
-            balance_after: _newTotal,
-            created_at: _now
-          });
-          if (_txRes.error) {
-            console.error('[Orb] orb_transactions insert 실패:', _txRes.error.message, _txRes.error);
-          } else {
-            console.log('[Orb] 무료 충전 +' + FREE_DAILY_PER_SLOT + ' (' + _slotKey + ') → 총 ' + _newTotal);
-          }
-          _orbFreeBalance = _newFree;
-          _orbBalance = _newTotal;
-        }
-      }
     } else {
       // orb_balance가 없음 — ID 불일치 가능성 체크
       if (currentUser.email) {
