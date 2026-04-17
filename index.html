@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.46.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.46.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4252,7 +4252,7 @@ function selectPartnerGender(g) {
   document.getElementById('pgBtnNone').classList.toggle('selected', g === '');
 }
 
-function confirmPartnerModal() {
+async function confirmPartnerModal() {
   var y = document.getElementById('partnerYear').value;
   var m = document.getElementById('partnerMonth').value;
   var d = document.getElementById('partnerDay').value;
@@ -4271,15 +4271,34 @@ function confirmPartnerModal() {
   if (gender)      parts.push(gender);
   if (name)        parts.push('(' + name + ')');
 
-  // 상대방 사주 계산 (hour 없으면 12시 기본)
+  // Worker에서 상대방 사주 계산
   var pHour = hour !== '' ? parseInt(hour) : 12;
-  window._partnerSaju = calcPartnerSaju(parseInt(y), parseInt(m), parseInt(d), pHour);
+  var STEM_EL_CP = {'갑':'목','을':'목','병':'화','정':'화','무':'토','기':'토','경':'금','신':'금','임':'수','계':'수'};
+  var ZODIAC_CP = ['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
+  var BRANCHES_CP = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+  try {
+    var _cpRes = await fetchWithTimeout(WORKER_URL+'/saju-test?year='+parseInt(y)+'&month='+parseInt(m)+'&day='+parseInt(d)+'&hour='+pHour+'&minute=0&gender='+((_partnerGender==='M')?'male':'female'), {}, 8000);
+    var _cpData = await _cpRes.json();
+    var _cpP = _cpData.summary && _cpData.summary.pillars ? _cpData.summary.pillars : {};
+    var _cpDayStem = (_cpP.day||'')[0]||'';
+    var _cpYearBranch = (_cpP.year||'')[1]||'';
+    window._partnerSaju = {
+      pillars: { year: _cpP.year||'', month: _cpP.month||'', day: _cpP.day||'', hour: _cpP.hour||'' },
+      zodiac: ZODIAC_CP[BRANCHES_CP.indexOf(_cpYearBranch)] || '',
+      dayElement: STEM_EL_CP[_cpDayStem] || '',
+      fivePct: (function(fp){ return {목:fp.wood||0,화:fp.fire||0,토:fp.earth||0,금:fp.metal||0,수:fp.water||0}; })(_cpData.five_pct||{}),
+      strength: (_cpData.strength_level_5==='신강'||_cpData.strength_level_5==='극왕') ? '신강' : (_cpData.strength_level_5==='신약'||_cpData.strength_level_5==='극약') ? '신약' : '중화'
+    };
+  } catch(e) {
+    console.warn('Worker 사주 조회 실패:', e);
+    window._partnerSaju = { pillars:{year:'',month:'',day:'',hour:''}, zodiac:'', dayElement:'', fivePct:{}, strength:'' };
+  }
   window._partnerSaju.name = name || '상대방';
   window._partnerSaju.gender = gender;
 
   var label = name ? name + ' ' : '상대: ';
   var ps = window._partnerSaju;
-  var sajuNote = ps ? ' [사주: ' + ps.pillars.year + '년 ' + ps.pillars.month + '월 ' + ps.pillars.day + '일 ' + ps.pillars.hour + '시, ' + ps.zodiac + ']' : '';
+  var sajuNote = ps && ps.pillars.year ? ' [사주: ' + ps.pillars.year + '년 ' + ps.pillars.month + '월 ' + ps.pillars.day + '일 ' + ps.pillars.hour + '시, ' + ps.zodiac + ']' : '';
   var text = _partnerChipText + ' — ' + label + parts.join(' ') + sajuNote;
 
   closePartnerModal();
@@ -4292,111 +4311,6 @@ function confirmPartnerModal() {
 
   document.getElementById('chatInput').value = text;
   sendMessage();
-}
-
-// ── 상대방 사주 직접 계산 (fortuneteller 오픈소스 로직) ────────
-function calcPartnerSaju(year, month, day, hour) {
-  const STEMS   = ['갑','을','병','정','무','기','경','신','임','계'];
-  const BRANCHES= ['자','축','인','묘','진','사','오','미','신','유','술','해'];
-  const ZODIAC  = ['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
-  const STEM_EL  = ['목','목','화','화','토','토','금','금','수','수'];
-  const BRANCH_EL= ['수','토','목','목','토','화','화','토','금','금','토','수'];
-
-  // 절기 근사 [그레고리월, 일, 월지 인덱스(BRANCHES 기준)]
-  const JEOLGI = [
-    [1, 6, 1],[2, 4, 2],[3, 6, 3],[4, 5, 4],
-    [5, 6, 5],[6, 6, 6],[7, 7, 7],[8, 8, 8],
-    [9, 8, 9],[10,8,10],[11,7,11],[12,7, 0],
-  ];
-  const birthMs = Date.UTC(year, month - 1, day);
-
-  // 월지 결정: 생일이 해당 절기일 이후인 마지막 절기
-  var monthBranchIdx = 1; // default: 축월
-  for (var ji = 0; ji < JEOLGI.length; ji++) {
-    var jm = JEOLGI[ji][0], jd = JEOLGI[ji][1], bi = JEOLGI[ji][2];
-    if (birthMs >= Date.UTC(year, jm - 1, jd)) monthBranchIdx = bi;
-  }
-
-  // 년주: 입춘(2/4) 전이면 전년도
-  var sajuYear = (birthMs < Date.UTC(year, 1, 4)) ? year - 1 : year;
-  var yearIdx      = ((sajuYear - 4) % 60 + 60) % 60;
-  var yearStemIdx  = yearIdx % 10;
-  var yearBranchIdx= yearIdx % 12;
-
-  // 월주: 오호둔법 (년간 기준 인월 천간 결정)
-  var MONTH_STEM_BASE = [2, 4, 6, 8, 0]; // 갑기→병, 을경→무, 병신→경, 정임→임, 무계→갑
-  var inMonthBase = MONTH_STEM_BASE[yearStemIdx % 5];
-  var MONTH_BRANCH_ORDER = [2,3,4,5,6,7,8,9,10,11,0,1]; // 인월=0 순서
-  var monthOrderIdx = MONTH_BRANCH_ORDER.indexOf(monthBranchIdx);
-  var monthStemIdx  = (inMonthBase + monthOrderIdx) % 10;
-
-  // 일주: 기준일 2024-02-10 = 갑진(index 40)
-  var BASE_UTC = Date.UTC(2024, 1, 10);
-  var diffDays = Math.round((birthMs - BASE_UTC) / 86400000);
-  var dayIdx      = ((40 + diffDays) % 60 + 60) % 60;
-  var dayStemIdx  = dayIdx % 10;
-  var dayBranchIdx= dayIdx % 12;
-
-  // 시주: 오호둔법 (일간 기준 자시 천간 결정)
-  var hourBranchIdx = (hour === 23) ? 0 : Math.floor((hour + 1) / 2) % 12;
-  var HOUR_STEM_BASE = [0, 2, 4, 6, 8]; // 갑기→갑, 을경→병, 병신→무, 정임→경, 무계→임
-  var hourStemBase = HOUR_STEM_BASE[dayStemIdx % 5];
-  var hourStemIdx  = (hourStemBase + hourBranchIdx) % 10;
-
-  // 지장간 [본기점수, [중기원소,점수], [말기원소,점수]] — 지지 인덱스 0~11(자~해) 순
-  var JIJANGGAN = [
-    [['수',6],['',0],['',0]],     // 자: 壬癸수 본기
-    [['토',6],['수',2],['금',2]], // 축: 己토 본기, 癸수 중기, 辛금 말기
-    [['목',6],['화',2],['토',2]], // 인: 甲목 본기, 丙화 중기, 戊토 말기
-    [['목',6],['목',4],['',0]],   // 묘: 乙목 본기, 甲목 중기
-    [['토',6],['목',2],['수',2]], // 진: 戊토 본기, 乙목 중기, 癸수 말기
-    [['화',6],['토',2],['금',2]], // 사: 丙화 본기, 戊토 중기, 庚금 말기
-    [['화',6],['토',2],['화',2]], // 오: 丁화 본기, 己토 중기, 丙화 말기
-    [['토',6],['화',2],['목',2]], // 미: 己토 본기, 丁화 중기, 乙목 말기
-    [['금',6],['수',2],['토',2]], // 신: 庚금 본기, 壬수 중기, 戊토 말기
-    [['금',6],['금',4],['',0]],   // 유: 辛금 본기, 庚금 중기
-    [['토',6],['금',2],['화',2]], // 술: 戊토 본기, 辛금 중기, 丁화 말기
-    [['수',6],['목',2],['토',2]], // 해: 壬수 본기, 甲목 중기, 戊토 말기
-  ];
-
-  // 오행 포인트 (천간 10점, 지지 지장간 합 10점 — 합계 균등)
-  var elPt = {목:0, 화:0, 토:0, 금:0, 수:0};
-  [yearStemIdx, monthStemIdx, dayStemIdx, hourStemIdx].forEach(function(i){ elPt[STEM_EL[i]] += 10; });
-  [yearBranchIdx, monthBranchIdx, dayBranchIdx, hourBranchIdx].forEach(function(bi){
-    JIJANGGAN[bi].forEach(function(pair){ if (pair[0]) elPt[pair[0]] += pair[1]; });
-  });
-  var totalPt = Object.values(elPt).reduce(function(a,b){ return a+b; }, 0);
-  var fivePct = {};
-  Object.keys(elPt).forEach(function(k){ fivePct[k] = Math.round(elPt[k] / totalPt * 100); });
-
-  // 신강/신약/중화 (일간 오행·인성 포인트 비율)
-  var dayEl = STEM_EL[dayStemIdx];
-  var PARENT_EL = {목:'수', 화:'목', 토:'화', 금:'토', 수:'금'};
-  var parentEl = PARENT_EL[dayEl];
-  var supportPt = 0;
-  [yearStemIdx, monthStemIdx, hourStemIdx].forEach(function(i){
-    if (STEM_EL[i] === dayEl || STEM_EL[i] === parentEl) supportPt += 10;
-  });
-  [yearBranchIdx, monthBranchIdx, dayBranchIdx, hourBranchIdx].forEach(function(bi){
-    JIJANGGAN[bi].forEach(function(pair){
-      if (pair[0] === dayEl || pair[0] === parentEl) supportPt += pair[1];
-    });
-  });
-  var supportRatio = supportPt / totalPt;
-  var strength = supportRatio >= 0.55 ? '신강' : supportRatio >= 0.35 ? '중화' : '신약';
-
-  return {
-    pillars: {
-      year:  STEMS[yearStemIdx]  + BRANCHES[yearBranchIdx],
-      month: STEMS[monthStemIdx] + BRANCHES[monthBranchIdx],
-      day:   STEMS[dayStemIdx]   + BRANCHES[dayBranchIdx],
-      hour:  STEMS[hourStemIdx]  + BRANCHES[hourBranchIdx],
-    },
-    zodiac: ZODIAC[yearBranchIdx],
-    fivePct: fivePct,
-    strength: strength,
-    dayElement: dayEl,
-  };
 }
 
 // ── 궁합 점수 계산 & 결과 모달 ──────────────────────────────────
@@ -4481,9 +4395,9 @@ async function openGunghapResultModal(pName, pY, pM, pD, pHour, pGender) {
     mySaju = workerToSaju(srvA);
     pSaju = workerToSaju(srvB);
   } catch(e) {
-    console.warn('Worker 사주 조회 실패, 로컬 fallback:', e);
-    mySaju = calcPartnerSaju(parseInt(bd[0]), parseInt(bd[1]), parseInt(bd[2]), parseInt(bt[0]));
-    pSaju  = calcPartnerSaju(pY, pM, pD, pHour);
+    console.warn('Worker 사주 조회 실패:', e);
+    alert('사주 계산 서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    return;
   }
   mySaju.gender = profile.gender === 'M' ? '남성' : '여성';
   pSaju.name = pName; pSaju.gender = pGender === 'M' ? '남성' : pGender === 'F' ? '여성' : '';
@@ -5605,7 +5519,7 @@ function buildConsultPrompt() {
     yongsin = convertChanja(_sd.saju_yongshin_primary || (_sd.saju_yongshin_full && _sd.saju_yongshin_full.primary_kor) || (_sd.yongshin && _sd.yongshin.primary_kor) || '');
   } catch(e) {}
   var iljin = '';
-  try { iljin = (typeof getTodayGanji === 'function' ? getTodayGanji() : '') || window._todayGanji || ''; } catch(e) {}
+  try { iljin = window._todayGanji || ''; } catch(e) {}
 
   var s = consultState;
   var parts = [];
@@ -6181,15 +6095,13 @@ async function callClaude(userMsg, apiKey) {
       futureMonthGanji += _fmItem.year + '년 ' + _fmItem.month + '월: ' + _fmItem.ganji + '월\n';
     }
   } catch(e) {
-    console.warn('Worker /today-ganji 실패, 로컬 fallback:', e);
-    todayGanji = getTodayGanji();
-    monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1, _nowKST.getUTCDate());
-    yearGanji = getYearGanji();
-    var _weekDaysFB = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
-    for (var i = 3; i >= 1; i--) { var _pd = new Date(new Date().getTime() - i * 86400000); var _pdKST = new Date(_pd.getTime() + 9*60*60*1000); pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _weekDaysFB[_pdKST.getUTCDay()] + '): ' + getTodayGanji(_pd) + '일\n'; }
-    for (var i = 1; i <= 3; i++) { var _fd = new Date(new Date().getTime() + i * 86400000); var _fdKST = new Date(_fd.getTime() + 9*60*60*1000); var prefix = (i === 1) ? '[내일] ' : ''; futureGanji += prefix + _fdKST.getUTCFullYear() + '년 ' + (_fdKST.getUTCMonth()+1) + '월 ' + _fdKST.getUTCDate() + '일 (' + _weekDaysFB[_fdKST.getUTCDay()] + '): ' + getTodayGanji(_fd) + '일\n'; }
-    for (var i = 1; i <= 6; i++) { var fm = new Date(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + i, 1); futureMonthGanji += fm.getFullYear() + '년 ' + (fm.getMonth()+1) + '월: ' + getMonthGanji(fm.getFullYear(), fm.getMonth()+1, 15) + '월\n'; }
+    console.warn('Worker /today-ganji 실패:', e);
+    todayGanji = '조회실패';
+    monthGanji = '조회실패';
+    yearGanji = '조회실패';
   }
+  // buildConsultPrompt 등 외부에서 일진 접근용 글로벌 저장
+  window._todayGanji = todayGanji;
   var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
   var _weekDaysShort = ['일','월','화','수','목','금','토'];
   // ── 이번 주/다음 주 실제 날짜 계산 (월~일 기준) ──
@@ -7652,74 +7564,9 @@ function scheduleFortunaNotification() {
 }
 
 
-function getTodayGanji(targetDate = new Date()) {
-  const heavenly = ['갑','을','병','정','무','기','경','신','임','계'];
-  const earthly  = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
-
-  // 네가 직접 확인한 기준일: 2024-02-10 = 갑진일
-  // 갑진은 60갑자 index 40
-  const baseIndex = 40;
-  const baseUtc = Date.UTC(2024, 1, 10); // 2024-02-10
-
-  // 한국시간(KST) 기준 날짜만 잘라서 계산
-  function toKSTDateOnlyUTC(date) {
-    const kstMs = date.getTime() + 9 * 60 * 60 * 1000;
-    const kst = new Date(kstMs);
-    return Date.UTC(
-      kst.getUTCFullYear(),
-      kst.getUTCMonth(),
-      kst.getUTCDate()
-    );
-  }
-
-  const todayUtc = toKSTDateOnlyUTC(targetDate);
-
-  const diffDays = Math.floor((todayUtc - baseUtc) / 86400000);
-  const idx = ((baseIndex + diffDays) % 60 + 60) % 60;
-
-  return heavenly[idx % 10] + earthly[idx % 12];
-}
-// 년건 계산 — 입춘(2월 4일경) 기준
-// 기준: 2024년 = 갑진년(甲辰) = 60갑자 index 40
-function getYearGanji(date) {
-  date = date || new Date();
-  const heavenly = ['갑','을','병','정','무','기','경','신','임','계'];
-  const earthly  = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
-  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-  var year = kst.getUTCFullYear();
-  var month = kst.getUTCMonth() + 1;
-  var day = kst.getUTCDate();
-  // 입춘(2월 4일) 이전이면 전년도 기준
-  var adjYear = (month < 2 || (month === 2 && day < 4)) ? year - 1 : year;
-  const idx = (((adjYear - 2024) % 60) + 40 + 60) % 60;
-  return heavenly[idx % 10] + earthly[idx % 12];
-}
-
-// 월건 계산 — 절기(節氣) 반영
-// 기준: 2024년 2월(입춘 이후) = 병인(丙寅) = 60갑자 index 2
-// 각 월 절기 시작일(근사치): 1=소한(5), 2=입춘(4), 3=경칩(6), 4=청명(5),
-//   5=입하(6), 6=망종(6), 7=소서(7), 8=입추(8), 9=백로(8), 10=한로(8), 11=입동(7), 12=대설(7)
-function getMonthGanji(year, month, day) {
-  const heavenly = ['갑','을','병','정','무','기','경','신','임','계'];
-  const earthly  = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
-
-  const SOLAR_TERM_DAY = [0, 5, 4, 6, 5, 6, 6, 7, 8, 8, 8, 7, 7]; // index=월
-
-  const baseIndex = 2; // 병인(丙寅)
-  const baseYear = 2024, baseMonth = 2;
-
-  // day가 절기일 이전이면 전월 기준
-  var adjYear = year, adjMonth = month;
-  if (day !== undefined && day < SOLAR_TERM_DAY[month]) {
-    adjMonth = month - 1;
-    if (adjMonth === 0) { adjMonth = 12; adjYear = year - 1; }
-  }
-
-  const diffMonths = (adjYear - baseYear) * 12 + (adjMonth - baseMonth);
-  const idx = ((baseIndex + diffMonths) % 60 + 60) % 60;
-
-  return heavenly[idx % 10] + earthly[idx % 12];
-}
+// ── 로컬 간지 계산 함수 삭제됨 (2.46.0) ──
+// getTodayGanji, getYearGanji, getMonthGanji → Worker /today-ganji API로 통합
+// calcPartnerSaju → Worker /saju-test API로 통합
 
 function genId() { return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
 
