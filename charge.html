@@ -453,10 +453,54 @@ function handleInviteCharge() {
   }
 }
 
+// 모바일 리다이렉트 결제 결과 처리
+async function handleRedirectResult() {
+  var params = new URLSearchParams(window.location.search);
+  var paymentId = params.get('paymentId');
+  if (!paymentId) return false;
+
+  // URL 정리 (파라미터 제거)
+  window.history.replaceState({}, '', window.location.pathname);
+
+  var code = params.get('code');
+  if (code) {
+    // 실패 또는 취소
+    toast('결제가 취소되었어요.');
+    return true;
+  }
+
+  // 성공 — paymentId에서 팩 정보 추출
+  showLoading();
+  try {
+    var packId = null;
+    var match = paymentId.match(/^ORB-(.+)-\d+$/);
+    if (match) packId = match[1];
+
+    var pack = PACKS.find(function(p) { return p.id === packId; });
+    if (!pack) {
+      hideLoading();
+      toast('충전 팩 정보를 찾을 수 없어요. 고객센터에 문의해주세요.');
+      return true;
+    }
+
+    var totalOrb = pack.orb + (pack.firstOnly && isFirstCharge ? (pack.bonus || 0) : 0);
+    await chargeOrb(pack, totalOrb, paymentId, paymentId);
+    hideLoading();
+    toast('✅ ' + totalOrb.toLocaleString() + ' Orb 충전 완료!', 3000);
+  } catch(e) {
+    hideLoading();
+    toast('결제는 완료됐으나 저장 중 오류가 발생했어요. 고객센터에 문의해주세요.');
+    console.warn('[리다이렉트 충전 오류]', e);
+  }
+  return true;
+}
+
 // 초기화
 (async function() {
   var ok = await loadUser();
-  if (ok) await loadBalance();
+  if (!ok) return;
+  await loadBalance();
+  await handleRedirectResult();
 })();
 </script>
 </body>
