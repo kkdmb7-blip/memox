@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.45.20'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.46.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -4450,22 +4450,44 @@ async function openGunghapResultModal(pName, pY, pM, pD, pHour, pGender) {
   var bd = (profile.birth_date || '').split('-');
   var bt = (profile.birth_time && profile.birth_time !== 'unknown') ? profile.birth_time.split(':') : ['12','0'];
   if (!bd[0]) { alert('내 프로필 생년월일이 없습니다.'); return; }
-  var mySaju = calcPartnerSaju(parseInt(bd[0]), parseInt(bd[1]), parseInt(bd[2]), parseInt(bt[0]));
-  mySaju.gender = profile.gender === 'M' ? '남성' : '여성';
-  var pSaju  = calcPartnerSaju(pY, pM, pD, pHour);
-  pSaju.name = pName; pSaju.gender = pGender === 'M' ? '남성' : pGender === 'F' ? '여성' : '';
-  window._partnerSaju = pSaju;
 
-  // ── 서버에서 정확한 용신 가져오기 ──
   var EL_KOR = {fire:'화',water:'수',wood:'목',metal:'금',earth:'토'};
+  var STEM_EL_GH = {'갑':'목','을':'목','병':'화','정':'화','무':'토','기':'토','경':'금','신':'금','임':'수','계':'수'};
+  var ZODIAC_GH = ['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
+  var BRANCHES_GH = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+
+  // Worker에서 정확한 사주 계산 (NASA 절기DB 기반)
+  function workerToSaju(srv) {
+    var p = srv.summary && srv.summary.pillars ? srv.summary.pillars : {};
+    var dayStem = (p.day || '')[0] || '';
+    var yearBranch = (p.year || '')[1] || '';
+    var fp = srv.five_pct || {};
+    return {
+      pillars: { year: p.year||'', month: p.month||'', day: p.day||'', hour: p.hour||'' },
+      zodiac: ZODIAC_GH[BRANCHES_GH.indexOf(yearBranch)] || '',
+      fivePct: { 목: fp.wood||0, 화: fp.fire||0, 토: fp.earth||0, 금: fp.metal||0, 수: fp.water||0 },
+      strength: srv.strength_level_5 === '신강' || srv.strength_level_5 === '극왕' ? '신강' : srv.strength_level_5 === '신약' || srv.strength_level_5 === '극약' ? '신약' : '중화',
+      dayElement: STEM_EL_GH[dayStem] || '',
+      _yongsin: srv.yongshin ? (EL_KOR[srv.yongshin.primary] || srv.yongshin.primary) : ''
+    };
+  }
+
+  var mySaju, pSaju;
   try {
     var [srvA, srvB] = await Promise.all([
-      fetch(WORKER_URL+'/saju-test?year='+bd[0]+'&month='+parseInt(bd[1])+'&day='+parseInt(bd[2])+'&hour='+parseInt(bt[0])+'&minute=0&gender=male').then(function(r){return r.json()}).catch(function(){return{}}),
-      fetch(WORKER_URL+'/saju-test?year='+pY+'&month='+pM+'&day='+pD+'&hour='+(pHour||12)+'&minute=0&gender=male').then(function(r){return r.json()}).catch(function(){return{}})
+      fetch(WORKER_URL+'/saju-test?year='+bd[0]+'&month='+parseInt(bd[1])+'&day='+parseInt(bd[2])+'&hour='+parseInt(bt[0])+'&minute=0&gender='+(profile.gender==='M'?'male':'female')).then(function(r){return r.json()}),
+      fetch(WORKER_URL+'/saju-test?year='+pY+'&month='+pM+'&day='+pD+'&hour='+(pHour||12)+'&minute=0&gender='+(pGender==='M'?'male':'female')).then(function(r){return r.json()})
     ]);
-    if (srvA.yongshin) mySaju._yongsin = EL_KOR[srvA.yongshin.primary] || srvA.yongshin.primary;
-    if (srvB.yongshin) pSaju._yongsin  = EL_KOR[srvB.yongshin.primary] || srvB.yongshin.primary;
-  } catch(e) { console.warn('서버 용신 조회 실패:', e); }
+    mySaju = workerToSaju(srvA);
+    pSaju = workerToSaju(srvB);
+  } catch(e) {
+    console.warn('Worker 사주 조회 실패, 로컬 fallback:', e);
+    mySaju = calcPartnerSaju(parseInt(bd[0]), parseInt(bd[1]), parseInt(bd[2]), parseInt(bt[0]));
+    pSaju  = calcPartnerSaju(pY, pM, pD, pHour);
+  }
+  mySaju.gender = profile.gender === 'M' ? '남성' : '여성';
+  pSaju.name = pName; pSaju.gender = pGender === 'M' ? '남성' : pGender === 'F' ? '여성' : '';
+  window._partnerSaju = pSaju;
 
   var sc = calcGunghapScore(mySaju, pSaju);
   var myName = profile.name || '나';
@@ -6127,9 +6149,47 @@ async function callClaude(userMsg, apiKey) {
   var todayStr = _nowKST.getUTCFullYear() + '-' + String(_nowKST.getUTCMonth()+1).padStart(2,'0') + '-' + String(_nowKST.getUTCDate()).padStart(2,'0');
   var currentHour = _nowKST.getUTCHours();
   var timeZoneLabel = currentHour < 6 ? '새벽' : currentHour < 10 ? '오전' : currentHour < 12 ? '오전(업무)' : currentHour < 14 ? '점심' : currentHour < 18 ? '오후' : currentHour < 22 ? '저녁' : '야간';
-  var todayGanji = getTodayGanji();
-  var monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1, _nowKST.getUTCDate());
-  var yearGanji = getYearGanji();
+  // ── Worker API에서 정밀 간지 데이터 가져오기 (NASA 절기DB 기반) ──
+  var todayGanji, monthGanji, yearGanji, pastGanji = '', futureGanji = '', futureMonthGanji = '';
+  try {
+    var _ganjiRes = await fetchWithTimeout(WORKER_URL + '/today-ganji', {}, 5000);
+    var _ganjiData = await _ganjiRes.json();
+    todayGanji = _ganjiData.dayGanji;
+    monthGanji = _ganjiData.monthGanji;
+    yearGanji = _ganjiData.yearGanji;
+    var _weekDaysTmp = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+    _ganjiData.pastDays.forEach(function(p) { var _pd2 = new Date(Date.UTC(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth(), _nowKST.getUTCDate()) - ((_ganjiData.pastDays.indexOf(p)+1>2?3:_ganjiData.pastDays.indexOf(p)+1>1?2:1)) * 0); pastGanji += p.date + ' (' + _weekDaysTmp[new Date(p.date.replace(/년|월/g,'-').replace('일','')).getDay()||0] + '): ' + p.ganji + '일\n'; });
+    // 단순 포맷팅
+    pastGanji = '';
+    for (var pi = 0; pi < _ganjiData.pastDays.length; pi++) {
+      var _pdItem = _ganjiData.pastDays[pi];
+      var _pdDate = new Date(new Date().getTime() - (3 - pi) * 86400000);
+      var _pdKST2 = new Date(_pdDate.getTime() + 9*60*60*1000);
+      pastGanji += _pdItem.date + ' (' + _weekDaysTmp[_pdKST2.getUTCDay()] + '): ' + _pdItem.ganji + '일\n';
+    }
+    futureGanji = '';
+    for (var fi = 0; fi < _ganjiData.futureDays.length; fi++) {
+      var _fdItem = _ganjiData.futureDays[fi];
+      var _fdDate = new Date(new Date().getTime() + (fi+1) * 86400000);
+      var _fdKST2 = new Date(_fdDate.getTime() + 9*60*60*1000);
+      var _prefix = (fi === 0) ? '[내일] ' : '';
+      futureGanji += _prefix + _fdItem.date + ' (' + _weekDaysTmp[_fdKST2.getUTCDay()] + '): ' + _fdItem.ganji + '일\n';
+    }
+    futureMonthGanji = '';
+    for (var mi2 = 0; mi2 < _ganjiData.futureMonths.length; mi2++) {
+      var _fmItem = _ganjiData.futureMonths[mi2];
+      futureMonthGanji += _fmItem.year + '년 ' + _fmItem.month + '월: ' + _fmItem.ganji + '월\n';
+    }
+  } catch(e) {
+    console.warn('Worker /today-ganji 실패, 로컬 fallback:', e);
+    todayGanji = getTodayGanji();
+    monthGanji = getMonthGanji(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + 1, _nowKST.getUTCDate());
+    yearGanji = getYearGanji();
+    var _weekDaysFB = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+    for (var i = 3; i >= 1; i--) { var _pd = new Date(new Date().getTime() - i * 86400000); var _pdKST = new Date(_pd.getTime() + 9*60*60*1000); pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _weekDaysFB[_pdKST.getUTCDay()] + '): ' + getTodayGanji(_pd) + '일\n'; }
+    for (var i = 1; i <= 3; i++) { var _fd = new Date(new Date().getTime() + i * 86400000); var _fdKST = new Date(_fd.getTime() + 9*60*60*1000); var prefix = (i === 1) ? '[내일] ' : ''; futureGanji += prefix + _fdKST.getUTCFullYear() + '년 ' + (_fdKST.getUTCMonth()+1) + '월 ' + _fdKST.getUTCDate() + '일 (' + _weekDaysFB[_fdKST.getUTCDay()] + '): ' + getTodayGanji(_fd) + '일\n'; }
+    for (var i = 1; i <= 6; i++) { var fm = new Date(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + i, 1); futureMonthGanji += fm.getFullYear() + '년 ' + (fm.getMonth()+1) + '월: ' + getMonthGanji(fm.getFullYear(), fm.getMonth()+1, 15) + '월\n'; }
+  }
   var _weekDays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
   var _weekDaysShort = ['일','월','화','수','목','금','토'];
   // ── 이번 주/다음 주 실제 날짜 계산 (월~일 기준) ──
@@ -6143,16 +6203,6 @@ async function callClaude(userMsg, apiKey) {
   function _fmtWD(d) { return (d.getUTCMonth()+1) + '/' + d.getUTCDate() + '(' + _weekDaysShort[d.getUTCDay()] + ')'; }
   var _weekRangeInfo = '이번 주: ' + _fmtWD(_thisMon) + ' ~ ' + _fmtWD(_thisSun) + '\n'
     + '다음 주: ' + _fmtWD(_nextMon) + ' ~ ' + _fmtWD(_nextSun);
-var pastGanji = '';
-for (var i = 3; i >= 1; i--) { var _pd = new Date(new Date().getTime() - i * 86400000); var _pdKST = new Date(_pd.getTime() + 9 * 60 * 60 * 1000); var _pdDay = _weekDays[_pdKST.getUTCDay()]; pastGanji += _pdKST.getUTCFullYear() + '년 ' + (_pdKST.getUTCMonth()+1) + '월 ' + _pdKST.getUTCDate() + '일 (' + _pdDay + '): ' + getTodayGanji(_pd) + '일\n'; }
-var futureGanji = '';
-for (var i = 1; i <= 3; i++) { var _fd = new Date(new Date().getTime() + i * 86400000); var _fdKST = new Date(_fd.getTime() + 9 * 60 * 60 * 1000); var _fdDay = _weekDays[_fdKST.getUTCDay()]; var prefix = (i === 1) ? '[내일] ' : ''; futureGanji += prefix + _fdKST.getUTCFullYear() + '년 ' + (_fdKST.getUTCMonth()+1) + '월 ' + _fdKST.getUTCDate() + '일 (' + _fdDay + '): ' + getTodayGanji(_fd) + '일\n'; }
-  var futureMonthGanji = '';
-for (var i = 1; i <= 6; i++) {
-  var fm = new Date(_nowKST.getUTCFullYear(), _nowKST.getUTCMonth() + i, 1);
-  var fy = fm.getFullYear(); var fmo = fm.getMonth() + 1;
-  futureMonthGanji += fy + '년 ' + fmo + '월: ' + getMonthGanji(fy, fmo, 15) + '월\n';
-}
   // ── 모드별 데이터 블록 조립 ──────────────────────────────
   // 사용자 일간/일주 코드에서 확정값 추출 (LLM 추론 금지)
   var _userDayMaster = (function(p){
