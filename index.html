@@ -6375,7 +6375,7 @@ async function callClaude(userMsg, apiKey) {
   + getBranchInstruction(window._currentBranch || 'default')
 
   + '【추가 지침】\n'
-  + (function(){ var _y=new Date().getFullYear(); var _h=['갑','을','병','정','무','기','경','신','임','계']; var _e=['자','축','인','묘','진','사','오','미','신','유','술','해']; return '- ' + _y + '년 ' + _h[(_y-2024+40)%10] + _e[(_y-2024+48)%12] + '년 기운을 반영할 것\n'; })()
+  + '- ' + _nowKST.getUTCFullYear() + '년 ' + yearGanji + '년 기운을 반영할 것\n'
   + '- 식물 비유 금지 → 천문·건축 비유 사용\n'
   + '- 포르투나 리포트 언급은 절실한 질문 시 딱 1번\n'
   + '- 용신은 조후용신 우선\n\n'
