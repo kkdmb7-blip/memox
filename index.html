@@ -522,14 +522,6 @@
   .vchip { padding:5px 11px; border-radius:14px; border:1px solid rgba(201,168,76,0.28); background:rgba(201,168,76,0.07); color:#c9a84c; font-size:11px; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.15s; }
   .vchip:hover { background:rgba(201,168,76,0.18); border-color:#c9a84c; color:#fff; }
   .vchip:active { transform:scale(0.95); }
-  .vchip.vchip-hero {
-    background: linear-gradient(135deg, #d4af37, #f5d072);
-    color: #1a1200; font-weight: 800; border-color: #f5d072;
-    padding:5px 13px; letter-spacing:0.3px;
-    box-shadow: 0 2px 10px rgba(212,175,55,0.35);
-    position: sticky; left: 0; z-index: 2;
-  }
-  .vchip.vchip-hero:hover { background: linear-gradient(135deg,#e8c24d,#ffd97a); color:#000; border-color:#ffd97a; }
 
   /* 리포트 연결 버튼 */
   @keyframes shimmer {
@@ -880,6 +872,27 @@
   }
   .mode-chip .sm-icon { font-size:13px; }
 
+  /* 종합운명사이트 버튼 (mode-bar 내, 학습자 옆) */
+  .pico-btn {
+    padding:5px 12px; border-radius:10px;
+    background:linear-gradient(135deg,#d4af37,#f5d072);
+    border:1px solid #f5d072;
+    color:#1a1200; font-size:12px; font-weight:800;
+    cursor:pointer; flex-shrink:0;
+    display:inline-flex; align-items:center; gap:4px; justify-content:center;
+    transition:all 0.18s; white-space:nowrap;
+    font-family:'Noto Sans KR',sans-serif;
+    box-shadow:0 2px 8px rgba(212,175,55,0.3);
+    letter-spacing:0.2px;
+  }
+  .pico-btn:hover {
+    background:linear-gradient(135deg,#e8c24d,#ffd97a);
+    border-color:#ffd97a;
+    box-shadow:0 3px 12px rgba(212,175,55,0.5);
+    transform:translateY(-1px);
+  }
+  .pico-btn:active { transform:scale(0.95); }
+
   .tarot-select-grid {
     display:grid;
     grid-template-columns: repeat(6, 1fr);
@@ -1189,12 +1202,13 @@
 
   <!-- 베딕 퀵메뉴 -->
   <div class="vedic-chips" id="vedicChips">
-    <button class="vchip vchip-hero" onclick="window.open('https://picolab.kr','_blank')" title="사주·점성·자미·기문·베딕·궁합 종합 분석">✨ 종합운명사이트</button>
     <button class="vchip" onclick="sendVedicChip('길일 잡기')">길일 잡기</button>
+    <button class="vchip" onclick="window.open('https://picolab.kr#gunghap','_blank')">궁합 보기</button>
     <button class="vchip" onclick="sendVedicChip('오늘 운세 한마디')">오늘 운세 한마디</button>
     <button class="vchip" onclick="sendVedicChip('내 탄생별 알기')">내 탄생별 알기</button>
     <button class="vchip" onclick="sendVedicChip('내 인생 지금 어느 시기?')">내 인생 지금 어느 시기?</button>
     <button class="vchip" onclick="sendVedicChip('나만의 운명 조합')">나만의 운명 조합</button>
+    <button class="vchip" onclick="window.open('https://picolab.kr#gunghap','_blank')">결혼운 보기</button>
   </div>
 
   <div id="studentHintBar" class="student-hint-bar" style="display:none;"></div>
@@ -1207,6 +1221,9 @@
     <button class="tarot-btn" id="tarotOpenBtn" onclick="openTarotModal()">🃏 타로</button>
     <button class="mode-chip" id="studentModeChip" onclick="toggleStudentMode(event)" title="명리학습자 모드: 격국·용신 용어로 답변">
       <span class="sm-icon">📚</span><span class="sm-label">학습자</span>
+    </button>
+    <button class="pico-btn" id="picoSiteBtn" onclick="window.open('https://picolab.kr','_blank')" title="사주·점성·자미·기문·베딕·궁합 종합 분석">
+      <span>✨</span><span>종합운명사이트</span>
     </button>
   </div>
 
@@ -1405,7 +1422,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.56.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.57.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
