@@ -123,6 +123,45 @@
   .onboard-footer { padding:16px 20px; border-top:1px solid var(--border); flex-shrink:0; }
 
   /* ── CHAT ── */
+  /* 마크다운 렌더링 — 표/헤더 */
+  .md-table {
+    border-collapse:collapse;
+    margin:10px 0;
+    width:100%;
+    font-size:12.5px;
+    background:rgba(26,16,39,0.4);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .md-table th, .md-table td {
+    border:1px solid rgba(201,168,76,0.25);
+    padding:6px 10px;
+    text-align:left;
+    vertical-align:top;
+    line-height:1.5;
+  }
+  .md-table th {
+    background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(212,175,55,0.12));
+    color:#d4af37;
+    font-weight:700;
+    font-size:12px;
+  }
+  .md-table td { color:var(--text); }
+  .md-table tbody tr:nth-child(even) td { background:rgba(255,255,255,0.02); }
+  .md-h1 {
+    font-size:17px; font-weight:700; color:#d4af37;
+    margin:12px 0 6px; padding-bottom:4px;
+    border-bottom:1px solid rgba(201,168,76,0.3);
+  }
+  .md-h2 {
+    font-size:15px; font-weight:700; color:#d4af37;
+    margin:10px 0 4px;
+  }
+  .md-h3 {
+    font-size:13.5px; font-weight:700; color:#c9a84c;
+    margin:8px 0 3px;
+  }
+
   /* 명리학습자 모드 배지 */
   .student-mode-badge {
     display:none;
@@ -1308,7 +1347,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.51.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.52.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -7628,12 +7667,37 @@ function renderMarkdown(str) {
   var s = String(str);
   // HTML 이스케이프 먼저
   s = s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  // **bold**
+
+  // 1) 마크다운 표 — 헤더 | 구분선(---) | 본문행들 블록을 <table>로
+  s = s.replace(
+    /(^|\n)(\|[^\n]+\|)\n(\|[\s:\-|]+\|)\n((?:\|[^\n]+\|\n?)+)/g,
+    function(_m, lead, header, _sep, body) {
+      var headCells = header.replace(/^\||\|$/g, '').split('|').map(function(c){ return c.trim(); });
+      var rows = body.trim().split('\n').map(function(ln){
+        return ln.replace(/^\||\|$/g, '').split('|').map(function(c){ return c.trim(); });
+      });
+      var thead = '<thead><tr>' + headCells.map(function(c){ return '<th>' + c + '</th>'; }).join('') + '</tr></thead>';
+      var tbody = '<tbody>' + rows.map(function(r){
+        return '<tr>' + r.map(function(c){ return '<td>' + c + '</td>'; }).join('') + '</tr>';
+      }).join('') + '</tbody>';
+      return lead + '<table class="md-table">' + thead + tbody + '</table>';
+    }
+  );
+
+  // 2) 헤더: ### / ## / #
+  s = s.replace(/(^|\n)### ([^\n]+)/g, '$1<div class="md-h3">$2</div>');
+  s = s.replace(/(^|\n)## ([^\n]+)/g, '$1<div class="md-h2">$2</div>');
+  s = s.replace(/(^|\n)# ([^\n]+)/g, '$1<div class="md-h1">$2</div>');
+
+  // 3) **bold**
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#d4af37;">$1</strong>');
-  // - 불렛 (줄 시작)
+  // 4) - 불렛 (줄 시작)
   s = s.replace(/(^|\n)- ([^\n]+)/g, '$1<span style="display:inline-block;margin-left:4px;">• $2</span>');
-  // 줄바꿈
+  // 5) 줄바꿈 (단, 표/헤더 블록 주위의 과잉 <br> 방지 위해 table/div 태그 경계는 \n 유지 불필요)
   s = s.replace(/\n/g, '<br>');
+  // 표 내부 <br> 제거 (table>...<br>... 패턴)
+  s = s.replace(/<\/table><br>/g, '</table>');
+  s = s.replace(/<br>(<table)/g, '$1');
   return s;
 }
 
