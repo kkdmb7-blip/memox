@@ -123,6 +123,40 @@
   .onboard-footer { padding:16px 20px; border-top:1px solid var(--border); flex-shrink:0; }
 
   /* ── CHAT ── */
+  /* 명리학습자 모드 힌트 바 */
+  .student-hint-bar {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:8px 12px 0;
+    padding:10px 12px;
+    background:linear-gradient(135deg,rgba(201,168,76,0.16),rgba(124,92,252,0.10));
+    border:1px solid rgba(201,168,76,0.35);
+    border-radius:12px;
+    font-size:12px;
+    line-height:1.45;
+    color:#e6d8a8;
+    animation:hintFadeIn 0.4s ease;
+  }
+  .student-hint-bar b { color:#d4af37; }
+  .student-hint-bar .hint-icon { font-size:16px; flex-shrink:0; }
+  .student-hint-bar .hint-text { flex:1; }
+  .student-hint-bar .hint-action {
+    padding:4px 10px; font-size:11px; font-weight:700;
+    background:#c9a84c; color:#1a1027;
+    border:none; border-radius:8px; cursor:pointer;
+    flex-shrink:0;
+  }
+  .student-hint-bar .hint-close {
+    padding:0 4px; cursor:pointer; opacity:0.6;
+    font-size:14px; flex-shrink:0;
+  }
+  .student-hint-bar .hint-close:hover { opacity:1; }
+  @keyframes hintFadeIn {
+    from { opacity:0; transform:translateY(-4px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+
   /* 마크다운 렌더링 — 표/헤더 */
   .md-table {
     border-collapse:collapse;
@@ -1144,6 +1178,8 @@
     <button class="vchip" onclick="window.open('https://picolab.kr#gunghap','_blank')">결혼운 보기</button>
   </div>
 
+  <div id="studentHintBar" class="student-hint-bar" style="display:none;"></div>
+
   <div class="chat-messages" id="chatMessages"></div>
 
   <div class="suggest-chips" id="suggestChips" style="display:none;"></div>
@@ -1347,7 +1383,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.52.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.53.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -6832,6 +6868,12 @@ async function callClaude(userMsg, apiKey) {
     .replace(/\{이름\}/g, _rNameStream)
     .trimEnd();
   bubble.innerHTML = renderMarkdown(cleanReply);
+  // 자동감지로 학습자 답변이 나온 경우(수동 토글 OFF) → 힌트 바 노출
+  try {
+    if (typeof _studentByTerms !== 'undefined' && _studentByTerms && !_studentByToggle) {
+      if (typeof showAutoDetectHint === 'function') showAutoDetectHint();
+    }
+  } catch(_e) {}
   // [CTX] 맥락 파싱 → 백그라운드 저장
   extractAndSaveContext(replyText);
 
@@ -7062,7 +7104,11 @@ function showScreen(name) {
   var el = document.getElementById('screen' + name.charAt(0).toUpperCase() + name.slice(1));
   if (el) el.classList.add('active');
   if (name === 'profile') renderProfile();
-  if (name === 'chat') { scrollToBottom(); if (typeof applyStudentModeUI === 'function') applyStudentModeUI(); }
+  if (name === 'chat') {
+    scrollToBottom();
+    if (typeof applyStudentModeUI === 'function') applyStudentModeUI();
+    if (typeof maybeShowFirstVisitHint === 'function') setTimeout(maybeShowFirstVisitHint, 600);
+  }
   if (name === 'login') checkInAppBrowser();
 }
 
@@ -7507,9 +7553,51 @@ function toggleStudentMode(e) {
   var next = !isStudentModeOn();
   try { localStorage.setItem('memox_student_mode', next ? 'true' : 'false'); } catch(err) {}
   applyStudentModeUI();
+  // 토글로 켜면 힌트 바는 자동 숨김
+  if (next) hideStudentHint();
   if (typeof toast === 'function') {
     toast(next ? '📚 명리학습자 모드 ON — 격국·용신 용어로 답변해요' : '명리학습자 모드 OFF');
   }
+}
+
+// ── 학습자 모드 존재 안내 힌트 바 ───────────────
+function showStudentHint(html, opts) {
+  opts = opts || {};
+  var bar = document.getElementById('studentHintBar');
+  if (!bar) return;
+  var action = opts.showActionBtn
+    ? '<button class="hint-action" onclick="toggleStudentMode(event)">모드 켜기</button>'
+    : '';
+  var dismissKey = opts.dismissKey || '';
+  bar.innerHTML =
+    '<span class="hint-icon">📚</span>' +
+    '<span class="hint-text">' + html + '</span>' +
+    action +
+    '<span class="hint-close" onclick="dismissStudentHint(\'' + dismissKey + '\')" title="닫기">✕</span>';
+  bar.style.display = 'flex';
+}
+function hideStudentHint() {
+  var bar = document.getElementById('studentHintBar');
+  if (bar) bar.style.display = 'none';
+}
+function dismissStudentHint(key) {
+  hideStudentHint();
+  if (key) { try { localStorage.setItem(key, '1'); } catch(e) {} }
+}
+function maybeShowFirstVisitHint() {
+  if (isStudentModeOn()) return;
+  try { if (localStorage.getItem('memox_student_hint_shown') === '1') return; } catch(e) {}
+  showStudentHint(
+    '햄버거 메뉴에서 <b>명리학습자 모드</b>를 켜면 격국·용신 용어로 답변해드려요',
+    { showActionBtn: true, dismissKey: 'memox_student_hint_shown' }
+  );
+}
+function showAutoDetectHint() {
+  if (isStudentModeOn()) return;
+  showStudentHint(
+    '명리 용어를 감지해 <b>학습자 답변</b>으로 드렸어요. 메뉴에서 모드를 고정할 수 있어요',
+    { showActionBtn: true }
+  );
 }
 
 function openFortuna() {
