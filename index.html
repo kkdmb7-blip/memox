@@ -1280,7 +1280,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.48.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.49.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -5848,6 +5848,11 @@ async function callClaude(userMsg, apiKey) {
   var saju = profile.saju_data || {};
   var astro = profile.astro_data || {};
 
+  // ── 학습자 모드 자동 감지 — 명리 용어 사용 시 활성화 ──
+  var _STUDENT_TERMS = /격국|용신|기신|희신|십신|통근|합화|공망|양인격|양인살|식신생재|식신격|정관격|편재격|편관격|편인격|정인격|상관격|종격|화격|양신성상|일행득기|자평진전|적천수|궁통보감|연해자평|지장간|장간|십이운성|십이신살|일주론|성국|파격|투출|투간|득령|득세|득지|월령|조후용신|용신재검증|편관제복|관인상생|살인상생|재생관|관살혼잡|허투|허화/;
+  var _isStudentMode = _STUDENT_TERMS.test(userMsg || '');
+  if (_isStudentMode) console.log('[학습자 모드 활성] 감지된 메시지:', (userMsg||'').slice(0,40));
+
   // ── [SMART] 개선 사항 적용 ────────────────────────────────
   if (USE_SMART_CHAT) {
     // 1. 캐시 날짜 만료 체크
@@ -6642,6 +6647,27 @@ async function callClaude(userMsg, apiKey) {
       .replace(/신강\/신약:[^\n]*\n/, '');
     systemPrompt = _precalc.summary_for_claude + '\n\n' + systemPrompt;
     console.log('[fortune-calc fallback] 주입 완료 — 길이:', systemPrompt.length);
+  }
+
+  // ── 학습자 모드 오버라이드 — 위 일반 규칙 무효화하고 학자 수준 답변 ──
+  if (_isStudentMode) {
+    var _studentBlock = '\n\n━━━ ★★ 학습자 모드 활성화 (사용자가 명리 용어 사용) ★★ ━━━\n'
+      + '위의 "용어 금지/한자 금지/길이 제한/공감 우선" 규칙은 이번 답변에 한해 무효.\n'
+      + '아래 학습자 답변 규칙으로 재작성:\n\n'
+      + '[학습자 답변 규칙]\n'
+      + '1. 명리 용어 적극 사용 권장: 격국·용신·기신·십신(편재·정관·식신·상관·정인·편인·비견·겁재·편관)·통근·투출·합화·양인·종격·화격·양신성상 등\n'
+      + '2. 한자 병기 권장 (양인격(陽刃格), 식신생재(食神生財), 관인상생(官印相生) 등)\n'
+      + '3. 사주 구조의 작동 원리 설명: "왜 이 격국이 성립하는가, 왜 이 글자가 용신인가" 인과 설명\n'
+      + '4. 정격/변격 분류, 통근 강도, 합화 조건, 격국 성패(成敗) 같은 기술적 분석 환영\n'
+      + '5. 고전 인용 권장: 자평진전, 적천수, 궁통보감, 연해자평 — 알면 짧게 인용 ("자평진전: 陽刃者...")\n'
+      + '6. 답변 길이: 600~1500자, ## 헤더 2~3개 사용 가능, 표(|) 허용\n'
+      + '7. 데이터에 없는 부분은 "확정 데이터로는 OO까지만 알 수 있고, 추가 분석이 필요" 솔직히\n'
+      + '8. 공감 도입부 생략 가능, 바로 본론 진입 권장\n'
+      + '9. 마지막에 "참고: [근거 출처]" 형태로 어느 데이터/고전에서 도출했는지 명시 권장\n'
+      + '10. 단, 다음 답변에서 사용자가 일상어로만 질문하면 학습 모드 자동 해제 (이 규칙 무시)\n'
+      + '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    systemPrompt += _studentBlock;
+    console.log('[학습자 모드 오버라이드 적용]');
   }
 
   console.log('[systemPrompt 길이]', systemPrompt.length);
