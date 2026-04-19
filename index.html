@@ -1036,6 +1036,7 @@
   <!-- 1단계: 이름 + 성별 -->
   <div class="onboard-body" id="onboardStep1">
     <div class="onboard-desc">처음 한 번만 입력해요. 입력한 정보는 안전하게 저장돼요.</div>
+    <div style="background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.18);border-radius:10px;padding:10px 12px;font-size:11.5px;color:#c4b8d4;line-height:1.6;margin-bottom:18px;">본 서비스의 운세 분석은 <strong style="color:#d4af37;">오락 및 참고 목적</strong>으로 제공됩니다. 시작하면 <a href="privacy.html" target="_blank" style="color:#d4af37;text-decoration:underline;">개인정보처리방침</a>에 동의한 것으로 간주됩니다.</div>
     <div class="form-group">
       <label class="form-label">이름</label>
       <input class="form-input" id="inputName" placeholder="이름을 입력해주세요" />
@@ -1190,6 +1191,9 @@
         <hr>
         <div class="settings-dropdown-item" onclick="openSupportCenter();closeSettingsMenu()">
           <span class="sd-icon">🎧</span><span>고객센터</span>
+        </div>
+        <div class="settings-dropdown-item" onclick="window.open('privacy.html','_blank');closeSettingsMenu()">
+          <span class="sd-icon">🔒</span><span>개인정보처리방침</span>
         </div>
         <div id="adminStatsMenuItem" style="display:none;">
           <hr>
@@ -1423,7 +1427,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.60.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.60.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
