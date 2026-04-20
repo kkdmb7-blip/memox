@@ -22,8 +22,8 @@
   @import url('https://fonts.googleapis.com/css2?family=Gmarket+Sans:wght@500;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;500;700&display=swap');
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css');
   :root {
-    --bg:#09090f; --surface:#12121e; --surface2:#1a1a2e; --surface3:#222238;
-    --border:#2a2a45; --accent:#c8a2f5; --accent2:#7c5cfc; --gold:#f5c842;
+    --bg:#0a0904; --surface:#131109; --surface2:#1c1a0e; --surface3:#231f10;
+    --border:#2d2812; --accent:#d4af37; --accent2:#a8832a; --gold:#d4af37;
     --text:#f0f0f0; --text2:#aaa; --text3:#666;
     --danger:#ff4444; --warn:#f5a623;
   }
@@ -69,8 +69,7 @@
     font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px;
     letter-spacing:0.5px;
   }
-  .badge-purple { background:rgba(124,92,252,0.15); border:1px solid rgba(124,92,252,0.3); color:#a58af8; }
-  .badge-gold { background:rgba(245,200,66,0.1); border:1px solid rgba(245,200,66,0.25); color:var(--gold); }
+  .badge-gold { background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.3); color:#d4af37; }
   .badge-green { background:rgba(100,220,130,0.1); border:1px solid rgba(100,220,130,0.2); color:#64dc82; }
   .google-btn {
     width:100%; max-width:320px; padding:15px 20px; border-radius:14px;
@@ -82,7 +81,7 @@
     touch-action:manipulation; -webkit-tap-highlight-color:transparent;
     position:relative; z-index:10;
   }
-  .google-btn:hover { border-color:rgba(200,162,245,0.4); transform:translateY(-1px); }
+  .google-btn:hover { border-color:rgba(212,175,55,0.4); transform:translateY(-1px); }
 
   .login-notice { font-size:11px; color:var(--text3); text-align:center; line-height:1.8; }
 
@@ -114,14 +113,14 @@
     background:var(--surface2); color:var(--text2); font-size:13px; font-weight:700;
     cursor:pointer; text-align:center; transition:all 0.15s; font-family:'Noto Sans KR',sans-serif;
   }
-  .radio-btn.selected { background:rgba(200,162,245,0.15); border-color:var(--accent); color:var(--accent); }
+  .radio-btn.selected { background:rgba(212,175,55,0.15); border-color:var(--accent); color:var(--accent); }
   .midnight-group { display:flex; flex-direction:column; gap:6px; }
   .midnight-btn {
     padding:10px 14px; border-radius:8px; border:1px solid var(--border);
     background:var(--surface2); color:var(--text2); font-size:12px;
     cursor:pointer; text-align:left; transition:all 0.15s; font-family:'Noto Sans KR',sans-serif;
   }
-  .midnight-btn.selected { background:rgba(200,162,245,0.15); border-color:var(--accent); color:var(--accent); }
+  .midnight-btn.selected { background:rgba(212,175,55,0.15); border-color:var(--accent); color:var(--accent); }
   .onboard-footer { padding:16px 20px; border-top:1px solid var(--border); flex-shrink:0; }
 
   /* ── CHAT ── */
@@ -132,7 +131,7 @@
     gap:8px;
     margin:8px 12px 0;
     padding:10px 12px;
-    background:linear-gradient(135deg,rgba(201,168,76,0.16),rgba(124,92,252,0.10));
+    background:linear-gradient(135deg,rgba(201,168,76,0.16),rgba(168,131,42,0.10));
     border:1px solid rgba(201,168,76,0.35);
     border-radius:12px;
     font-size:12px;
@@ -352,7 +351,7 @@
     background:var(--surface2); border:1px solid var(--border); color:var(--text);
   }
   .msg.user .msg-bubble {
-    background:rgba(124,92,252,0.2); border-color:rgba(124,92,252,0.3); color:var(--text);
+    background:rgba(168,131,42,0.2); border-color:rgba(168,131,42,0.3); color:var(--text);
   }
   .msg-time { font-size:10px; color:var(--text3); margin-top:4px; text-align:right; }
   .msg.user .msg-time { text-align:left; }
@@ -469,29 +468,29 @@
   .suggest-chips { display:flex; flex-wrap:nowrap; gap:8px; padding:0 16px 12px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
   .suggest-chips::-webkit-scrollbar { display:none; }
   .chip {
-    padding:8px 14px; border-radius:20px; border:1px solid rgba(139,92,246,0.3);
-    background:rgba(139,92,246,0.08); color:#c4b5fd; font-size:12px; cursor:pointer;
+    padding:8px 14px; border-radius:20px; border:1px solid rgba(212,175,55,0.3);
+    background:rgba(212,175,55,0.08); color:#e6c55a; font-size:12px; cursor:pointer;
     transition:all 0.2s; font-family:'Noto Sans KR',sans-serif; white-space:nowrap;
     flex-shrink:0;
   }
-  .chip:hover { background:rgba(139,92,246,0.2); border-color:var(--accent); color:#fff; }
+  .chip:hover { background:rgba(212,175,55,0.2); border-color:var(--accent); color:#fff; }
   .chip:active { transform:scale(0.96); }
 
   /* 모드 선택 버튼 */
-  .mode-bar { display:flex; align-items:center; gap:5px; padding:7px 10px 9px; overflow-x:visible; background:rgba(139,92,246,0.06); border-top:1px solid rgba(139,92,246,0.12); flex-wrap:wrap; }
-  .mode-btn { padding:5px 11px; border-radius:20px; border:1px solid rgba(139,92,246,0.3); background:transparent; color:var(--text3); font-size:12px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.18s; position:relative; }
-  .mode-btn:hover { background:rgba(139,92,246,0.12); color:var(--text); border-color:rgba(139,92,246,0.5); }
-  .mode-btn.active { background:linear-gradient(135deg,#7c3aed,#db2777); border-color:transparent; color:#fff; font-weight:700; transform:translateY(-1px); box-shadow:0 3px 10px rgba(139,92,246,0.4); }
-  .mode-bar-sep { width:1px; height:20px; background:rgba(139,92,246,0.25); flex-shrink:0; margin:0 2px; }
+  .mode-bar { display:flex; align-items:center; gap:5px; padding:7px 10px 9px; overflow-x:visible; background:rgba(212,175,55,0.06); border-top:1px solid rgba(212,175,55,0.12); flex-wrap:wrap; }
+  .mode-btn { padding:5px 11px; border-radius:20px; border:1px solid rgba(212,175,55,0.3); background:transparent; color:var(--text3); font-size:12px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.18s; position:relative; }
+  .mode-btn:hover { background:rgba(212,175,55,0.12); color:var(--text); border-color:rgba(212,175,55,0.5); }
+  .mode-btn.active { background:linear-gradient(135deg,#a8832a,#b87d1a); border-color:transparent; color:#fff; font-weight:700; transform:translateY(-1px); box-shadow:0 3px 10px rgba(212,175,55,0.4); }
+  .mode-bar-sep { width:1px; height:20px; background:rgba(212,175,55,0.25); flex-shrink:0; margin:0 2px; }
   /* 모드 툴팁 */
-  .mode-tooltip { position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:rgba(15,5,35,0.96); border:1px solid rgba(139,92,246,0.3); color:#e2d9f3; font-size:11px; white-space:nowrap; padding:5px 10px; border-radius:8px; pointer-events:none; opacity:0; transition:opacity 0.15s; z-index:200; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
-  .mode-tooltip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:rgba(15,5,35,0.96); }
+  .mode-tooltip { position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:rgba(10,8,2,0.96); border:1px solid rgba(212,175,55,0.3); color:#f5e9b8; font-size:11px; white-space:nowrap; padding:5px 10px; border-radius:8px; pointer-events:none; opacity:0; transition:opacity 0.15s; z-index:200; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
+  .mode-tooltip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:rgba(10,8,2,0.96); }
   .mode-btn:hover .mode-tooltip { opacity:1; }
   .mode-btn.tooltip-show .mode-tooltip { opacity:1; }
   #modeBtn-default .mode-tooltip::after { display:none; }
 
   /* 달 위상 뱃지 */
-  #moonPhaseDisplay { font-size:10.5px; color:#9b8fb0; margin-top:2px; letter-spacing:0.02em; cursor:default; }
+  #moonPhaseDisplay { font-size:10.5px; color:#8a7a52; margin-top:2px; letter-spacing:0.02em; cursor:default; }
 /* 베딕 퀵메뉴 */
   .vedic-chips { display:flex; flex-wrap:nowrap; gap:6px; padding:7px 14px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; background:rgba(30,15,60,0.5); border-bottom:1px solid rgba(201,168,76,0.12); }
   .vedic-chips::-webkit-scrollbar { display:none; }
@@ -506,17 +505,17 @@
   }
   .fortuna-banner {
     margin:0 16px 10px; padding:12px 16px; border-radius:12px;
-    background:linear-gradient(135deg,rgba(124,92,252,0.15),rgba(200,162,245,0.08));
-    border:1px solid rgba(124,92,252,0.3); cursor:pointer; transition:all 0.2s;
+    background:linear-gradient(135deg,rgba(168,131,42,0.15),rgba(212,175,55,0.08));
+    border:1px solid rgba(168,131,42,0.3); cursor:pointer; transition:all 0.2s;
     display:flex; align-items:center; gap:10px; position:relative; overflow:hidden;
   }
   .fortuna-banner::after {
     content:''; position:absolute; top:0; left:0; right:0; bottom:0;
-    background:linear-gradient(90deg, transparent 0%, rgba(200,162,245,0.15) 50%, transparent 100%);
+    background:linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.15) 50%, transparent 100%);
     background-size:200% 100%;
     animation:shimmer 2.5s infinite linear;
   }
-  .fortuna-banner:hover { border-color:rgba(200,162,245,0.5); }
+  .fortuna-banner:hover { border-color:rgba(212,175,55,0.5); }
   .fortuna-banner-text { flex:1; }
   .fortuna-banner-title { font-size:12px; font-weight:700; color:var(--accent); margin-bottom:2px; }
   .fortuna-banner-sub { font-size:11px; color:var(--text3); }
@@ -546,7 +545,7 @@
     gap:10px; padding:6px 14px 4px;
   }
   .qcard {
-    background:linear-gradient(145deg,rgba(36,20,65,0.95),rgba(20,10,38,0.98));
+    background:linear-gradient(145deg,rgba(26,20,6,0.95),rgba(16,12,4,0.98));
     border:1px solid rgba(212,175,55,0.18);
     border-radius:16px; padding:14px 16px;
     max-width:320px; width:100%; display:flex; flex-direction:column; gap:8px;
@@ -798,7 +797,7 @@
   .partner-dob-row .partner-input { text-align:center; }
   .partner-gender-row { display:flex; gap:8px; }
   .partner-gender-btn { flex:1; padding:9px 0; border-radius:10px; border:1px solid var(--border); background:var(--surface2); color:var(--text3); font-size:13px; cursor:pointer; transition:all 0.15s; font-family:'Noto Sans KR',sans-serif; }
-  .partner-gender-btn.selected { border-color:var(--accent2); background:rgba(139,92,246,0.15); color:#c4b5fd; font-weight:700; }
+  .partner-gender-btn.selected { border-color:var(--accent2); background:rgba(212,175,55,0.15); color:#e6c55a; font-weight:700; }
   .partner-confirm-btn { width:100%; margin-top:18px; padding:13px 0; border-radius:12px; border:none; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#fff; font-size:15px; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif; }
   .partner-confirm-btn:hover { opacity:0.9; }
   .partner-skip { font-size:11px; color:var(--text3); cursor:pointer; text-decoration:underline; margin-left:6px; }
@@ -826,7 +825,7 @@
   /* 명리학습자 모드 칩 (mode-bar 내) */
   .mode-chip {
     padding:5px 10px; border-radius:10px;
-    background:rgba(139,92,246,0.08);
+    background:rgba(212,175,55,0.08);
     border:1px solid rgba(201,168,76,0.28);
     color:#b8a378; font-size:12px; font-weight:600;
     cursor:pointer; flex-shrink:0;
@@ -947,17 +946,17 @@
     <div class="login-title">FORTUNA</div>
     <div class="login-sub">사주와 별자리로<br>당신만의 운명 지도를 그려드려요</div>
     <div class="login-badges">
-      <span class="badge badge-purple">🌙 사주</span>
+      <span class="badge badge-gold">🌙 사주</span>
       <span class="badge badge-gold">⭐ 점성술</span>
       <span class="badge badge-green">✨ 나만의 분석</span>
-      <span class="badge badge-purple">🔯 기문둔갑</span>
+      <span class="badge badge-gold">🔯 기문둔갑</span>
       <span class="badge badge-gold">🪐 베딕</span>
     </div>
     <!-- PWA 설치 유도 배너 -->
-    <div id="pwaBanner" style="display:none;margin-bottom:12px;padding:12px 14px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.35);border-radius:14px;text-align:left;position:relative;">
-      <button onclick="closePwaBanner()" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#9b8fb0;font-size:18px;cursor:pointer;line-height:1;">×</button>
+    <div id="pwaBanner" style="display:none;margin-bottom:12px;padding:12px 14px;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.35);border-radius:14px;text-align:left;position:relative;">
+      <button onclick="closePwaBanner()" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#8a7a52;font-size:18px;cursor:pointer;line-height:1;">×</button>
       <div id="pwaBannerText" style="font-size:13px;color:#ede6f8;line-height:1.8;padding-right:20px;"></div>
-      <button id="pwaInstallBtn" style="display:none;margin-top:10px;width:100%;padding:11px 0;background:linear-gradient(135deg,#7c3aed,#db2777);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">홈 화면에 추가하기</button>
+      <button id="pwaInstallBtn" style="display:none;margin-top:10px;width:100%;padding:11px 0;background:linear-gradient(135deg,#a8832a,#b87d1a);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">홈 화면에 추가하기</button>
     </div>
 
     <button class="google-btn" id="kakaoLoginBtn" style="background:#FEE500;color:#3C1E1E;border:none;">
@@ -974,7 +973,7 @@
       <button onclick="copyAppUrl()" id="copyUrlBtn" style="background:#FEE500;color:#3C1E1E;border:none;border-radius:10px;padding:11px 0;font-size:14px;font-weight:700;cursor:pointer;width:100%;">
         링크 복사하기
       </button>
-      <div style="font-size:11px;color:#9b8fb0;margin-top:8px;">복사 후 Safari 주소창에 붙여넣기 → 카카오 로그인</div>
+      <div style="font-size:11px;color:#8a7a52;margin-top:8px;">복사 후 Safari 주소창에 붙여넣기 → 카카오 로그인</div>
     </div>
 
     <!-- 인앱 브라우저 감지 시 표시 (Android 카카오) -->
@@ -986,7 +985,7 @@
       <button id="openInChromeBtn" style="background:#FEE500;color:#3C1E1E;border:none;border-radius:10px;padding:11px 0;font-size:14px;font-weight:700;cursor:pointer;width:100%;">
         크롬으로 열기
       </button>
-      <div style="font-size:11px;color:#9b8fb0;margin-top:8px;">크롬 → 카카오 로그인 가능</div>
+      <div style="font-size:11px;color:#8a7a52;margin-top:8px;">크롬 → 카카오 로그인 가능</div>
     </div>
 
     <div class="login-notice">무료로 시작 · 광고없음 · 내 정보는 나만 봄</div>
@@ -994,10 +993,10 @@
 </div>
 
 <!-- PWA 채팅 화면 하단 고정 배너 -->
-<div id="pwaChatBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;padding:12px 16px;background:linear-gradient(135deg,rgba(30,10,60,0.97),rgba(50,20,80,0.97));border-top:1px solid rgba(139,92,246,0.4);backdrop-filter:blur(8px);">
-  <button onclick="closePwaChatBanner()" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#9b8fb0;font-size:20px;cursor:pointer;line-height:1;">×</button>
+<div id="pwaChatBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;padding:12px 16px;background:linear-gradient(135deg,rgba(20,14,4,0.97),rgba(30,22,6,0.97));border-top:1px solid rgba(212,175,55,0.4);backdrop-filter:blur(8px);">
+  <button onclick="closePwaChatBanner()" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#8a7a52;font-size:20px;cursor:pointer;line-height:1;">×</button>
   <div id="pwaChatBannerText" style="font-size:13px;color:#ede6f8;line-height:1.8;padding-right:24px;"></div>
-  <button id="pwaChatInstallBtn" style="display:none;margin-top:10px;width:100%;padding:11px 0;background:linear-gradient(135deg,#7c3aed,#db2777);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">홈 화면에 추가하기</button>
+  <button id="pwaChatInstallBtn" style="display:none;margin-top:10px;width:100%;padding:11px 0;background:linear-gradient(135deg,#a8832a,#b87d1a);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">홈 화면에 추가하기</button>
 </div>
 
 <!-- SCREEN: ONBOARDING (사주/점성 입력) -->
@@ -1138,7 +1137,7 @@
 <div class="screen" id="screenChat">
   <div class="chat-header">
     <div class="chat-header-logo" style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="location.href='https://picolab.kr'"><img src="goddess2.png" alt="FORTUNA" style="height:40px;object-fit:contain;"><span style="font-family:'Noto Serif KR',serif;font-size:15px;font-weight:700;color:#d4af37;letter-spacing:2px;">FORTUNA</span></div>
-    <div id="totalConsultations" style="font-size:11px;color:#9b8fb0;letter-spacing:0.01em;flex-shrink:0;"></div>
+    <div id="totalConsultations" style="font-size:11px;color:#8a7a52;letter-spacing:0.01em;flex-shrink:0;"></div>
     <a id="orbBadge" href="charge.html" title="Orb 잔액 · 클릭해서 충전">💎 <span id="orbBadgeNum">...</span></a>
 
     <div class="chat-header-actions" style="position:relative;">
@@ -1389,7 +1388,7 @@
         </select>
         <textarea id="supportMessage" placeholder="문의 내용을 입력해주세요..." style="width:100%;min-height:120px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;resize:vertical;font-family:inherit;box-sizing:border-box;" maxlength="1000"></textarea>
         <div style="font-size:11px;color:var(--text3);text-align:right;margin-top:4px;"><span id="supportCharCount">0</span>/1000</div>
-        <button id="supportSubmitBtn" onclick="submitSupport()" style="width:100%;padding:13px;margin-top:10px;border:none;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">문의 보내기</button>
+        <button id="supportSubmitBtn" onclick="submitSupport()" style="width:100%;padding:13px;margin-top:10px;border:none;border-radius:12px;background:linear-gradient(135deg,#a8832a,#a78bfa);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">문의 보내기</button>
       </div>
       <div id="supportMyTickets" style="margin-top:16px;"></div>
     </div>
@@ -1403,7 +1402,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.61.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.62.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -1554,7 +1553,7 @@ async function loadAdminTickets() {
         (t.admin_reply ? '<div style="margin-top:6px;font-size:12px;color:#7ac4ff;">💬 '+t.admin_reply+'</div>' : '') +
         '<div style="margin-top:8px;display:flex;gap:6px;">' +
         '<input type="text" placeholder="답변 입력..." id="reply_'+t.id+'" style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:inherit;"/>' +
-        '<button onclick="replyTicket(\''+t.id+'\')" style="padding:6px 12px;border:none;border-radius:8px;background:#7c3aed;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;">답변</button>' +
+        '<button onclick="replyTicket(\''+t.id+'\')" style="padding:6px 12px;border:none;border-radius:8px;background:#a8832a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;">답변</button>' +
         '</div></div>';
     }).join('');
   } catch(e) { el.innerHTML = '<div style="color:#f44336;font-size:12px;">오류</div>'; }
@@ -2998,7 +2997,7 @@ function showStreakMilestone(streak) {
     '<div style="font-size:14px;color:#e5e7eb;line-height:1.7;">' + m.text + '</div>';
   var btn = document.createElement('button');
   btn.textContent = '확인';
-  btn.style.cssText = 'margin-top:24px;padding:12px 36px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;';
+  btn.style.cssText = 'margin-top:24px;padding:12px 36px;background:linear-gradient(135deg,#a8832a,#a855f7);border:none;color:#fff;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;';
   btn.addEventListener('click', function() { overlay.remove(); });
   box.appendChild(btn);
   overlay.appendChild(box);
@@ -3291,7 +3290,7 @@ async function loadHitsScreen() {
   overlay.style.cssText = 'position:fixed;inset:0;background:#05020e;z-index:9999;overflow-y:auto;padding:24px 16px;';
   overlay.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
     '<h2 style="color:#c9a84c;font-size:18px;margin:0;">🎯 나의 적중 일지</h2>' +
-    '<button onclick="document.getElementById(\'hitsScreen\').remove()" style="background:none;border:none;color:#9b8fb0;font-size:22px;cursor:pointer;">&times;</button>' +
+    '<button onclick="document.getElementById(\'hitsScreen\').remove()" style="background:none;border:none;color:#8a7a52;font-size:22px;cursor:pointer;">&times;</button>' +
     '</div><div id="hitsList" style="color:#ede6f8;font-size:14px;">불러오는 중...</div>';
   document.body.appendChild(overlay);
 
@@ -3302,7 +3301,7 @@ async function loadHitsScreen() {
     const hits = await res.json();
     const el = document.getElementById('hitsList');
     if (!hits || hits.length === 0) { el.textContent = '아직 기록된 적중이 없어요.'; return; }
-    el.innerHTML = '<p style="color:#9b8fb0;margin-bottom:12px;">총 ' + hits.length + '개의 적중 기록</p>' +
+    el.innerHTML = '<p style="color:#8a7a52;margin-bottom:12px;">총 ' + hits.length + '개의 적중 기록</p>' +
       hits.map(function(h) {
         const d = new Date(h.hit_at);
         const kst = new Date(d.getTime() + 9*60*60*1000);
@@ -3339,11 +3338,11 @@ function renderRetroCard(card, dateStr) {
   overlay.id = 'retroCard';
   overlay.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 48px);max-width:360px;background:linear-gradient(135deg,#1a0e2e,#0f0620);border:1px solid #c9a84c55;border-radius:16px;padding:16px;z-index:200;box-shadow:0 4px 20px rgba(201,168,76,0.2);';
   const summaryText = (card.summary || card.content || '운세 정보').slice(0, 150);
-  overlay.innerHTML = '<div style="color:#9b8fb0;font-size:11px;margin-bottom:8px;">7일 전 (' + dateStr + ') 운세 �아보기</div>' +
+  overlay.innerHTML = '<div style="color:#8a7a52;font-size:11px;margin-bottom:8px;">7일 전 (' + dateStr + ') 운세 �아보기</div>' +
     '<div id="retroCardContent" style="color:#ede6f8;font-size:14px;line-height:1.6;margin-bottom:12px;">' + summaryText + '</div>' +
     '<div style="display:flex;gap:8px;">' +
     '<button id="retroHitBtn" onclick="saveFortuneHit(document.getElementById(\'retroCardContent\').textContent, document.getElementById(\'retroHitBtn\')); document.getElementById(\'retroCard\').style.opacity=\'0.6\';" style="flex:1;padding:8px;background:#c9a84c22;border:1px solid #c9a84c66;border-radius:8px;color:#c9a84c;font-size:13px;cursor:pointer;">🎯 맞았어요</button>' +
-    '<button onclick="document.getElementById(\'retroCard\').remove()" style="flex:1;padding:8px;background:#ffffff11;border:1px solid #ffffff22;border-radius:8px;color:#9b8fb0;font-size:13px;cursor:pointer;">아니에요</button>' +
+    '<button onclick="document.getElementById(\'retroCard\').remove()" style="flex:1;padding:8px;background:#ffffff11;border:1px solid #ffffff22;border-radius:8px;color:#8a7a52;font-size:13px;cursor:pointer;">아니에요</button>' +
     '</div>';
   document.body.appendChild(overlay);
   setTimeout(function(){ const el = document.getElementById('retroCard'); if (el) el.remove(); }, 15000);
@@ -3829,7 +3828,7 @@ async function loadQimenDaily() {
   var STEM_EL_KOR = {갑:'목',을:'목',병:'화',정:'화',무:'토',기:'토',경:'금',신:'금',임:'수',계:'수'};
   var KOR_HAN = {갑:'甲',을:'乙',병:'丙',정:'丁',무:'戊',기:'己',경:'庚',신:'辛',임:'壬',계:'癸'};
   var STEM_OHAENG = {'甲':'목','乙':'목','丙':'화','丁':'화','戊':'토','己':'토','庚':'금','辛':'금','壬':'수','癸':'수'};
-  var GRADE_COLOR = {'대길':'#fde047','길':'#86efac','평':'#9b8fb0','흉':'#fb923c','대흉':'#f87171'};
+  var GRADE_COLOR = {'대길':'#fde047','길':'#86efac','평':'#8a7a52','흉':'#fb923c','대흉':'#f87171'};
   var doorNameMap = {'生':'생문','開':'개문','休':'휴문','景':'경문','傷':'상문','杜':'두문','驚':'경문','死':'사문'};
 
   function elScore(src, tgt) {
@@ -3929,7 +3928,7 @@ async function loadQimenDaily() {
       if (personalDelta > 0) parts.push('▲' + EL_HAN[userDayEl]);
       else if (personalDelta < 0) parts.push('▼' + EL_HAN[userDayEl]);
       if (parts.length > 0) {
-        var noteColor = total >= 2 ? '#7c3aed' : total <= -2 ? '#e05c6a' : '#9b8fb0';
+        var noteColor = total >= 2 ? '#a8832a' : total <= -2 ? '#e05c6a' : '#8a7a52';
         personNote = '<div style="margin-top:6px;font-size:11px;color:' + noteColor + ';">✦ ' + userDayStem + '(' + EL_HAN[userDayEl] + ') 일간 · ' + ymGong + '궁 연명 맞춤 ' + parts.join(' ') + '</div>';
       }
     } else {
@@ -3939,7 +3938,7 @@ async function loadQimenDaily() {
       keyword = DOOR_KW[door] || '평온한 하루';
     }
 
-    var color = GRADE_COLOR[grade] || '#9b8fb0';
+    var color = GRADE_COLOR[grade] || '#8a7a52';
 
     var wrap = document.createElement('div');
     wrap.id = 'qimenDailyWrap';
@@ -4133,7 +4132,7 @@ function renderDailyCard(card) {
     // 주의 / 추천
     '<div style="padding:0 16px 14px;display:flex;flex-direction:column;gap:7px;">' +
       (card.caution ? '<div style="background:rgba(248,113,113,0.08);border-left:2px solid #f87171;padding:7px 12px;border-radius:0 8px 8px 0;font-size:12px;color:#f87171;">⚠️ 주의 · ' + escHtml(card.caution) + '</div>' : '') +
-      (card.recommendation ? '<div style="background:rgba(139,92,246,0.08);border-left:2px solid #a78bfa;padding:7px 12px;border-radius:0 8px 8px 0;font-size:12px;color:#c4b5fd;">✨ 추천 · ' + escHtml(card.recommendation) + '</div>' : '') +
+      (card.recommendation ? '<div style="background:rgba(212,175,55,0.08);border-left:2px solid #a78bfa;padding:7px 12px;border-radius:0 8px 8px 0;font-size:12px;color:#e6c55a;">✨ 추천 · ' + escHtml(card.recommendation) + '</div>' : '') +
     '</div>' +
     // 하단 버튼
     '<div style="display:flex;gap:8px;padding:0 16px 16px;" id="dailyCardBtns"></div>' +
@@ -4155,7 +4154,7 @@ function renderDailyCard(card) {
     })('[오늘의 운세]\n' + (card.keyword||'') + '\n' + (card.summary||'') + '\n\n' + (card.content||''));
 
     var chatBtn = document.createElement('button');
-    chatBtn.style.cssText = 'flex:2;padding:11px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;';
+    chatBtn.style.cssText = 'flex:2;padding:11px;background:linear-gradient(135deg,#a8832a,#a855f7);border:none;color:#fff;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;';
     chatBtn.textContent = '대화하기 💬';
     (function(s) {
       chatBtn.addEventListener('click', function() { startDailyChat(s); });
@@ -4826,13 +4825,13 @@ function renderMuhurtaHtml(muhurta) {
   muhurta.forEach(function(d) {
     var isToday = d.date === today;
     var color = (d.quality === '대길') ? '#6ee7b7' : (d.quality === '길') ? '#86efac' :
-                (d.quality === '흉')   ? '#f87171' : (d.quality === '주의') ? '#fbbf24' : '#c4b5fd';
+                (d.quality === '흉')   ? '#f87171' : (d.quality === '주의') ? '#fbbf24' : '#e6c55a';
     var row = '<div style="margin-bottom:7px' + (isToday ? ';border-left:2px solid #fbbf24;padding-left:8px' : '') + '">';
     row += '<strong>' + d.date.slice(5).replace('-','/') + ' ' + d.weekday + '</strong>';
     if (isToday) row += ' <span style="color:#fbbf24;font-size:10px">◀ 오늘</span>';
     row += ' <span style="color:' + color + ';font-weight:700">' + d.quality + '</span>';
     if (d.specials && d.specials.length) row += ' <span style="color:#fbbf24;font-size:11px">✦ ' + d.specials.join(' · ') + '</span>';
-    row += '<br><span style="color:#9b8fb0;font-size:11px">' + d.nakshatra + ' · ' + d.tithi + ' · ' + d.yoga + '</span>';
+    row += '<br><span style="color:#8a7a52;font-size:11px">' + d.nakshatra + ' · ' + d.tithi + ' · ' + d.yoga + '</span>';
     if (isToday) row += '<br><span style="color:#f87171;font-size:11px">⚠ 라후칼라 ' + d.rahuKala + ' — 중요한 일 피하세요</span>';
     if (d.cautions && d.cautions.length) row += '<br><span style="color:#f87171;font-size:11px">주의: ' + d.cautions.join(' · ') + '</span>';
     row += '</div>';
@@ -4885,12 +4884,12 @@ function showChipConfirm(text) {
   overlay.id = 'chipConfirmModal';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:flex-end;background:rgba(0,0,0,0.55);';
   var box = document.createElement('div');
-  box.style.cssText = 'width:100%;background:#1a1a2e;border-radius:20px 20px 0 0;padding:24px 20px 36px;border-top:1px solid rgba(200,162,245,0.25);';
+  box.style.cssText = 'width:100%;background:#1a1a2e;border-radius:20px 20px 0 0;padding:24px 20px 36px;border-top:1px solid rgba(212,175,55,0.25);';
   box.innerHTML =
     '<div style="width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 20px;"></div>' +
     '<div style="font-size:16px;font-weight:700;color:#f0f0f0;margin-bottom:8px;">✦ ' + text + '</div>' +
     '<div style="font-size:13px;color:#aaa;margin-bottom:24px;line-height:1.8;">' + desc + '</div>' +
-    '<button id="chipConfirmBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:14px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;margin-bottom:10px;">분석 시작</button>' +
+    '<button id="chipConfirmBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#a8832a,#a855f7);border:none;border-radius:14px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;margin-bottom:10px;">분석 시작</button>' +
     '<button id="chipCancelBtn" style="width:100%;padding:12px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:14px;color:#aaa;font-size:14px;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;">취소</button>';
   overlay.appendChild(box);
   document.body.appendChild(overlay);
@@ -7921,8 +7920,8 @@ function showPwaIosModal() {
   var modal = document.createElement('div');
   modal.id = 'pwaIosModal';
   modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:flex-end;justify-content:center;';
-  modal.innerHTML = '<div style="background:#1a0a2e;border:1px solid rgba(139,92,246,0.4);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;position:relative;text-align:center;">'
-    + '<button onclick="document.getElementById(\'pwaIosModal\').style.display=\'none\'" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#9b8fb0;font-size:22px;cursor:pointer;line-height:1;">×</button>'
+  modal.innerHTML = '<div style="background:#1a0a2e;border:1px solid rgba(212,175,55,0.4);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;position:relative;text-align:center;">'
+    + '<button onclick="document.getElementById(\'pwaIosModal\').style.display=\'none\'" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#8a7a52;font-size:22px;cursor:pointer;line-height:1;">×</button>'
     + '<div style="font-size:22px;margin-bottom:8px;">📲</div>'
     + '<div style="font-size:15px;font-weight:700;color:#ede6f8;margin-bottom:12px;">홈 화면에 추가하는 방법</div>'
     + '<div style="font-size:13px;color:#c4b5d8;line-height:2;text-align:left;">'
@@ -7930,7 +7929,7 @@ function showPwaIosModal() {
     + '② 스크롤해서 <strong style="color:#fff">홈 화면에 추가</strong> 선택<br>'
     + '③ 오른쪽 상단 <strong style="color:#fff">추가</strong> 탭'
     + '</div>'
-    + '<div style="margin-top:16px;padding:10px;background:rgba(139,92,246,0.12);border-radius:10px;font-size:12px;color:#9b8fb0;">Safari 브라우저에서만 홈 화면 추가가 가능해요</div>'
+    + '<div style="margin-top:16px;padding:10px;background:rgba(212,175,55,0.12);border-radius:10px;font-size:12px;color:#8a7a52;">Safari 브라우저에서만 홈 화면 추가가 가능해요</div>'
     + '</div>';
   document.body.appendChild(modal);
 }
