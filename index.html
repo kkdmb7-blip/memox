@@ -1433,7 +1433,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.61.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.61.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -8403,6 +8403,10 @@ document.addEventListener('visibilitychange', function() {
 
 // ── Service Worker 등록 ──────────────────────────────────────
 if ('serviceWorker' in navigator) {
+  // 새 SW가 활성화되면 최신 코드 적용을 위해 페이지 리로드
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
   window.addEventListener('load', async () => {
     try {
       const reg = await navigator.serviceWorker.register('/memox/sw.js?v=' + APP_VERSION, { scope: '/memox/' });
