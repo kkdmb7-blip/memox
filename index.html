@@ -1433,7 +1433,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.60.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.60.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -7786,8 +7786,10 @@ async function subscribePush() {
         created_at: now
       }, { onConflict: 'user_id' });
     }
+    localStorage.setItem('fortuna_push_subscribed', '1');
     console.log('Push 구독 저장 완료');
   } catch(e) {
+    localStorage.removeItem('fortuna_push_subscribed');
     console.warn('Push 구독 실패:', e.message);
     throw e;
   }
@@ -7840,6 +7842,10 @@ async function getNotifState() {
     var sub = await reg.pushManager.getSubscription();
     subscribed = !!sub;
   } catch(e) {}
+  // 브라우저 getSubscription이 null이어도 DB 저장 성공했으면 ON으로 간주
+  if (!subscribed && perm === 'granted' && localStorage.getItem('fortuna_push_subscribed') === '1') {
+    subscribed = true;
+  }
   return { supported:true, permission:perm, subscribed:subscribed };
 }
 
@@ -7921,6 +7927,7 @@ async function onNotifSwitchToggle(el) {
       var sub = await reg.pushManager.getSubscription();
       if (sub) await sub.unsubscribe();
       try { await sb.from('push_subscriptions').delete().eq('user_id', currentUser.id); } catch(e) {}
+      localStorage.removeItem('fortuna_push_subscribed');
       clearTimeout(window._fortunaNotifTimer);
       if (msg) msg.textContent = '알림이 꺼졌어요. 언제든 다시 켤 수 있습니다.';
       toast('🔕 알림이 꺼졌어요');
