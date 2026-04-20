@@ -1157,10 +1157,6 @@
         <div class="settings-dropdown-item" onclick="newChat();closeSettingsMenu()">
           <span class="sd-icon">🔄</span><span>새 대화</span>
         </div>
-        <div class="settings-dropdown-item" onclick="openNotifSettings();closeSettingsMenu()">
-          <span class="sd-icon">🔔</span><span>알림 설정</span>
-          <span id="notifStatusDot" class="sd-toggle-status">—</span>
-        </div>
         <div class="settings-dropdown-item" onclick="toggleStudentMode(event)">
           <span class="sd-icon">📚</span><span>명리학습자 모드</span>
           <span id="studentModeStatus" class="sd-toggle-status">OFF</span>
@@ -1407,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.61.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.61.7'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2013,7 +2009,6 @@ function applyProfile(profile) {
     var el = document.getElementById('adminStatsMenuItem');
     if (el) el.style.display = 'block';
   }
-  if (Notification.permission === 'granted') subscribePush();
   subscribeOrbRealtime();
   loadOrbBalance();
   loadChatHistory().then(function() {
@@ -2028,9 +2023,6 @@ function applyProfile(profile) {
     }
     initQPanel();
   if (chatHistory.length === 0) showWelcome();
-    if ('Notification' in window && Notification.permission === 'granted') {
-      scheduleFortunaNotification();
-    }
     if (new URLSearchParams(location.search).get('daily') === '1') {
       history.replaceState(null, '', '/');
       localStorage.removeItem('fortuna_daily_dismissed');
@@ -7598,7 +7590,6 @@ function toggleSettingsMenu(e) {
   var d = document.getElementById('settingsDropdown');
   d.classList.toggle('open');
   if (d.classList.contains('open')) {
-    refreshNotifStatusDot();
     var close = function() { d.classList.remove('open'); document.removeEventListener('click', close); };
     setTimeout(function() { document.addEventListener('click', close); }, 0);
   }
@@ -7720,204 +7711,6 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-async function subscribePush() {
-  if (!currentUser) return;
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-  try {
-    var reg = await navigator.serviceWorker.ready;
-    var sub = await reg.pushManager.getSubscription();
-    if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      });
-    }
-    // 브라우저 구독 성공 즉시 저장 (DB 저장 전) — 리로드로 유실 방지
-    localStorage.setItem('fortuna_push_subscribed', '1');
-    var now = Date.now();
-    if (currentUser && currentUser.provider === 'kakao') {
-      await fetch('https://fortuna-silk.vercel.app/api/push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: currentUser.id, subscription: sub.toJSON() })
-      });
-    } else {
-      await sb.from('push_subscriptions').upsert({
-        user_id: currentUser.id,
-        subscription: sub.toJSON(),
-        created_at: now
-      }, { onConflict: 'user_id' });
-    }
-    console.log('Push 구독 저장 완료');
-  } catch(e) {
-    localStorage.removeItem('fortuna_push_subscribed');
-    console.warn('Push 구독 실패:', e.message);
-    throw e;
-  }
-}
-
-
-// 설정/할당량 영역에서 다시 켤 수 있게
-function requestNotification() {
-  if (!('Notification' in window)) { toast('이 브라우저는 알림을 지원하지 않아요.'); return; }
-  if (Notification.permission === 'granted') {
-    toast('✅ 알림이 이미 켜져 있어요 🔮');
-    scheduleFortunaNotification();
-    subscribePush();
-    return;
-  }
-  if (Notification.permission === 'denied') {
-    toast('알림이 차단됐어요. 브라우저 설정 > 알림에서 허용해주세요.');
-    return;
-  }
-  Notification.requestPermission().then(function(permission) {
-    if (permission === 'granted') {
-      toast('✅ 매일 07:30에 오늘의 운세 알림을 보내드릴게요 🔮');
-      scheduleFortunaNotification();
-      subscribePush();
-    }
-  });
-}
-
-// ===== 알림 설정 모달 =====
-async function getNotifState() {
-  var supported = ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window);
-  if (!supported) return { supported:false, permission:'unsupported', subscribed:false };
-  var perm = Notification.permission;
-  var subscribed = false;
-  try {
-    var reg = await navigator.serviceWorker.ready;
-    var sub = await reg.pushManager.getSubscription();
-    subscribed = !!sub;
-  } catch(e) {}
-  // 브라우저 getSubscription이 null이어도 DB 저장 성공했으면 ON으로 간주
-  if (!subscribed && perm === 'granted' && localStorage.getItem('fortuna_push_subscribed') === '1') {
-    subscribed = true;
-  }
-  return { supported:true, permission:perm, subscribed:subscribed };
-}
-
-async function refreshNotifStatusDot() {
-  var dot = document.getElementById('notifStatusDot');
-  if (!dot) return;
-  var on = localStorage.getItem('fortuna_push_subscribed') === '1'
-    && ('Notification' in window) && Notification.permission === 'granted';
-  dot.textContent = on ? 'ON' : 'OFF';
-  dot.style.color = on ? '#86efac' : '#9ca3af';
-  dot.classList.toggle('on', on);
-}
-
-async function openNotifSettings() {
-  var modal = document.getElementById('notifSettings');
-  if (!modal) return;
-  modal.classList.add('open');
-  var sw = document.getElementById('notifSwitch');
-  var msg = document.getElementById('notifStatusMsg');
-  var s = await getNotifState();
-  if (!s.supported) {
-    if (sw) { sw.checked = false; sw.disabled = true; }
-    if (msg) msg.textContent = '이 브라우저는 웹 알림을 지원하지 않습니다.';
-    return;
-  }
-  if (sw) sw.disabled = false;
-  var isOn = localStorage.getItem('fortuna_push_subscribed') === '1'
-    && s.permission === 'granted';
-  if (s.permission === 'denied') {
-    if (sw) sw.checked = false;
-    if (msg) msg.textContent = '브라우저에서 알림이 차단됐어요. 브라우저 설정 > 알림 > 이 사이트 허용으로 변경해주세요.';
-  } else if (isOn) {
-    if (sw) sw.checked = true;
-    if (msg) msg.textContent = '매일 아침 알림이 켜져 있어요.';
-  } else {
-    if (sw) sw.checked = false;
-    if (msg) msg.textContent = '토글을 켜면 알림 권한을 요청합니다.';
-  }
-}
-
-function closeNotifSettings() {
-  var modal = document.getElementById('notifSettings');
-  if (modal) modal.classList.remove('open');
-  refreshNotifStatusDot();
-}
-
-async function onNotifSwitchToggle(el) {
-  var msg = document.getElementById('notifStatusMsg');
-  if (!currentUser) {
-    if (el) el.checked = false;
-    if (msg) msg.textContent = '로그인 후 이용해주세요.';
-    return;
-  }
-  if (!('Notification' in window)) {
-    if (el) el.checked = false;
-    if (msg) msg.textContent = '이 브라우저는 알림을 지원하지 않습니다.';
-    return;
-  }
-  if (el && el.checked) {
-    try {
-      var perm = Notification.permission;
-      if (perm === 'default') perm = await Notification.requestPermission();
-      if (perm !== 'granted') {
-        el.checked = false;
-        if (msg) msg.textContent = '알림 권한이 필요합니다. 브라우저 설정에서 허용해주세요.';
-        return;
-      }
-      await subscribePush();
-      scheduleFortunaNotification();
-      if (msg) msg.textContent = '✅ 알림이 켜졌어요. 매일 07:30에 오늘의 운세를 보내드립니다.';
-      toast('🔔 알림이 켜졌어요');
-    } catch(e) {
-      el.checked = false;
-      const errText = '알림 오류: ' + (e.message || String(e));
-      if (msg) msg.textContent = errText;
-      toast(errText);
-    }
-  } else {
-    try {
-      var reg = await navigator.serviceWorker.ready;
-      var sub = await reg.pushManager.getSubscription();
-      if (sub) await sub.unsubscribe();
-      try { await sb.from('push_subscriptions').delete().eq('user_id', currentUser.id); } catch(e) {}
-      localStorage.removeItem('fortuna_push_subscribed');
-      clearTimeout(window._fortunaNotifTimer);
-      if (msg) msg.textContent = '알림이 꺼졌어요. 언제든 다시 켤 수 있습니다.';
-      toast('🔕 알림이 꺼졌어요');
-    } catch(e) {
-      if (msg) msg.textContent = '해지 중 오류: ' + (e.message || e);
-    }
-  }
-  refreshNotifStatusDot();
-}
-
-document.addEventListener('click', function(ev) {
-  var modal = document.getElementById('notifSettings');
-  if (modal && modal.classList.contains('open') && ev.target === modal) closeNotifSettings();
-});
-document.addEventListener('DOMContentLoaded', function() { setTimeout(refreshNotifStatusDot, 1200); });
-
-function scheduleFortunaNotification() {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  var name = (userProfile && userProfile.name) ? userProfile.name : '';
-  var now = new Date();
-  // 오늘 07:30, 지났으면 내일
-  var target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 30, 0);
-  if (now >= target) target.setDate(target.getDate() + 1);
-  var delay = target - now;
-  clearTimeout(window._fortunaNotifTimer);
-  window._fortunaNotifTimer = setTimeout(function() {
-    if (Notification.permission === 'granted') {
-      var body = name ? name + '님의 오늘 운세가 도착했어요' : '오늘 운세가 도착했어요';
-      var notif = new Notification('🔮 포르투나', {
-        body: name ? name + '님의 오늘 운세가 도착했어요. 지금 확인해보세요!' : '오늘의 운세가 도착했어요. 지금 확인해보세요!',
-        icon: '/memox/goddess.png',
-        badge: '/memox/goddess.png',
-        tag: 'fortuna-daily',
-        renotify: true
-      });
-      notif.onclick = function() { window.focus(); notif.close(); };
-    }
-    scheduleFortunaNotification(); // 내일을 위해 재귀 예약
-  }, delay);
-}
 
 
 // ── 로컬 간지 계산 함수 삭제됨 (2.46.0) ──
@@ -8376,35 +8169,6 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<!-- 알림 권한 다이얼로그 -->
-
-<!-- 알림 설정 모달 -->
-<div id="notifSettings" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.62);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:22px 22px 20px;max-width:360px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.28);">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <div style="font-size:16px;font-weight:700;color:#e5e7eb;">🔔 알림 설정</div>
-      <button onclick="closeNotifSettings()" aria-label="닫기" style="background:transparent;border:0;color:#9ca3af;font-size:20px;cursor:pointer;line-height:1;">✕</button>
-    </div>
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="font-size:14px;font-weight:700;color:#e5e7eb;">오늘의 운세 알림</div>
-        <label class="nf-switch" style="position:relative;display:inline-block;width:44px;height:24px;">
-          <input type="checkbox" id="notifSwitch" onclick="onNotifSwitchToggle(this)" style="opacity:0;width:0;height:0;">
-          <span class="nf-slider" style="position:absolute;cursor:pointer;inset:0;border-radius:22px;transition:.2s;"></span>
-        </label>
-      </div>
-      <div style="font-size:12px;color:#9ca3af;line-height:1.55;">매일 아침 07:30, 사주 기반 오늘 운세를 브라우저 알림으로 받습니다.</div>
-    </div>
-    <div id="notifStatusMsg" style="font-size:12px;color:#9ca3af;line-height:1.5;padding:4px 2px 0;"></div>
-  </div>
-</div>
-<style>
-  #notifSettings.open{display:flex !important;}
-  .nf-slider{background:#3f3f46;}
-  .nf-switch input:checked + .nf-slider{background:linear-gradient(135deg,#7b5ea7,#a07fd4);}
-  .nf-slider::before{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s;}
-  .nf-switch input:checked + .nf-slider::before{transform:translateX(20px);}
-</style>
 
 <!-- 결과 공유 카드 모달 -->
 <div id="resultShareModal" role="dialog" aria-modal="true">
