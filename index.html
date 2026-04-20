@@ -390,32 +390,6 @@
   }
   #fortunaCardCanvas { position:fixed; left:-9999px; top:-9999px; pointer-events:none; }
 
-  /* 알림 권한 다이얼로그 */
-  #notifPrompt {
-    display:none; position:fixed; inset:0; z-index:10000;
-    background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
-    align-items:flex-end; justify-content:center; padding-bottom:32px;
-  }
-  #notifPrompt.open { display:flex; }
-  #notifPrompt .np-box {
-    background:#1a1a2e; border:1px solid rgba(139,92,246,0.4);
-    border-radius:20px; padding:24px 20px 20px;
-    width:min(360px, calc(100vw - 32px)); text-align:center;
-    box-shadow:0 -4px 40px rgba(139,92,246,0.2);
-  }
-  #notifPrompt .np-icon { font-size:36px; margin-bottom:12px; }
-  #notifPrompt .np-title { font-size:16px; font-weight:700; color:#e5e7eb; margin-bottom:8px; }
-  #notifPrompt .np-desc { font-size:13px; color:#9ca3af; line-height:1.6; margin-bottom:20px; }
-  #notifPrompt .np-btns { display:flex; gap:10px; }
-  #notifPrompt .np-allow {
-    flex:1; padding:13px; background:linear-gradient(135deg,#7c3aed,#a855f7);
-    color:#fff; border:none; border-radius:14px; font-size:14px; font-weight:600; cursor:pointer;
-  }
-  #notifPrompt .np-deny {
-    padding:13px 18px; background:rgba(255,255,255,0.06);
-    color:#6b7280; border:1px solid rgba(255,255,255,0.1);
-    border-radius:14px; font-size:14px; cursor:pointer;
-  }
 
   /* 카드 모달 */
   #cardModal {
@@ -1433,7 +1407,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.61.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.61.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2054,12 +2028,8 @@ function applyProfile(profile) {
     }
     initQPanel();
   if (chatHistory.length === 0) showWelcome();
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
-        scheduleFortunaNotification();
-      } else if (Notification.permission === 'default' && !localStorage.getItem('fortuna_notif_asked')) {
-        setTimeout(showNotifPrompt, 3000);
-      }
+    if ('Notification' in window && Notification.permission === 'granted') {
+      scheduleFortunaNotification();
     }
     if (new URLSearchParams(location.search).get('daily') === '1') {
       history.replaceState(null, '', '/');
@@ -7739,16 +7709,6 @@ function dismissDailyCard() {
   if (wrap) wrap.remove();
 }
 
-function showNotifPrompt() {
-  if (!('Notification' in window)) return;
-  if (Notification.permission !== 'default') return;
-  localStorage.setItem('fortuna_notif_asked', '1');
-  document.getElementById('notifPrompt').classList.add('open');
-}
-
-function closeNotifPrompt() {
-  document.getElementById('notifPrompt').classList.remove('open');
-}
 
 // URL-safe Base64 → Uint8Array (VAPID 공개키 변환)
 function urlBase64ToUint8Array(base64String) {
@@ -7796,19 +7756,6 @@ async function subscribePush() {
   }
 }
 
-function allowNotification() {
-  closeNotifPrompt();
-  if (!('Notification' in window)) { toast('이 브라우저는 알림을 지원하지 않아요.'); return; }
-  Notification.requestPermission().then(function(permission) {
-    if (permission === 'granted') {
-      toast('✅ 매일 07:30에 오늘의 운세 알림을 보내드릴게요 🔮');
-      scheduleFortunaNotification();
-      subscribePush();
-    } else {
-      toast('알림이 차단됐어요. 브라우저 설정 > 알림에서 허용해주세요.');
-    }
-  });
-}
 
 // 설정/할당량 영역에서 다시 켤 수 있게
 function requestNotification() {
@@ -7864,7 +7811,6 @@ async function openNotifSettings() {
   var modal = document.getElementById('notifSettings');
   if (!modal) return;
   modal.classList.add('open');
-  closeNotifPrompt();
   var sw = document.getElementById('notifSwitch');
   var msg = document.getElementById('notifStatusMsg');
   var s = await getNotifState();
@@ -8431,17 +8377,6 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <!-- 알림 권한 다이얼로그 -->
-<div id="notifPrompt">
-  <div class="np-box">
-    <div class="np-icon">🔮</div>
-    <div class="np-title">포르투나가 매일 아침 운세를 알려드려요</div>
-    <div class="np-desc">매일 07:30, 오늘의 운세를 알림으로 받아보세요.<br>아래 버튼을 누르면 브라우저에서 한 번 더 확인 창이 나옵니다. 거기서도 허용해주세요.</div>
-    <div class="np-btns">
-      <button class="np-allow" onclick="allowNotification()">허용하기 →</button>
-      <button class="np-deny" onclick="closeNotifPrompt()">괜찮아요</button>
-    </div>
-  </div>
-</div>
 
 <!-- 알림 설정 모달 -->
 <div id="notifSettings" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.62);z-index:9999;align-items:center;justify-content:center;padding:20px;">
