@@ -1433,7 +1433,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.61.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.61.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -7773,6 +7773,8 @@ async function subscribePush() {
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
+    // 브라우저 구독 성공 즉시 저장 (DB 저장 전) — 리로드로 유실 방지
+    localStorage.setItem('fortuna_push_subscribed', '1');
     var now = Date.now();
     if (currentUser && currentUser.provider === 'kakao') {
       await fetch('https://fortuna-silk.vercel.app/api/push', {
@@ -7787,7 +7789,6 @@ async function subscribePush() {
         created_at: now
       }, { onConflict: 'user_id' });
     }
-    localStorage.setItem('fortuna_push_subscribed', '1');
     console.log('Push 구독 저장 완료');
   } catch(e) {
     localStorage.removeItem('fortuna_push_subscribed');
@@ -7864,6 +7865,7 @@ async function openNotifSettings() {
   var modal = document.getElementById('notifSettings');
   if (!modal) return;
   modal.classList.add('open');
+  closeNotifPrompt();
   var sw = document.getElementById('notifSwitch');
   var msg = document.getElementById('notifStatusMsg');
   var s = await getNotifState();
