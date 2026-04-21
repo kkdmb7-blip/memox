@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.62.8'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.62.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -8251,8 +8251,25 @@ if ('serviceWorker' in navigator) {
     return petData.all[elem];
   }
 
-  function buildPetHTML(elem) {
-    return '<span style="font-size:28px;line-height:1;">' + (ELEM_STYLE[elem]||ELEM_STYLE.water).emoji + '</span>';
+  function getPetStageIdx(lv) {
+    return Math.min(Math.floor((lv || 1) / 3), 4);
+  }
+
+  function buildPetHTML(elem, lv) {
+    var stageIdx = getPetStageIdx(lv);
+    var n = stageIdx + 1; // 1~5
+    var src;
+    if (elem === 'fire') {
+      src = 'https://picolab.kr/img/pet_fire_' + n + '.png';
+    } else if (elem === 'wood') {
+      src = (n === 1 || n === 5)
+        ? 'https://picolab.kr/img/pet_wood_' + n + '_rb.png'
+        : 'https://picolab.kr/img/pet_wood_' + n + '.png';
+    } else {
+      // water, metal, earth 등 이미지 없으면 이모지 fallback
+      return '<span style="font-size:28px;line-height:1;">' + (ELEM_STYLE[elem]||ELEM_STYLE.water).emoji + '</span>';
+    }
+    return '<img src="' + src + '" style="width:44px;height:44px;object-fit:contain;pointer-events:none;" onerror="this.parentNode.innerHTML=\'<span style=font-size:28px>' + (ELEM_STYLE[elem]||ELEM_STYLE.water).emoji + '</span>\'">';
   }
 
   function moveTo(pos) {
@@ -8323,7 +8340,7 @@ if ('serviceWorker' in navigator) {
       'animation:mx-pet-idle 2.5s ease-in-out infinite',
       'position:relative','overflow:hidden',
     ].join(';');
-    pet.innerHTML = buildPetHTML(elem);
+    pet.innerHTML = buildPetHTML(elem, lv);
 
     // 레벨 뱃지
     var lvBadge = document.createElement('div');
