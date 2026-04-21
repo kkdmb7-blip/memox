@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.62.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.62.6'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -8194,5 +8194,205 @@ if ('serviceWorker' in navigator) {
     <button class="modal-btn btn-close-modal" onclick="closeCardModal()">닫기</button>
   </div>
 </div>
+<!-- 용신 플로팅 펫 (pico 연동) -->
+<script>
+(function() {
+  'use strict';
+  var SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
+  var SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
+  var PICO_PET_URL = 'https://picolab.kr/yongsin-pet.html';
+
+  var ELEM_STYLE = {
+    wood:  { bg:'#1a6630', glow:'rgba(26,102,48,0.5)',  emoji:'🌿', label:'목(木)' },
+    fire:  { bg:'#c62828', glow:'rgba(198,40,40,0.5)',  emoji:'🔥', label:'화(火)' },
+    earth: { bg:'#6a4a10', glow:'rgba(106,74,16,0.5)',  emoji:'🪨', label:'토(土)' },
+    metal: { bg:'#5a5a4a', glow:'rgba(90,90,74,0.5)',   emoji:'💎', label:'금(金)' },
+    water: { bg:'#1565c0', glow:'rgba(21,101,192,0.5)', emoji:'💧', label:'수(水)' },
+  };
+
+  var POSITIONS = [
+    {x:5,y:20},{x:80,y:15},{x:10,y:60},{x:75,y:55},{x:40,y:80},{x:5,y:40},{x:82,y:70}
+  ];
+
+  var pet, bubble, wrapper;
+  var moveTimer, bubbleTimer;
+  var MOVE_TRANSITION = 'left 1.8s cubic-bezier(0.34,1.2,0.64,1), top 1.8s cubic-bezier(0.34,1.2,0.64,1)';
+
+  function getPicoUserId() {
+    try {
+      var ku = JSON.parse(localStorage.getItem('fortuna_kakao_user') || '{}');
+      if (ku.kakao_id) return 'kakao_' + ku.kakao_id;
+    } catch(e) {}
+    return null;
+  }
+
+  function fetchPetState(uid, cb) {
+    fetch(SB_URL + '/rest/v1/reports?user_id=eq.' + encodeURIComponent(uid) + '&report_type=eq.pet_state&select=content&order=created_at.desc&limit=1', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (rows && rows[0] && rows[0].content && rows[0].content[0]) {
+        try { cb(JSON.parse(rows[0].content[0])); } catch(e) { cb(null); }
+      } else { cb(null); }
+    }).catch(function() { cb(null); });
+  }
+
+  function getPetElement(petData) {
+    if (!petData) return null;
+    return petData.element || null;
+  }
+
+  function getPetStats(petData) {
+    var elem = getPetElement(petData);
+    if (!elem || !petData.all || !petData.all[elem]) return null;
+    return petData.all[elem];
+  }
+
+  function buildPetHTML(elem) {
+    return '<span style="font-size:28px;line-height:1;">' + (ELEM_STYLE[elem]||ELEM_STYLE.water).emoji + '</span>';
+  }
+
+  function moveTo(pos) {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var x = Math.round(vw * pos.x / 100) + window.scrollX;
+    var y = Math.round(vh * pos.y / 100) + window.scrollY;
+    x = Math.max(0, Math.min(vw - 60 + window.scrollX, x));
+    y = Math.max(0, Math.min(document.body.scrollHeight - 60, y));
+    wrapper.style.left = x + 'px';
+    wrapper.style.top  = y + 'px';
+  }
+
+  function scheduleMove() {
+    clearTimeout(moveTimer);
+    moveTimer = setTimeout(function() {
+      var pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
+      moveTo(pos);
+      scheduleMove();
+    }, 9000 + Math.random() * 12000);
+  }
+
+  function positionBubble() {
+    var rect = pet.getBoundingClientRect();
+    var bw = bubble.offsetWidth || 180;
+    var left = Math.max(8, Math.min(window.innerWidth - bw - 8, rect.left + rect.width/2 - bw/2));
+    var top = rect.top - bubble.offsetHeight - 10;
+    if (top < 8) top = rect.bottom + 10;
+    bubble.style.left = left + 'px';
+    bubble.style.top  = top + 'px';
+  }
+
+  function showBubble(html, duration) {
+    bubble.firstChild.innerHTML = html;
+    positionBubble();
+    bubble.style.opacity = '1';
+    clearTimeout(bubbleTimer);
+    if (duration > 0) bubbleTimer = setTimeout(function() { bubble.style.opacity = '0'; }, duration);
+  }
+
+  function init(elem, stats) {
+    var s = ELEM_STYLE[elem] || ELEM_STYLE.water;
+    var lv = stats ? (stats.level || 1) : 1;
+    var energy = stats ? Math.round(stats.energy || 0) : 0;
+
+    wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:absolute;z-index:9990;pointer-events:none;transition:' + MOVE_TRANSITION + ';left:10px;top:20%;';
+
+    bubble = document.createElement('div');
+    bubble.style.cssText = 'position:fixed;background:rgba(26,18,10,0.92);color:#fcf7ea;padding:10px 30px 10px 14px;border-radius:14px;font-size:13px;font-weight:500;max-width:200px;width:max-content;text-align:center;line-height:1.55;opacity:0;transition:opacity 0.3s;pointer-events:auto;z-index:9991;font-family:\'Pretendard Variable\',Pretendard,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
+    var bubbleText = document.createElement('div');
+    bubble.appendChild(bubbleText);
+    var bubbleClose = document.createElement('button');
+    bubbleClose.textContent = '✕';
+    bubbleClose.style.cssText = 'position:absolute;top:5px;right:7px;background:none;border:none;color:rgba(252,247,234,0.7);font-size:14px;cursor:pointer;padding:4px;line-height:1;';
+    bubbleClose.addEventListener('pointerdown', function(e) { e.stopPropagation(); bubble.style.opacity='0'; });
+    bubble.appendChild(bubbleClose);
+    document.body.appendChild(bubble);
+
+    pet = document.createElement('button');
+    pet.style.cssText = [
+      'width:52px','height:52px','border-radius:50%',
+      'border:2px solid ' + s.bg,
+      'background:#f9f1de','cursor:pointer','padding:0',
+      'display:flex','align-items:center','justify-content:center',
+      'box-shadow:0 0 12px ' + s.glow + ',0 3px 10px rgba(0,0,0,0.15)',
+      'pointer-events:auto','touch-action:none','-webkit-user-select:none','user-select:none',
+      'transition:transform 0.2s,box-shadow 0.2s',
+      'animation:mx-pet-idle 2.5s ease-in-out infinite',
+      'position:relative','overflow:hidden',
+    ].join(';');
+    pet.innerHTML = buildPetHTML(elem);
+
+    // 레벨 뱃지
+    var lvBadge = document.createElement('div');
+    lvBadge.style.cssText = 'position:absolute;top:-4px;right:-4px;background:' + s.bg + ';color:#fff;font-size:9px;font-weight:700;padding:2px 4px;border-radius:6px;border:1.5px solid #f9f1de;pointer-events:none;z-index:2;font-family:\'Pretendard Variable\',sans-serif;';
+    lvBadge.textContent = 'Lv.' + lv;
+    pet.appendChild(lvBadge);
+
+    // 에너지 바
+    var ebar = document.createElement('div');
+    ebar.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:4px;background:rgba(0,0,0,0.15);pointer-events:none;z-index:2;';
+    var efill = document.createElement('div');
+    efill.style.cssText = 'height:100%;width:' + energy + '%;background:' + s.bg + ';transition:width 0.6s;';
+    ebar.appendChild(efill);
+    pet.appendChild(ebar);
+
+    // 클릭
+    var clickCount = 0, clickTimer;
+    pet.addEventListener('click', function() {
+      pet.style.animation = 'none';
+      pet.style.animation = 'mx-pet-found 0.5s ease';
+      setTimeout(function() { pet.style.animation = 'mx-pet-idle 2.5s ease-in-out infinite'; }, 600);
+      clickCount++;
+      if (clickCount === 1) {
+        clickTimer = setTimeout(function() { clickCount = 0; }, 380);
+        showBubble('<b style="color:' + (s.bg) + ';">' + s.label + ' Lv.' + lv + '</b><br>피코에서 키워줘요! 🌟', 2500);
+      } else if (clickCount >= 2) {
+        clearTimeout(clickTimer); clickCount = 0;
+        window.open(PICO_PET_URL, '_blank');
+      }
+    });
+
+    pet.addEventListener('mouseenter', function() { pet.style.transform = 'scale(1.15)'; });
+    pet.addEventListener('mouseleave', function() { pet.style.transform = ''; });
+
+    // CSS
+    var style = document.createElement('style');
+    style.textContent = '@keyframes mx-pet-idle{0%,100%{transform:translateY(0) rotate(0deg)}30%{transform:translateY(-5px) rotate(-3deg)}70%{transform:translateY(-3px) rotate(3deg)}}@keyframes mx-pet-found{0%{transform:scale(1)}30%{transform:scale(1.3) rotate(-10deg)}60%{transform:scale(1.2) rotate(10deg)}100%{transform:scale(1)}}';
+    document.head.appendChild(style);
+
+    wrapper.appendChild(pet);
+    document.body.appendChild(wrapper);
+
+    // 등장
+    wrapper.style.opacity = '0';
+    wrapper.style.transform = 'scale(0)';
+    wrapper.style.transition += ',opacity 0.5s,transform 0.5s';
+    var startPos = POSITIONS[Math.floor(Math.random() * 5)];
+    moveTo(startPos);
+    setTimeout(function() {
+      wrapper.style.opacity = '1';
+      wrapper.style.transform = 'scale(1)';
+      showBubble('<b style="color:#c8a830;">안녕!</b> 피코에서 왔어요 👋', 2200);
+    }, 1800);
+
+    scheduleMove();
+  }
+
+  // 실행: 로그인 유저 & 펫 데이터 있을 때만
+  if (window.location.pathname.indexOf('yongsin-pet') !== -1) return;
+  var uid = getPicoUserId();
+  if (!uid) return;
+
+  fetchPetState(uid, function(petData) {
+    var elem = getPetElement(petData);
+    if (!elem) return;
+    var stats = getPetStats(petData);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() { init(elem, stats); });
+    } else {
+      setTimeout(function() { init(elem, stats); }, 1000);
+    }
+  });
+})();
+</script>
 </body>
 </html>
