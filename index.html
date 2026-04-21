@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.63.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.63.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -8506,11 +8506,11 @@ if ('serviceWorker' in navigator) {
     lvBadge.textContent = 'Lv.'+lv;
     wrapper.appendChild(lvBadge);
 
-    // 에너지 바 — pet 아래 (wrapper에 배치)
+    // 에너지 바 — 원형에 살짝 겹치게 (margin-top 음수)
     var ebar = document.createElement('div');
-    ebar.style.cssText = 'width:52px;height:4px;background:rgba(0,0,0,0.15);border-radius:2px;margin:3px auto 0;overflow:hidden;';
+    ebar.style.cssText = 'width:48px;height:7px;background:rgba(255,255,255,0.25);border-radius:4px;margin:-4px auto 0;overflow:hidden;border:1px solid rgba(255,255,255,0.18);box-shadow:0 1px 4px rgba(0,0,0,0.25);';
     var efill = document.createElement('div');
-    efill.style.cssText = 'height:100%;width:'+energy+'%;background:'+s.bg+';border-radius:2px;transition:width 0.6s;';
+    efill.style.cssText = 'height:100%;width:'+energy+'%;background:'+s.bg+';border-radius:4px;transition:width 0.6s;box-shadow:0 0 4px '+s.glow+';';
     ebar.appendChild(efill);
 
     wrapper.appendChild(pet);
