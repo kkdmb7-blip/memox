@@ -1403,7 +1403,30 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.63.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.64.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+
+// ── 이벤트 로깅 ───────────────────────────────────────────────
+function logEvent(eventType, properties) {
+  try {
+    var uid = null;
+    try { var _ku = JSON.parse(localStorage.getItem('fortuna_kakao_user')||'{}'); uid = _ku.id || null; } catch(e) {}
+    fetch('https://fortuna-silk.vercel.app/api/log-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: uid, event_type: eventType, properties: properties || {} }),
+    }).catch(function(){});
+  } catch(e) {}
+}
+
+// session_start: 하루 1회
+(function() {
+  var today = new Date(Date.now() + 9*3600000).toISOString().slice(0,10);
+  var lsKey = 'memox_session_' + today;
+  if (!localStorage.getItem(lsKey)) {
+    localStorage.setItem(lsKey, '1');
+    logEvent('session_start', { date: today });
+  }
+})();
 var VAPID_PUBLIC_KEY = 'BJY4cJSg25L1wOIkbJf06cIsONQT-un3frY2AZxZEMZO6Zm9j8a6MsmHVrcaRlQQHgwj0YcybLo-VZWLOt89V_g';
 const SB_URL = 'https://ymghmfkqctckxxysxkvy.supabase.co';
 const SB_KEY = 'sb_publishable_3-9zobXqx6Nv36LzmNMBpA_fohZqA5x';
@@ -2644,6 +2667,7 @@ async function submitOnboard() {
     updateChatHeader();
     showWelcome();
     toast('🔮 ' + name + '님의 운명 데이터가 저장됐어요!');
+    logEvent('onboarding_complete', { gender: selectedGender, calendar: selectedCal });
 
   } catch(e) {
     console.error('submitOnboard 오류:', e);
@@ -5721,6 +5745,11 @@ async function sendMessage(displayText) {
   window._typingStart = Date.now();
   isTyping = true;
   document.getElementById('sendBtn').disabled = true;
+  // first_message: 생애 첫 메시지
+  if (!localStorage.getItem('memox_first_msg_sent')) {
+    localStorage.setItem('memox_first_msg_sent', '1');
+    logEvent('first_message');
+  }
 
   // ── 분기 감지 ──
   window._currentBranch = detectBranch(text);
@@ -7180,6 +7209,12 @@ function showScreen(name) {
     scrollToBottom();
     if (typeof applyStudentModeUI === 'function') applyStudentModeUI();
     if (typeof maybeShowFirstVisitHint === 'function') setTimeout(maybeShowFirstVisitHint, 600);
+    // chat_open: 하루 1회
+    var _today = new Date(Date.now() + 9*3600000).toISOString().slice(0,10);
+    if (localStorage.getItem('memox_chat_open_' + _today) !== '1') {
+      localStorage.setItem('memox_chat_open_' + _today, '1');
+      logEvent('chat_open', { date: _today });
+    }
   }
   if (name === 'login') checkInAppBrowser();
 }
