@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.64.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.64.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 
 // ── 이벤트 로깅 ───────────────────────────────────────────────
 function logEvent(eventType, properties) {
@@ -2026,6 +2026,22 @@ function _smartClassifyTopic(msg) {
 
 function applyProfile(profile) {
   userProfile = profile;
+  // float.js용 pico_profile 동기화 (이름/생년월일/성별)
+  try {
+    if (profile && profile.birth_date) {
+      var _bd = profile.birth_date.split('-');
+      var _bt = (profile.birth_time || '00:00').split(':');
+      localStorage.setItem('pico_profile', JSON.stringify({
+        name: profile.name || '',
+        year: parseInt(_bd[0]||0), month: parseInt(_bd[1]||0), day: parseInt(_bd[2]||0),
+        hour: parseInt(_bt[0]||0), gender: profile.gender || 'M'
+      }));
+    }
+    if (profile && profile.name) {
+      var _ku = {}; try { _ku = JSON.parse(localStorage.getItem('fortuna_kakao_user')||'{}'); } catch(e) {}
+      localStorage.setItem('pico_user', JSON.stringify({ id: _ku.id || profile.id || '', name: profile.name, avatar: _ku.avatar || '' }));
+    }
+  } catch(e) {}
   window._vedicCache = null; window._vedicFetched = false;
   showScreen('chat');
   if (currentUser && currentUser.id === ADMIN_UUID) {
@@ -2880,6 +2896,13 @@ async function loadUserContext() {
     } else {
       var res = await sb.from('user_context').select('*').eq('user_id', currentUser.id).maybeSingle();
       if (res.data) window._fortunaUserCtx = res.data;
+    }
+    // float.js용 pico_yongsin 동기화 (한국어→영문 변환)
+    var _ctx = window._fortunaUserCtx;
+    if (_ctx) {
+      var _ysKor = (_ctx.saju_yongshin_primary || '').charAt(0);
+      var _KE = {'목':'wood','화':'fire','토':'earth','금':'metal','수':'water'};
+      if (_KE[_ysKor]) try { localStorage.setItem('pico_yongsin', _KE[_ysKor]); } catch(e2) {}
     }
   } catch(e) { console.warn('[loadUserContext 실패]', e.message); }
 }
