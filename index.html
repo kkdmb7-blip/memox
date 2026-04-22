@@ -1410,7 +1410,7 @@ function logEvent(eventType, properties) {
   try {
     var uid = null;
     try { var _ku = JSON.parse(localStorage.getItem('fortuna_kakao_user')||'{}'); uid = _ku.id || null; } catch(e) {}
-    fetch('https://fortuna-silk.vercel.app/api/log-event', {
+    fetch('https://fortuna-silk.vercel.app/api/save-profile?action=log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: uid, event_type: eventType, properties: properties || {} }),
