@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.66.4'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.66.5'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 
 // ── 이벤트 로깅 ───────────────────────────────────────────────
 function logEvent(eventType, properties) {
@@ -2898,12 +2898,16 @@ async function loadUserContext() {
       var res = await sb.from('user_context').select('*').eq('user_id', currentUser.id).maybeSingle();
       if (res.data) window._fortunaUserCtx = res.data;
     }
-    // float.js용 pico_yongsin 동기화 (한국어→영문 변환)
+    // float.js용 pico_yongsin + yongsin_pet_pref 동기화 (한국어→영문 변환)
     var _ctx = window._fortunaUserCtx;
     if (_ctx) {
       var _ysKor = (_ctx.saju_yongshin_primary || '').charAt(0);
       var _KE = {'목':'wood','화':'fire','토':'earth','금':'metal','수':'water'};
-      if (_KE[_ysKor]) try { localStorage.setItem('pico_yongsin', _KE[_ysKor]); } catch(e2) {}
+      var _ysEng = _KE[_ysKor];
+      if (_ysEng) {
+        try { localStorage.setItem('pico_yongsin', _ysEng); } catch(e2) {}
+        try { localStorage.setItem('yongsin_pet_pref', _ysEng); } catch(e3) {}
+      }
     }
   } catch(e) { console.warn('[loadUserContext 실패]', e.message); }
 }
