@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.66.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.66.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 
 // ── 이벤트 로깅 ───────────────────────────────────────────────
 function logEvent(eventType, properties) {
@@ -3278,9 +3278,9 @@ async function trackEmotionAndTopic(text) {
 
   if (emotion) {
     try {
-      await fetch(SUPABASE_URL + '/rest/v1/user_emotions', {
+      await fetch(SB_URL + '/rest/v1/user_emotions', {
         method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
           'Content-Type': 'application/json', 'Prefer': 'resolution=ignore-duplicates' },
         body: JSON.stringify({ kakao_id: user.id, emotion: emotion, recorded_at: kst.toISOString() })
       });
@@ -3293,9 +3293,9 @@ async function trackEmotionAndTopic(text) {
     window._fortunaUserCtx.concerns = concerns;
     updateInterestDisplay(concerns);
     try {
-      await fetch(SUPABASE_URL + '/rest/v1/user_context?kakao_id=eq.' + encodeURIComponent(user.id), {
+      await fetch(SB_URL + '/rest/v1/user_context?kakao_id=eq.' + encodeURIComponent(user.id), {
         method: 'PATCH',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
           'Content-Type': 'application/json' },
         body: JSON.stringify({ concerns: concerns })
       });
@@ -3316,9 +3316,9 @@ async function saveFortuneHit(content, btn) {
   if (btn) btn.disabled = true;
   try {
     const kst = new Date(new Date().getTime() + 9*60*60*1000);
-    await fetch(SUPABASE_URL + '/rest/v1/fortune_hits', {
+    await fetch(SB_URL + '/rest/v1/fortune_hits', {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
         'Content-Type': 'application/json' },
       body: JSON.stringify({ kakao_id: user.id, content: content.slice(0,200), hit_at: kst.toISOString() })
     });
@@ -3344,8 +3344,8 @@ async function loadHitsScreen() {
   document.body.appendChild(overlay);
 
   try {
-    const res = await fetch(SUPABASE_URL + '/rest/v1/fortune_hits?kakao_id=eq.' + encodeURIComponent(user.id) + '&order=hit_at.desc&limit=30', {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    const res = await fetch(SB_URL + '/rest/v1/fortune_hits?kakao_id=eq.' + encodeURIComponent(user.id) + '&order=hit_at.desc&limit=30', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     const hits = await res.json();
     const el = document.getElementById('hitsList');
@@ -3357,7 +3357,7 @@ async function loadHitsScreen() {
         const ds = kst.toISOString().slice(0,10);
         return '<div style="background:#110820;border:1px solid #2a1f3d;border-radius:10px;padding:12px;margin-bottom:10px;">' +
           '<div style="color:#c9a84c;font-size:12px;margin-bottom:6px;">' + ds + '</div>' +
-          '<div>' + h.content + '</div></div>';
+          '<div>' + String(h.content||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></div>';
       }).join('');
   } catch(e) {
     const el = document.getElementById('hitsList');
@@ -3372,8 +3372,8 @@ async function loadWeekAgoFortune() {
   kst.setUTCDate(kst.getUTCDate() - 7);
   const dateStr = kst.toISOString().slice(0,10);
   try {
-    const res = await fetch(SUPABASE_URL + '/rest/v1/daily_fortune?kakao_id=eq.' + encodeURIComponent(user.id) + '&date=eq.' + dateStr + '&limit=1', {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    const res = await fetch(SB_URL + '/rest/v1/daily_fortune?kakao_id=eq.' + encodeURIComponent(user.id) + '&date=eq.' + dateStr + '&limit=1', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     const data = await res.json();
     if (data && data.length > 0) renderRetroCard(data[0], dateStr);
