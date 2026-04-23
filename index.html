@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.65.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.66.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 
 // ── 이벤트 로깅 ───────────────────────────────────────────────
 function logEvent(eventType, properties) {
@@ -2732,7 +2732,8 @@ async function fetchSaju(birth, birthTime, city, gender, cal, midnight) {
     var data = (json.status === 'success' && json.data) ? json.data : json;
     // Flatten summary fields for easy access
     if (data.summary) {
-      data.saju_pillars = data.summary.pillars;
+      var _rp = data.summary.pillars;
+      data.saju_pillars = (_rp && typeof _rp === 'object') ? ((_rp.year||'') + ' / ' + (_rp.month||'') + ' / ' + (_rp.day||'') + ' / ' + (_rp.hour||'')) : (_rp || '');
       data.saju_strength = data.summary.strength;
       data.saju_zodiac = data.summary.zodiac;
     }
@@ -3745,7 +3746,7 @@ async function callDailyFortune() {
     '이름: ' + name + '\n' +
     '성별: ' + (profile.gender === 'M' ? '남성' : '여성') + '\n' +
     '생년월일: ' + (profile.birth_date || '미상') + '\n' +
-    '사주기둥: ' + (saju.saju_pillars || '미상') + '\n' +
+    '사주기둥: ' + (function(){ var _p = saju.saju_pillars; if (!_p) return '미상'; if (typeof _p === 'object') return (_p.year||'') + ' / ' + (_p.month||'') + ' / ' + (_p.day||'') + ' / ' + (_p.hour||''); return _p; })() + '\n' +
     '신강/신약: ' + (saju.saju_strength || '미상') + '\n' +
     '격국: ' + (saju.saju_geokguk || '미상') + '\n' +
     '용신: ' + (saju.saju_yongshin_primary || '미상') + '\n' +
