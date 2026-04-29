@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.66.9'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.67.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 
 // ── 이벤트 로깅 ───────────────────────────────────────────────
 function logEvent(eventType, properties) {
@@ -6166,18 +6166,55 @@ async function callClaude(userMsg, apiKey) {
       var _soul = _zc.soulPalace || (_zc.palaces||[]).find(function(p){ return p.name==='명궁'; });
       var _dec  = _zc.currentDecade;
       var _yr   = _zc.currentYear;
+      var _cm   = _zc.currentMonth;
+      var _cd   = _zc.currentDay;
+      var _br   = (_zc.brightness && _zc.brightness.byStar) || {};
+      var _cat  = (_zc.brightness && _zc.brightness.category) || {};
       var _findPal = function(n) { return (_zc.palaces||[]).find(function(p){ return p.name===n; }); };
-      var _starsStr = function(p) { return p ? ((p.majorStars||[]).join(', ')||'별 없음') : '미상'; };
-      var _jaebaek = _findPal('재백궁') || _findPal('재백');
-      var _gwanrok = _findPal('관록궁') || _findPal('관록');
-      var _bucheo  = _findPal('부처궁') || _findPal('부처');
+      var _fmtStars = function(arr) {
+        if (!arr || !arr.length) return '(공궁)';
+        return arr.map(function(s){ return _br[s] ? s + '(' + _br[s] + ')' : s; }).join(',');
+      };
+      var _palaceLine = function(name) {
+        var p = _findPal(name);
+        if (!p) return '';
+        return '  ' + name + '(' + (p.heavenlyStem||'') + (p.earthlyBranch||'') + '): 주성[' + _fmtStars(p.majorStars) + '] 보성[' + ((p.minorStars||[]).join(',')||'없음') + ']';
+      };
+      var _keyLines = ['명궁','재백','관록','부처','천이'].map(_palaceLine).filter(Boolean).join('\n');
+
+      // 사화
+      var _sh = _zc.sihua || {};
+      var _shLine = '  화록:' + (_sh.lu&&_sh.lu.star?_sh.lu.star+'@'+_sh.lu.palace:'-') +
+                    ' / 화권:' + (_sh.quan&&_sh.quan.star?_sh.quan.star+'@'+_sh.quan.palace:'-') +
+                    ' / 화과:' + (_sh.ke&&_sh.ke.star?_sh.ke.star+'@'+_sh.ke.palace:'-') +
+                    ' / 화기:' + (_sh.ji&&_sh.ji.star?_sh.ji.star+'@'+_sh.ji.palace:'-');
+
+      // 명궁 삼방사정 통합주성
+      var _myungSb = _zc.samBangSaJung && _zc.samBangSaJung['명궁'];
+      var _sbLine = _myungSb ? _fmtStars(_myungSb.combinedMajorStars) : '미상';
+
+      // 격국 + textbook
+      var _patBlock = (_zc.patterns||[]).length
+        ? _zc.patterns.map(function(p){ return '■ ' + p.name + ' (' + (p.type||'-') + ') — ' + (p.description||'') + '\n  [textbook] ' + (p.doc||p.description||''); }).join('\n\n')
+        : '검출된 격국 없음';
+      var _shPatBlock = (_zc.sihuaCross && _zc.sihuaCross.patterns||[]).length
+        ? _zc.sihuaCross.patterns.map(function(p){ return '■ ' + p.name + ' (' + (p.type||'-') + ') — ' + (p.description||'') + '\n  [textbook] ' + (p.doc||p.description||''); }).join('\n\n')
+        : '검출된 사화 패턴 없음';
+
       _ziweiBlock =
-        '- 명주성/신주성: ' + (_zc.destinyMaster||'미상') + '/' + (_zc.bodyMaster||'미상') + '\n' +
-        '- 오행국: ' + (_zc.element||'미상') + '\n' +
-        '- 명궁: ' + (_soul ? _soul.name + ' (' + (_soul.majorStars||[]).join(', ') + ')' : '미상') + '\n' +
-        '- 현재 대한: ' + (_dec ? _dec.name + ' (' + _dec.ageRange + ')' : '미상') + '\n' +
-        '- ' + new Date().getFullYear() + '년 유년궁: ' + (_yr ? _yr.palace : '미상') + '\n' +
-        '- 주요 궁 배치: 재백궁(' + _starsStr(_jaebaek) + '), 관록궁(' + _starsStr(_gwanrok) + '), 부처궁(' + _starsStr(_bucheo) + ')';
+        '- 출생년 천간: ' + (_zc.yearStem||'미상') + '\n' +
+        '- 명주성/신주성: ' + (_zc.destinyMaster||'미상') + '/' + (_zc.bodyMaster||'미상') + ' / 오행국: ' + (_zc.element||'미상') + '\n' +
+        '\n[핵심 5궁 — 별 강도 포함 묘/왕/득=강 평=평 불/한/함=약]\n' + _keyLines + '\n' +
+        '\n[명궁 삼방사정 통합주성]\n  ' + _sbLine + '\n' +
+        '\n[사화 분포 (출생년 ' + (_zc.yearStem||'') + ' 기준)]\n' + _shLine + '\n' +
+        '\n[운기 흐름]\n' +
+        '  대한: ' + (_dec ? (_dec.name + ' ' + (_dec.heavenlyStem||'') + (_dec.earthlyBranch||'') + ' ' + (_dec.ageRange||'')) : '미상') + '\n' +
+        '  유년: ' + (_yr ? ((_yr.year||'')+'년 ' + (_yr.name||'') + ' ' + (_yr.heavenlyStem||'') + (_yr.earthlyBranch||'')) : '미상') + '\n' +
+        (_cm ? '  유월: ' + (_cm.name||'') + ' ' + (_cm.heavenlyStem||'') + (_cm.earthlyBranch||'') + '\n' : '') +
+        (_cd ? '  유일: ' + (_cd.name||'') + ' ' + (_cd.heavenlyStem||'') + (_cd.earthlyBranch||'') + '\n' : '') +
+        '\n[검출된 격국 — 자미두수전서 표준 본문, 그대로 인용·요약]\n' + _patBlock + '\n' +
+        '\n[검출된 사화 패턴 — textbook 본문, 그대로 인용·요약]\n' + _shPatBlock + '\n' +
+        '\n★ 절대 규칙: 위 [textbook] 본문은 자미두수전서 표준 해설. 그대로 인용·요약만. 본인 표현으로 격국 정의 새로 만들지 말 것. 별 강도(묘/왕/득/평/불/한/함)는 명시된 등급 그대로 사용. 데이터에 없는 별·궁·사화·격국은 절대 언급 금지.';
     }
   } catch(_ze) { console.warn('자미두수 빌더 오류:', _ze.message); }
 
