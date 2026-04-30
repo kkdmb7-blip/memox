@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.67.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.67.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 
 // ── 이벤트 로깅 ───────────────────────────────────────────────
 function logEvent(eventType, properties) {
@@ -6484,6 +6484,14 @@ async function callClaude(userMsg, apiKey) {
     : '【사용 시스템: 사주 + ' + (_sys2==='astro'?'서양점성술':_sys2==='ziwei'?'자미두수':'베딕점성술') + '】\n위 두 시스템의 데이터만 활용하세요. 다른 시스템 언급 금지.\n\n';
 
   var systemPrompt = personaPrompt + outputControl + '\n\n【절대 규칙 - 반드시 준수】\n'
+  + '--- 한국어 두음법칙 절대 규칙 ---\n'
+  + '명리 한자어를 한글로 표기할 때 반드시 표준 한국어 두음법칙 적용:\n'
+  + '· 壬(임)·林(임): "림진월/림오/림관" 절대 금지 → "임진월/임오/임관"\n'
+  + '· 廉(염): "렴정" 절대 금지 → "염정"\n'
+  + '· 流(유): "류년/류월/류일" 절대 금지 → "유년/유월/유일"\n'
+  + '· 列(열)·龍(용)·良(양)·連(연) 등도 표준 한국어 표기 사용\n'
+  + '북한식·학술식 표기 절대 사용 금지.\n'
+  + '--- 여기까지 ---\n\n'
   + '--- 날짜 구분 절대 규칙 ---\n'
   + '오늘 날짜: ' + todayStr + '\n'
   + '현재 시각: ' + currentHour + '시 (' + timeZoneLabel + ')\n\n'
