@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.67.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.68.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 
 // ── 이벤트 로깅 ───────────────────────────────────────────────
 function logEvent(eventType, properties) {
@@ -3063,10 +3063,10 @@ function renderStreakBadge(streak) {}
 
 function showStreakMilestone(streak) {
   var msgs = {
-    7:   { icon: '🔥', text: '7일 연속! 운명의 흐름을 타고 있어요' },
-    14:  { icon: '⚡', text: '14일 연속! 두 주를 꽉 채웠어요' },
-    30:  { icon: '✨', text: '30일 연속! 포르투나와 깊은 인연이네요' },
-    100: { icon: '👑', text: '100일 연속! 당신은 진짜 운명을 읽는 사람' }
+    7:   { icon: '✦', text: '한 주를 같이 보냈어요. 무리하지 말고 오늘도 한 호흡만.' },
+    14:  { icon: '✦', text: '두 주를 같이 보냈어요. 마음의 결을 천천히 알아가는 중이에요.' },
+    30:  { icon: '✦', text: '한 달을 같이 보냈어요. 결정은 늘 천천히, 안 따라도 괜찮아요.' },
+    100: { icon: '✦', text: '백 일을 같이 보냈어요. 그 결을 알아가는 동행, 고마워요.' }
   };
   var m = msgs[streak];
   if (!m) return;
@@ -3075,11 +3075,11 @@ function showStreakMilestone(streak) {
   var box = document.createElement('div');
   box.style.cssText = 'background:linear-gradient(160deg,#1a1a2e,#16213e);border:1px solid rgba(212,175,55,0.5);border-radius:24px;padding:36px 28px;text-align:center;width:min(300px,calc(100vw-40px));box-shadow:0 8px 48px rgba(212,175,55,0.2);';
   box.innerHTML =
-    '<div style="font-size:52px;margin-bottom:14px;">' + m.icon + '</div>' +
-    '<div style="font-size:20px;font-weight:800;color:#d4af37;margin-bottom:10px;">' + streak + '일 연속!</div>' +
-    '<div style="font-size:14px;color:#e5e7eb;line-height:1.7;">' + m.text + '</div>';
+    '<div style="font-size:46px;margin-bottom:14px;color:#d4af37;font-family:\'Noto Serif KR\',serif;">' + m.icon + '</div>' +
+    '<div style="font-size:20px;font-weight:800;color:#d4af37;margin-bottom:10px;">' + streak + '일째 함께</div>' +
+    '<div style="font-size:13.5px;color:#e5e7eb;line-height:1.75;">' + m.text + '</div>';
   var btn = document.createElement('button');
-  btn.textContent = '확인';
+  btn.textContent = '고마워요';
   btn.style.cssText = 'margin-top:24px;padding:12px 36px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;';
   btn.addEventListener('click', function() { overlay.remove(); });
   box.appendChild(btn);
@@ -3097,8 +3097,8 @@ function scheduleStreakReminder(streak) {
   clearTimeout(window._fortunaStreakTimer);
   window._fortunaStreakTimer = setTimeout(function() {
     if (Notification.permission !== 'granted') return;
-    var body = streak + '일 스트릭 지키고 있어요. 내일도 올 거죠?';
-    new Notification('🔥 포르투나', { body: body, icon: '/icon.svg', tag: 'fortuna-streak', renotify: true });
+    var body = streak + '일째 같이 와주셨어요. 안 와도 괜찮으니, 마음 가는 날에 들러주세요.';
+    new Notification('포르투나', { body: body, icon: '/icon.svg', tag: 'fortuna-streak', renotify: true });
   }, delay);
 }
 
