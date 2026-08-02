@@ -1405,7 +1405,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.69.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.69.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 
 // ── 이벤트 로깅 ───────────────────────────────────────────────
 function logEvent(eventType, properties) {
@@ -5845,14 +5845,10 @@ async function sendMessage(displayText) {
     || _deepKeywords.some(function(k) { return text.indexOf(k) !== -1; });
 
   var apiKey = (userProfile && userProfile.gemini_key) || localStorage.getItem('memox_gemini_key') || 'fortuna';
-  var _orbLeft = await getOrbBalance();
-  if (_orbLeft < 20) {
-    isTyping = false;
-    document.getElementById('sendBtn').disabled = false;
-    showOrbEmptyModal();
-    return;
-  }
-
+  // ⚠️ 예전엔 여기서 Orb 잔액이 20 미만이면 서버에 물어보지도 않고 바로 막았음 — 그런데 서버
+  // (chat.js)에 방금 "하루 N회는 잔액 0이어도 무료" 로직을 추가했는데, 이 클라이언트 사전차단이
+  // 그 요청 자체를 서버로 보내지도 않아서 정작 무료 횟수가 남은 사람도 여기서 막혀버림. 서버가
+  // orb_insufficient를 돌려줄 때만(callClaude 안에서 이미 처리) 유료화 모달을 띄우도록 바꾼다.
   input.value = '';
   autoResize(input);
   // 채팅창에는 사람이 읽기 쉬운 텍스트 표시, AI에는 구조화된 전체 텍스트 전달
