@@ -191,6 +191,13 @@ body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-
     <div class="how-item">🔒 <span>결제는 <strong>KG이니시스</strong> 안전 처리</span></div>
     <div class="how-item">📞 <span>문의: <strong>picolab.kr</strong></span></div>
   </div>
+
+  <!-- Orb 이용/충전 내역 — 결제형 앱 리뷰에서 가장 흔한 불만이 "왜 깎였는지 모르겠다"는
+       투명성 문제인데, orb_transactions에는 이미 다 기록되면서 정작 보여주는 화면이 없었음. -->
+  <div class="section-label">이용 내역</div>
+  <div class="how-list" id="orbHistoryList">
+    <div class="how-item" style="justify-content:center;color:var(--text3);">불러오는 중…</div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -520,11 +527,38 @@ async function handleRedirectResult() {
   return true;
 }
 
+// Orb 이용/충전 내역 — 최근 20건만, 최신순
+var ORB_TYPE_LABEL = { use: '💬 AI 채팅', charge: '💎 충전', signup_bonus: '🎁 가입 축하', migration: '🔄 계정 이전', referral: '👥 친구 초대' };
+function fmtHistDate(iso) {
+  var d = new Date(iso);
+  return (d.getMonth()+1) + '.' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+async function loadOrbHistory() {
+  var el = document.getElementById('orbHistoryList');
+  if (!el || !currentUserId) return;
+  try {
+    var res = await sb.from('orb_transactions').select('*').eq('user_id', currentUserId).order('created_at', { ascending: false }).limit(20);
+    var rows = res.data || [];
+    if (!rows.length) { el.innerHTML = '<div class="how-item" style="justify-content:center;color:var(--text3);">아직 내역이 없어요</div>'; return; }
+    el.innerHTML = rows.map(function(r) {
+      var isPlus = r.amount > 0;
+      var label = ORB_TYPE_LABEL[r.type] || r.type || '내역';
+      return '<div class="how-item" style="justify-content:space-between;">'
+        + '<span>' + label + '<br><span style="font-size:11px;color:var(--text3);">' + fmtHistDate(r.created_at) + '</span></span>'
+        + '<strong style="color:' + (isPlus ? 'var(--orb)' : 'var(--text)') + ';white-space:nowrap;">' + (isPlus ? '+' : '') + r.amount + ' Orb</strong>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="how-item" style="justify-content:center;color:var(--text3);">내역을 불러오지 못했어요</div>';
+  }
+}
+
 // 초기화
 (async function() {
   var ok = await loadUser();
   if (!ok) return;
   await loadBalance();
+  loadOrbHistory();
   await handleRedirectResult();
 })();
 </script>
