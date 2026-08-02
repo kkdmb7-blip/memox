@@ -1405,7 +1405,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.69.1'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.70.0'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 
 // ── 이벤트 로깅 ───────────────────────────────────────────────
 function logEvent(eventType, properties) {
@@ -4094,7 +4094,6 @@ if (!window._qimenCountdownInterval) {
 }
 
 async function loadDailyCard() {
-  return; // 오늘의 운세 비활성화
   if (!currentUser || !userProfile) return;
   var today = getKSTDate(); // KST 기준 'YYYY-MM-DD'
 
@@ -4109,17 +4108,16 @@ async function loadDailyCard() {
   }
 
   try {
-    // Supabase에서 오늘 날짜(KST)와 정확히 일치하는 운세만 조회
-    var res = await sb.from('daily_fortune')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .eq('date', today)
-      .maybeSingle();
+    // daily_fortune은 RLS(user_id=auth.uid()) 정책이라 Supabase Auth 세션이 없는 이 앱에서
+    // 클라이언트 anon 키로 직접 select/upsert 하면 항상 막힘 → 서버 API(서비스키)로 우회
+    var cacheR = await fetch('https://fortuna-silk.vercel.app/api/daily-fortune-cache?user_id=' + encodeURIComponent(currentUser.id) + '&date=' + today);
+    var cacheJson = await cacheR.json();
+    var row = cacheJson.row;
 
     var cardData = null;
-    if (res.data && res.data.date === today && res.data.keyword) {
+    if (row && row.date === today && row.keyword) {
       // date가 오늘과 정확히 일치하고 내용이 있을 때만 사용
-      cardData = res.data;
+      cardData = row;
     } else {
       // 없거나 날짜 불일치 → 새로 생성
       renderDailyCard(null); // 로딩 상태
@@ -4133,15 +4131,19 @@ async function loadDailyCard() {
           recommendation: '잠깐의 휴식과 명상'
         };
       }
-      await sb.from('daily_fortune').upsert({
-        user_id: currentUser.id,
-        date: today,
-        keyword: parsed.keyword,
-        summary: parsed.summary,
-        content: parsed.content,
-        caution: parsed.caution,
-        recommendation: parsed.recommendation
-      });
+      fetch('https://fortuna-silk.vercel.app/api/daily-fortune-cache', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          date: today,
+          keyword: parsed.keyword,
+          summary: parsed.summary,
+          content: parsed.content,
+          caution: parsed.caution,
+          recommendation: parsed.recommendation
+        })
+      }).catch(function(){});
       cardData = parsed;
     }
 
