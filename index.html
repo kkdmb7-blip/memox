@@ -1403,7 +1403,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APP_VERSION = '2.68.2'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
+const APP_VERSION = '2.68.3'; // 배포할 때마다 올리기 (sw.js CACHE_NAME도 함께 변경)
 
 // ── 이벤트 로깅 ───────────────────────────────────────────────
 function logEvent(eventType, properties) {
@@ -2659,9 +2659,17 @@ async function submitOnboard() {
           localStorage.removeItem('fortuna_prev_user_id');
         } else {
           // 진짜 신규 가입
+          // ⚠️ 이 insert에 free_balance/paid_balance가 빠져있었음 — CLAUDE.md에 이미 적힌 규칙대로
+          // "balance + paid_balance 반드시 동시 업데이트, 빠지면 음수 버그"인데 여기가 바로 그
+          // 빠뜨린 자리였음. free_balance/paid_balance는 DB 기본값(0)으로 들어가는데, 정작
+          // useOrb()는 balance가 아니라 free_balance/paid_balance를 기준으로 차감하므로, 신규
+          // 가입자가 첫 메시지를 보내는 순간 Math.max(0, 0-사용량)으로 0에 clamp돼 balance:60이
+          // balance:0으로 덮어써지며 가입 축하 Orb 60개가 통째로 사라졌었음.
           await sb.from('orb_balance').insert({
             user_id: currentUser.id,
             balance: 60,
+            free_balance: 60,
+            paid_balance: 0,
             is_first_charge: true,
             legacy_user: false,
             updated_at: _now,
@@ -3025,7 +3033,9 @@ function extractAndSaveContext(replyText) {
 async function updateStreak() {
   var today = getKSTDate();
   var storageKey = 'fortuna_streak_' + (currentUser ? currentUser.id : 'guest');
-  var streakData = JSON.parse(localStorage.getItem(storageKey) || '{"streak":1,"last_date":""}');
+  var streakData;
+  try { streakData = JSON.parse(localStorage.getItem(storageKey) || '{"streak":1,"last_date":""}'); }
+  catch(e) { streakData = {streak:1,last_date:""}; }
 
   if (streakData.last_date === today) {
     renderStreakBadge(streakData.streak);
@@ -7080,15 +7090,25 @@ async function retryLastMessage() {
 }
 
 async function saveMessage(role, content) {
-  if (currentUser && currentUser.provider === 'kakao') {
-    await fetch('https://fortuna-silk.vercel.app/api/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: genId(), user_id: currentUser.id, role, content, created_at: Date.now(), session_id: currentSessionId })
-    });
-    return;
+  // ⚠️ 예전엔 여기 try/catch가 전혀 없었음 — sendMessage()의 'user' 메시지 저장 호출(가장 중요한
+  // 호출부)은 이 함수 밖에 아무 try/catch도 없이 그냥 await만 하고 있어서, 네트워크 오류로 이
+  // fetch/insert가 하나라도 실패하면 예외가 sendMessage() 밖으로 그대로 튀어나가 isTyping과
+  // 전송버튼이 새로고침 전까지 영원히 잠겨버렸음(사용자 메시지는 이미 화면에 붙은 채로).
+  // 로컬 chatHistory는 이미 갱신돼있으니, 저장 실패는 콘솔 경고만 남기고 삼켜서 채팅 자체는
+  // 계속 진행되게 한다.
+  try {
+    if (currentUser && currentUser.provider === 'kakao') {
+      await fetch('https://fortuna-silk.vercel.app/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: genId(), user_id: currentUser.id, role, content, created_at: Date.now(), session_id: currentSessionId })
+      });
+      return;
+    }
+    await sb.from('chat_messages').insert({ id: genId(), user_id: currentUser.id, role, content, created_at: Date.now(), session_id: currentSessionId });
+  } catch(e) {
+    console.warn('[saveMessage] 저장 실패:', e && e.message);
   }
-  await sb.from('chat_messages').insert({ id: genId(), user_id: currentUser.id, role, content, created_at: Date.now(), session_id: currentSessionId });
 }
 
 // ── UI ────────────────────────────────────────────────────────
@@ -8510,7 +8530,10 @@ if ('serviceWorker' in navigator) {
   }
 
   function fetchTodayAdvice(cb) {
-    var today = new Date().toISOString().slice(0,10);
+    // new Date().toISOString()는 항상 UTC라 KST 00:00~08:59엔 실제 날짜보다 하루 전으로 계산됨 —
+    // 그 시간대에 열면 어제 캐시된 조언이 "오늘 것"으로 잘못 재사용될 수 있었음. 이 파일에 이미
+    // 있는 KST 계산 헬퍼(getKSTDate)를 그대로 씀.
+    var today = getKSTDate();
     try {
       var cached = JSON.parse(localStorage.getItem(ADVICE_KEY)||'{}');
       if (cached.date===today && cached.advice && !cached.advice.includes('{')) { cb(cached); return; }
