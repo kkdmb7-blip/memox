@@ -4110,7 +4110,7 @@ async function loadDailyCard() {
   try {
     // daily_fortune은 RLS(user_id=auth.uid()) 정책이라 Supabase Auth 세션이 없는 이 앱에서
     // 클라이언트 anon 키로 직접 select/upsert 하면 항상 막힘 → 서버 API(서비스키)로 우회
-    var cacheR = await fetch('https://fortuna-silk.vercel.app/api/daily-fortune-cache?user_id=' + encodeURIComponent(currentUser.id) + '&date=' + today);
+    var cacheR = await fetch('https://fortuna-silk.vercel.app/api/daily-fortune?action=cache-get&user_id=' + encodeURIComponent(currentUser.id) + '&date=' + today);
     var cacheJson = await cacheR.json();
     var row = cacheJson.row;
 
@@ -4131,10 +4131,11 @@ async function loadDailyCard() {
           recommendation: '잠깐의 휴식과 명상'
         };
       }
-      fetch('https://fortuna-silk.vercel.app/api/daily-fortune-cache', {
+      fetch('https://fortuna-silk.vercel.app/api/daily-fortune', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'cache-save',
           user_id: currentUser.id,
           date: today,
           keyword: parsed.keyword,
